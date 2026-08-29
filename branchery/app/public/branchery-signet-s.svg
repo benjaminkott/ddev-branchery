@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" id="soul-ref" viewBox="0 0 16 16" role="img" aria-label="Branchery">
+  <title>Branchery</title>
+  <!-- Every colour sits on its own shape, as a var() with a hex fallback: a page
+       that declares the tokens gets its own ink, and this file still renders on
+       its own. Nothing colours it from a style block or from the root, and no
+       comment in here may carry a double dash, which is what makes an SVG
+       malformed and a reference to it draw nothing. -->
+  <!-- S, drawn at 16. Sixteen pixels have nowhere to put two, so the stroke goes
+       to 1, rounding to 0.5 and the gap to 1. A one unit stroke is centred on a
+       half for its ink to land on whole pixels, which is why the line sits at
+       4.5 and the branch at 8.5 rather than on round numbers; the commits are
+       circles and, like every curve here, exempt from that grid.
+
+       The three commits keep the weight the middle size is drawn with instead of
+       giving ground, so the mark gets heavier as the box shrinks. Nothing was
+       dropped: the peel still rises two pixels across two arcs, and at 16 that
+       is enough to read as a branch leaving a line. -->
+  <path stroke="var(--text-primary, #8A8378)" d="M4.5 4V12" fill="none" stroke-width="1" stroke-linejoin="round" stroke-linecap="round"></path>
+  <path stroke="var(--text-primary, #8A8378)" d="M4.5 8.5H7A1.5 1.5 0 0 0 8.5 7A1.5 1.5 0 0 1 10 5.5H11.5" fill="none" stroke-width="1" stroke-linejoin="round" stroke-linecap="round"></path>
+  <circle fill="var(--text-primary, #8A8378)" cx="4.5" cy="4" r="2"></circle>
+  <circle fill="var(--text-primary, #8A8378)" cx="4.5" cy="12" r="2"></circle>
+  <circle fill="var(--accent, #FF8700)" cx="11.5" cy="5.5" r="2"></circle>
+</svg>

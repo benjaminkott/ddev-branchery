@@ -1,0 +1,695 @@
+/*
+ * Supplementary layout for the interface. Colors, typography and controls come
+ * from the Soul Design System -- only the arrangement and the few building
+ * blocks Soul does not provide live here.
+ */
+
+/* Soul sets display on some building blocks, which defeats the hidden attribute. */
+[hidden] {
+    display: none !important;
+}
+
+/* Where a heading jumped to comes to rest: the bar stands still over the page,
+   so a target scrolled to the top of the window lands underneath it. Said once,
+   for every anchor on every page. */
+:root {
+    scroll-padding-top: calc(var(--height-header) + var(--space-4));
+}
+
+/* The bar draws nothing until its script has run, so the room it will take is
+   held for it -- otherwise the page is laid out once without a bar and again
+   with one, under a reader who has already started. */
+sds-nav-main:not(:defined) {
+    display: block;
+    min-height: var(--height-header);
+}
+
+/* The notices above whatever page is open.
+
+   Their own page block, because `sds-page` and `sds-body` are siblings and one
+   nested in the other is inset twice. They take no room when there is nothing
+   to say, which is nearly always. */
+.branchery-notices {
+    padding-block: 0;
+    /* A page block for its inset, and nothing else: the system's page grows to
+       fill the shell, which for a strip of notices is a hand's width of nothing. */
+    flex: none;
+}
+.branchery-notices:has(> .branchery-notices__item:not([hidden])) {
+    padding-block-start: var(--space-8);
+}
+
+/* What fills the shell is the page being read, not the notices above it. */
+.branchery-main {
+    flex: 1;
+    display: grid;
+    gap: var(--space-8);
+}
+
+/* The page takes the focus when the reader goes to another one -- see land()
+   in app.ts -- and a focus taken that way draws no ring.
+
+   Reaching into what the system draws, and the one way to get this: around the
+   whole page the ring says "this box is a control", to a reader who did nothing
+   but open a worktree. */
+.branchery-main:focus,
+.branchery-main:focus-visible {
+    outline: none;
+    box-shadow: none;
+}
+
+/* Nothing in the page may push it wider than the page: the rows of this grid
+   are `auto`, which lets a child that is wide inside grow past its track and
+   gives the whole page a bar along the bottom. The children are told they may
+   be narrower than their contents. */
+.branchery-main > * {
+    min-width: 0;
+}
+
+/* Set like the title of a worktree's own page, and in the same face: a reader
+   arriving from one to the other should find the name in the same place, in the
+   same letters. */
+/* The name and the door beside it share a line, and the parting space is the
+   heading's: the row the system draws leaves its own, which is wider than what
+   a title stands over here. */
+.branchery-project {
+    margin: 0 0 var(--space-3-5);
+}
+/* What the notices leave between two of them cannot also be what ends them:
+   set off by the same space, the title reads as one more notice. */
+sds-note + .branchery-project {
+    margin-block-start: var(--space-8);
+}
+.branchery-project__name {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: var(--font-size-h2);
+}
+
+/* The project's own checkout, at the end of the band that names the project.
+
+   Not a row of the list and not a box of ours: the fill a table draws a picked
+   row with says "singled out", where what had to be said is "of another kind".
+   The band it ends says that, and nothing here has to.
+
+   The three columns are named, the head that named them not being over it any
+   more. They sit at the two ends of the line while there is room, and stack
+   when there is not. */
+/* Off the name of the repository and close to the name it labels: an eyebrow
+   set as far from its own line as from the heading above it belongs to neither. */
+.branchery-checkout {
+    display: grid;
+    gap: var(--space-2);
+    margin: var(--space-6) 0 0;
+}
+/* The gap of the block sets the label off its statement; the parting space
+   every paragraph carries would be a second one. */
+.branchery-checkout > .sds-label {
+    margin: 0;
+}
+.branchery-checkout__body {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: start;
+    gap: var(--space-4) var(--space-10);
+}
+/* Enough of the line to keep the facts beside it, and not so much that a long
+   name pushes them off it. */
+.branchery-checkout__what {
+    flex: 1 1 20rem;
+    min-width: 0;
+}
+/* The name of the thing the page is about, in the face every checkout is named
+   in. Drawn in the ink of the page like every other name in the list -- see
+   .branchery-list__title. */
+.branchery-checkout__name {
+    font-family: var(--font-mono);
+    font-size: var(--font-size-lead);
+    color: inherit;
+    text-decoration: none;
+    overflow-wrap: anywhere;
+}
+.branchery-checkout__name:hover {
+    text-decoration: underline;
+}
+/* What is true of it right now, in the register the same sentence is set in
+   under a name in the list. */
+.branchery-checkout__meta {
+    margin: var(--space-1) 0 0;
+    color: var(--text-muted);
+    font-size: var(--aside-size);
+    line-height: var(--aside-leading);
+}
+/* The facts end where the plane does: the room under the last of them is the
+   plane's own padding, and the component's parting space would double it. */
+.branchery-checkout__facts {
+    margin-block-end: 0;
+}
+
+/* Nothing here says how far over the heading: the system spaces whatever
+   stands before a heading of that rank, and the two lists read as one rhythm
+   only while both take it. */
+.branchery-section-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2-5) var(--space-4);
+}
+/* What can be done to the list as a whole, the quiet one first. */
+.branchery-section-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    /* At the end of the row whether or not it had to wrap onto a line of its
+       own, so the buttons are in the same place in a narrow window. */
+    margin-left: auto;
+}
+
+/* Small, because it is a tool and not a question; and first in the row,
+   because that is where the eye goes when the list is too long to read. */
+.branchery-filter {
+    /* The width it asks for in the row above the list; everything else is the
+       field's own. The key that gets here is stated as the field's suffix rather
+       than hidden and shown by a rule of ours -- one that leaves while it is being
+       used was two rules reaching into what the element draws.
+
+       Room enough for the prompt and the key: a hand's width narrower, and the key
+       stood on the last word of the prompt. */
+    flex: 0 1 22rem;
+    min-width: 18rem;
+}
+
+/* The way back, at the start of the page it leaves. Pulled out by the padding
+   a control holds its contents off its edge with, so the glyph stands where the
+   title under it starts: a ghost button draws no box, so what a reader sees is
+   an arrow, and an arrow a finger's width right of every other left edge is the
+   kind of thing everybody notices. The token is the control's own. */
+.branchery-back {
+    margin-inline-start: calc(-1 * var(--control-pad-x));
+}
+
+/* One note over the page. The way to act on it is the note's own -- `action`
+   on the element -- so nothing here lays a button out beside one.
+
+   Drawn only when it is shown: laying it out unconditionally overrides the
+   `hidden` attribute the shell hides it with, and three empty boxes with a
+   margin each held a hand's width of nothing above every page. */
+.branchery-notices__item:not([hidden]) {
+    display: block;
+    margin-bottom: var(--space-8);
+}
+
+/* A row while something is being done to it: the spinner and what it is doing
+   take the place of what was true a moment ago, so the row keeps its height.
+   Soul's spinner turns what is inside it and draws nothing itself, so what
+   turns is the same mark the step list uses for the step in hand. */
+.branchery-list__meta--busy {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    color: var(--text-primary);
+}
+.branchery-list__meta--busy .sds-spinner {
+    color: var(--text-primary);
+}
+
+/* The name is the way to the page about the worktree. In the ink of the row
+   rather than a link's: a column of forty names all in link colour is a column
+   nobody can scan, and the row it sits in says it leads somewhere. */
+.branchery-list__title {
+    font-family: var(--font-mono);
+    overflow-wrap: anywhere;
+    color: inherit;
+    text-decoration: none;
+}
+.branchery-list__title:hover {
+    text-decoration: underline;
+}
+
+/* What the row is, under its name: the branch and the last piece of work on
+   it, on one line.
+
+   Cut off rather than wrapped. A list is scanned down its left edge, and a line
+   that wraps moves the next row's name down by however long this row's message
+   happened to be. What is cut is the end of the subject, where a subject is
+   least itself.
+
+   Clamped rather than held on one line with `white-space: nowrap`: a cell that
+   cannot break cannot shrink, and a table sized to its longest commit message
+   ran off the side of a laptop. Clamped, the line still breaks where it must. */
+.branchery-list__what {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+}
+
+/* Held together as one item so the column keeps them at the end of the row,
+   and set apart by the space two controls stand apart in everywhere else. */
+.branchery-list__ways {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+/* Never wrapped: "12 uncommitted" broken across two lines is a number and a
+   word that no longer look like one thing, in the one column read as a number.
+   The figures are lined up by the system, which sets tabular figures wherever a
+   column says it is read down its right edge. */
+.branchery-list__count {
+    display: block;
+    white-space: nowrap;
+}
+
+/* A line of its own and not another item in the dotted list: a subject is a
+   sentence, and a sentence among "3 uncommitted · 2 behind" is one thing more
+   to scan past. The hash after it is plain text -- set as code it stood out
+   bold, in a line whose whole point is to be read past. */
+.branchery-list__tip {
+    display: block;
+    overflow-wrap: anywhere;
+}
+
+/* A band of the system's, like every other part of this page: what says the
+   subject changed is where that band ends. The heading is a rank below the
+   project's own. */
+/* The press that brings the rest of them, under the list it lengthens. */
+.branchery-branches__more {
+    margin: var(--space-3) 0 0;
+}
+/* The list with nothing in it. It keeps the room a list takes and says why it
+   is empty, rather than leaving a sentence where a table was.
+
+   As wide as the list it stands in place of: the system holds a paragraph to
+   the width prose is read at, which drew the two rules of the box to two thirds
+   of the page and stopped them in mid air. */
+.branchery-list__empty {
+    margin: 0;
+    max-width: none;
+    padding: var(--space-6) var(--space-1-5);
+    color: var(--text-muted);
+    border-top: var(--border-hairline) solid var(--border-strong);
+    border-bottom: var(--border-hairline) solid var(--border-subtle);
+}
+/* The same said where there is no list to stand in place of. A sentence and
+   not a box, so it takes no rules of its own. */
+.branchery-list__quiet {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: var(--font-size-small);
+}
+
+/* A wait, and when it is worth saying. Nothing under 200ms, and the word for
+   it only over 2s -- both the system's own thresholds.
+
+   Carried by the delay of an animation and not by a timer: a delay is that
+   decision written down, and it keeps a redraw out of the one moment the page
+   is already waiting for something else. The room is taken from the first frame
+   either way, so nothing moves when the bar appears.
+
+   A reader who asked for no motion is not asking to wait longer for the word:
+   with the animations gone both are simply there. */
+.branchery-waiting {
+    animation: branchery-appear 1ms linear 200ms both;
+}
+.branchery-waiting__label {
+    animation: branchery-appear 1ms linear 2s both;
+}
+@keyframes branchery-appear {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .branchery-waiting,
+    .branchery-waiting__label {
+        animation: none;
+    }
+}
+
+/* A bar in the run of a text rather than in a cell of its own: set inline, so
+   the line keeps the height it will have once the words are there. As wide as
+   the system draws its widest -- three lengths of "a line of something" in a
+   set of four rows is a pattern the reader looks for a meaning in.
+
+   The floor is what makes it a bar at all: a share of a column sized by what is
+   in it comes out at nothing. */
+.branchery-waiting__bar {
+    display: inline-block;
+    vertical-align: middle;
+    width: 84%;
+    min-width: 10ch;
+}
+
+/* A bar where a title will be. Set from the type it stands in: an em of it is
+   the heading's own size, so the bar is the height of what the letters will
+   fill rather than of the line they sit on. */
+.branchery-waiting__title {
+    --sds-skeleton-height: 0.58em;
+    width: 14ch;
+}
+
+/* What was done to it: one operation per row, opening onto its steps. Every
+   entry is an `sds-run`, closed -- so they are surfaces of their own and what
+   used to be a hairline between entries is the gap a stack of cards is read by. */
+.branchery-history {
+    display: grid;
+    gap: var(--space-2);
+}
+
+/* The documentation is the design system's own layout, and nothing of it is
+   styled here: the two columns are `sds-body`, the pages an `sds-rail`, and the
+   parts of the page being read an `sds-aside` that marks the part being read by
+   itself. The links are the plain headings the component needs, and the press is
+   taken by the router. */
+
+/* A path in a table of the manual is one word. The system lets a code span
+   break anywhere, which is right for a database name in a cell of the list and
+   wrong for a column of paths, where every row broke at a different character.
+   Reaching into what the system draws, because no token of its own says how a
+   code span in a cell wraps. */
+.sds-prose .sds-table td > code:only-child {
+    white-space: nowrap;
+    overflow-wrap: normal;
+}
+
+/* Wizard. The surface is Soul's `sds-modal` in one of the system's own sizes;
+   what is left here is the form inside it.
+
+   Where the stage changes under the reader, the height a size states is taken
+   as the height and not only as the ceiling: a box measured to each stop in turn
+   moves the buttons out from under the pointer between one press and the next.
+   A flow of plain questions is not that, and takes the room it needs. */
+.sds-modal--lg.branchery-modal--flow {
+    height: var(--sds-modal-height);
+}
+/* An operation on the stage takes the room its steps take, and no more: it
+   used to keep the height of the flow that started it, so a fetch of one step
+   stood in a box the size of the window. The floor keeps the footer from
+   climbing under the pointer while the first rows arrive.
+
+   fit-content and not auto: a modal is pinned top and bottom by the browser's
+   own sheet, and "auto" between two pins is the whole distance. */
+.sds-modal.branchery-modal--flow:has(sds-run) {
+    height: fit-content;
+    min-height: min(22rem, var(--sds-modal-height));
+    max-height: var(--sds-modal-height);
+}
+.branchery-modal-form {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    flex: 1;
+    min-height: 0;
+}
+/* The surface is Soul's; the stack of fields inside this one is ours. Scoped
+   to the flow's dialog: the confirm dialog is Soul's own, body and all. */
+.branchery-modal--flow .sds-modal__body {
+    display: grid;
+    gap: var(--space-4);
+    align-content: start;
+}
+/* The mark an operation leaves behind when its dialog is closed. Bottom left,
+   where nothing else stands and nothing a reader is working on is covered: it
+   is a way back, not a thing to attend to. */
+.branchery-ticket {
+    position: fixed;
+    z-index: 40;
+    inset: auto auto var(--space-5) var(--space-5);
+    box-shadow: var(--shadow-flyout);
+}
+/* It floats over whatever is being read, so it brings its own ground: a button
+   of this system is drawn with none until it is pressed, and the value is set on
+   the button itself -- handed down from around it, the button's own overrules. */
+.branchery-ticket .sds-btn {
+    --sds-btn-fill: var(--surface-raised);
+}
+.branchery-ticket--failed {
+    --sds-btn-ink: var(--status-error);
+}
+
+/* The one stop whose body holds a list: the set of answers keeps its height
+   and the block under it is handed everything else. Named row by row rather
+   than stretched, which deals the spare room out to every row alike and let the
+   set of answers grow while the list waited behind a gap. */
+.sds-modal__body:has(.branchery-choice-detail) {
+    grid-template-rows: auto 1fr;
+}
+
+/* Soul's head is a row of a title and a close button, held apart. This dialog
+   has no close button and puts its bar above the title, so the head stacks --
+   here and not in every modal: the confirm dialog keeps its close mark.
+
+   Which also changes what its padding is for: the tight one is cramped under
+   two or three lines, so a stacked head takes the block's own. */
+.branchery-modal--flow .sds-modal__head {
+    display: block;
+    --sds-modal-head-pad-y: var(--block-pad-y);
+}
+/* The head already says how a title is set; the heading is only there to be
+   read as one. */
+.branchery-modal-title {
+    margin: 0;
+    font-size: inherit;
+    font-weight: inherit;
+}
+/* What is decided at this stop, in one line under its title. The head states
+   size and weight both, so a line standing in it inherits a heading's weight
+   unless it says otherwise -- and a bold one reads as a second title. */
+.branchery-modal-lead {
+    margin: var(--space-1) 0 0;
+    color: var(--text-muted);
+    font-size: var(--font-size-small);
+    font-weight: var(--weight-regular);
+    line-height: var(--leading-body);
+}
+
+/* How far through the questions the reader is. The bar brings a margin of its
+   own, measured for a bar standing in a body; this one stands over a title in a
+   head, and keeps to the room of a line there. */
+.branchery-modal-progress {
+    margin: 0 0 var(--space-3-5);
+}
+
+/* A list rather than a control that has to be opened: the step asks one thing,
+   so the answers can be on the page. The field above it filters, and is the way
+   in for a name the list does not hold. */
+/* Beside the field rather than under it: the count is what the field acts on,
+   and a line of its own between a control and the list it filters reads as a
+   third thing. Set from the tokens rather than by borrowing a field's hint
+   class: this is a count beside a control, not the hint under one. */
+.branchery-choice-find {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: var(--space-2-5);
+}
+.branchery-choice-count {
+    font-size: var(--aside-size);
+    line-height: var(--aside-leading);
+    color: var(--text-muted);
+}
+
+.branchery-picklist {
+    display: grid;
+    gap: var(--space-0-5);
+    align-content: start;
+    /* However tall the room it was given: the stop it stands on states that,
+       and a height of its own would be a second answer to the same question. */
+    min-height: 0;
+    overflow-y: auto;
+    padding: var(--space-1);
+    background: var(--surface-inset);
+    border: var(--border-hairline) solid var(--border-subtle);
+    border-radius: var(--radius-control);
+}
+.branchery-picklist__item {
+    width: 100%;
+    text-align: left;
+    margin: 0;
+    padding: var(--space-1-5) var(--space-2);
+    border: 0;
+    border-radius: var(--radius-control);
+    background: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+.branchery-picklist__item:hover {
+    background: var(--surface-raised);
+}
+.branchery-picklist__item[aria-pressed='true'] {
+    background: var(--surface-accent-quiet);
+    color: var(--text-accent-quiet);
+}
+.branchery-picklist__empty {
+    margin: 0;
+    padding: var(--space-1-5) var(--space-2);
+    color: var(--text-muted);
+    font-size: var(--font-size-small);
+}
+
+/* What one answer of a set opens up. It stands under the set rather than under
+   its answer: the set draws its choices as one block, and a question with one
+   answer open below it is read the same way round.
+
+   The list is the middle row and the only one that stretches, down to a floor
+   under which the body scrolls rather than showing a list too short to pick
+   from. The third row is for the error, which is not always there. */
+.branchery-choice-detail {
+    display: grid;
+    grid-template-rows: auto minmax(5rem, 1fr) auto;
+    gap: var(--space-2);
+    min-height: 0;
+    margin-block: calc(-1 * var(--space-1)) var(--space-1);
+}
+
+/* What a value in the summary comes to, under the value itself. Quiet and a
+   size down, so the value stays the thing read first. */
+.branchery-preview__note {
+    display: block;
+    color: var(--text-muted);
+    font-size: var(--font-size-small);
+    line-height: var(--leading-body);
+}
+
+.branchery-preview {
+    background: var(--surface-inset);
+    border: var(--border-hairline) solid var(--border-subtle);
+    border-radius: var(--radius-control);
+    padding: var(--space-3-5) var(--space-4);
+}
+.branchery-preview dl {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: var(--space-1) var(--space-4);
+    margin: 0;
+}
+.branchery-preview dt {
+    color: var(--text-muted);
+}
+.branchery-preview dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+/* The subject of a commit leads into the commit itself, drawn in the page's own
+   ink and not the link colour: a column of twenty subjects in it is twenty
+   accents, and the three places the accent means something stop meaning
+   anything. What says it leads somewhere is the hover.
+
+   Through the component's own token. Set on the anchor and not on what holds
+   it, because the component declares the token on the element it draws -- a
+   value inherited from an ancestor never reaches it. */
+.branchery-subject sds-link,
+.branchery-subject .sds-link {
+    --sds-link-ink: var(--text-primary);
+    --sds-link-ink-hover: var(--text-link);
+}
+
+/* What is below the cut: the base's commits, in the muted ink. The branch's
+   own work is what the list is opened for; what it stands on is context, and
+   context reads as context by being quieter. */
+.branchery-subject--base sds-link,
+.branchery-subject--base .sds-link {
+    --sds-link-ink: var(--text-muted);
+}
+
+/* The message of a commit, set as it was written and in the mono face: a
+   commit message is composed in a terminal at a fixed width, and a body
+   reflowed into a paragraph turns a list of three points into one sentence with
+   dashes in it. The page's own ink and not a quotation. */
+.branchery-message {
+    margin: var(--space-4) 0 0;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    font-family: var(--font-mono);
+    font-size: var(--font-size-small);
+    line-height: var(--leading-body);
+    color: var(--text-primary);
+}
+
+/* What is uncommitted, over the commits: the line that counts it and opens the
+   files on a surface of their own. */
+.branchery-uncommitted {
+    margin: 0 0 var(--space-3);
+}
+
+/* The three columns are held by the list and not by each row: what happened to
+   a file is one of five words of five different lengths, and a badge that sets
+   the start of the path anew on every line gives a column of paths five
+   different left edges. Subgrid is what lets the row -- two levels down, so
+   what it unfolds is its sibling -- stand in the tracks the list measured. */
+.branchery-changes {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr) max-content;
+    list-style: none;
+    margin: var(--space-3) 0 0;
+    padding: 0;
+    border-top: var(--border-hairline) solid var(--border-subtle);
+}
+.branchery-changes__file {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+    border-bottom: var(--border-hairline) solid var(--border-subtle);
+}
+/* What an opened row unfolds takes the whole width: the columns are the row's
+   own business. */
+.branchery-changes__file > * {
+    grid-column: 1 / -1;
+}
+/* The whole row is the press. A button with no chrome of its own: what it
+   looks like is a line of a list, and what it does is what a list of files does
+   everywhere. The ring when it is reached by keyboard is the system's own. */
+.branchery-changes__row {
+    display: grid;
+    grid-template-columns: subgrid;
+    align-items: center;
+    gap: var(--space-3);
+    width: 100%;
+    margin: 0;
+    padding: var(--space-2);
+    border: 0;
+    border-radius: var(--radius-control);
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.branchery-changes__row:hover {
+    background: var(--surface-raised);
+}
+.branchery-changes__path {
+    overflow-wrap: anywhere;
+}
+/* The directory is kept, two files of one name in two places being the
+   ordinary case -- and set quietly, not being what the row is read by. */
+.branchery-changes__dir {
+    color: var(--text-muted);
+}
+/* Which way the row stands, at the end of it. Quiet: it answers a question the
+   reader only asks of the row they are about to press. */
+.branchery-changes__mark {
+    color: var(--text-muted);
+}
+.branchery-changes__file sds-diff {
+    margin: var(--space-2) var(--space-2) var(--space-3);
+}
+.branchery-changes__more {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: var(--font-size-small);
+}
+/* On the surface of its own, the list needs no line to close it at the top:
+   the head of the dialog already draws one, and two rules a hand's width apart
+   read as a strip of nothing rather than as an edge. */
+.sds-modal__body > .branchery-changes {
+    margin-top: 0;
+    border-top: 0;
+}

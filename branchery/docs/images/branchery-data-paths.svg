@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="750" viewBox="0 0 1200 750" role="img" aria-labelledby="dp-t dp-d">
+<title id="dp-t">Every way in ends in a database of its own</title>
+<desc id="dp-d">Three ways a worktree gets data. The project's data is copied in when the configuration says data.from source, and the schema is then fitted to the checked-out code. Where there is nothing to copy, the application is installed instead. Later, database:sync replaces the worktree's data from the project or from another worktree. All three end in the worktree's own database; the project's is only read.</desc>
+<rect width="1200" height="750" fill="var(--surface-canvas, #FBFAF7)"></rect>
+
+<text x="60" y="60" fill="var(--accent, #FF8700)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13" font-weight="600" letter-spacing="1.6">COPY · INSTALL · REPLACE</text>
+<text x="60" y="108" fill="var(--text-primary, #1C1A17)" font-family="'Source Sans 3',system-ui,sans-serif" font-size="36" font-weight="700" letter-spacing="-0.5">Every way in ends in a database of its own</text>
+<text x="60" y="140" fill="var(--text-secondary, #4A453D)" font-family="'Source Sans 3',system-ui,sans-serif" font-size="17">The project's database is read and never written to. What a worktree starts with, and what replaces it later, lands beside it.</text>
+<line x1="60" y1="176" x2="1140" y2="176" stroke="var(--border-subtle, #E3DFD6)" stroke-width="1"></line>
+
+<text x="60" y="264" fill="var(--text-muted, #726C63)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13" letter-spacing="0.8">WHAT THERE IS TO START FROM</text>
+
+<rect x="60" y="282" width="460" height="88" rx="6" fill="var(--surface-raised, #FFFFFF)" stroke="var(--border-subtle, #E3DFD6)" stroke-width="1"></rect>
+<text x="80" y="318" fill="var(--text-primary, #1C1A17)" font-family="'Source Sans 3',system-ui,sans-serif" font-size="16" font-weight="600">The project's data</text>
+<text x="80" y="344" fill="var(--text-muted, #726C63)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13">data.from: source — at add and fork</text>
+
+<rect x="60" y="386" width="460" height="88" rx="6" fill="var(--surface-canvas, #FBFAF7)" stroke="var(--border-subtle, #E3DFD6)" stroke-width="1" stroke-dasharray="5 4"></rect>
+<text x="80" y="422" fill="var(--text-primary, #1C1A17)" font-family="'Source Sans 3',system-ui,sans-serif" font-size="16" font-weight="600">Nothing to copy</text>
+<text x="80" y="448" fill="var(--text-muted, #726C63)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13">data.from: none, or an empty project</text>
+
+<rect x="60" y="490" width="460" height="88" rx="6" fill="var(--surface-raised, #FFFFFF)" stroke="var(--border-subtle, #E3DFD6)" stroke-width="1"></rect>
+<text x="80" y="526" fill="var(--text-primary, #1C1A17)" font-family="'Source Sans 3',system-ui,sans-serif" font-size="16" font-weight="600">The project, or another worktree</text>
+<text x="80" y="552" fill="var(--text-muted, #726C63)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13">database:sync my-fix [--from=other]</text>
+
+<path d="M520 326 H588" stroke="var(--text-muted, #726C63)" stroke-width="1.5" fill="none"></path>
+<path d="M588 321 598 326 588 331Z" fill="var(--text-muted, #726C63)"></path>
+<text x="556" y="316" text-anchor="middle" fill="var(--text-muted, #726C63)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13">copy</text>
+
+<path d="M520 430 H588" stroke="var(--text-muted, #726C63)" stroke-width="1.5" fill="none"></path>
+<path d="M588 425 598 430 588 435Z" fill="var(--text-muted, #726C63)"></path>
+<text x="556" y="420" text-anchor="middle" fill="var(--text-muted, #726C63)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13">install</text>
+
+<path d="M520 534 H588" stroke="var(--accent, #FF8700)" stroke-width="2" fill="none"></path>
+<path d="M588 529 598 534 588 539Z" fill="var(--accent, #FF8700)"></path>
+<text x="556" y="524" text-anchor="middle" fill="var(--accent, #FF8700)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13">replaces</text>
+
+<rect x="600" y="230" width="540" height="380" rx="6" fill="none" stroke="var(--border-strong, #C9C3B7)" stroke-width="1.5"></rect>
+<text x="624" y="264" fill="var(--text-muted, #726C63)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13" letter-spacing="0.8">branchery_my_fix — ITS OWN DATABASE</text>
+
+<rect x="624" y="282" width="492" height="88" rx="6" fill="var(--surface-raised, #FFFFFF)" stroke="var(--border-subtle, #E3DFD6)" stroke-width="1"></rect>
+<text x="644" y="318" fill="var(--text-primary, #1C1A17)" font-family="'Source Sans 3',system-ui,sans-serif" font-size="16" font-weight="600">The data, fitted to this code</text>
+<text x="644" y="344" fill="var(--text-muted, #726C63)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13">migrate</text>
+
+<rect x="624" y="386" width="492" height="88" rx="6" fill="var(--surface-raised, #FFFFFF)" stroke="var(--border-subtle, #E3DFD6)" stroke-width="1"></rect>
+<text x="644" y="422" fill="var(--text-primary, #1C1A17)" font-family="'Source Sans 3',system-ui,sans-serif" font-size="16" font-weight="600">The application, installed</text>
+<text x="644" y="448" fill="var(--text-muted, #726C63)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13">setup</text>
+
+<rect x="624" y="490" width="492" height="88" rx="6" fill="var(--surface-raised, #FFFFFF)" stroke="var(--border-subtle, #E3DFD6)" stroke-width="1"></rect>
+<text x="644" y="526" fill="var(--text-primary, #1C1A17)" font-family="'Source Sans 3',system-ui,sans-serif" font-size="16" font-weight="600">The data replaced, then fitted</text>
+<text x="644" y="552" fill="var(--text-muted, #726C63)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13">dump · drop · restore · migrate</text>
+
+<line x1="60" y1="650" x2="1140" y2="650" stroke="var(--border-strong, #C9C3B7)" stroke-width="1"></line>
+<text x="60" y="684" fill="var(--text-primary, #1C1A17)" font-family="'Source Sans 3',system-ui,sans-serif" font-size="16" font-weight="600">The project's own database is only ever read: a dump is taken from it, and nothing is written back.</text>
+<text x="60" y="710" fill="var(--text-secondary, #4A453D)" font-family="'Source Sans 3',system-ui,sans-serif" font-size="14">Sync is the one that can lose work, and only the target's: the dump has to succeed before the target is dropped.</text>
+</svg>

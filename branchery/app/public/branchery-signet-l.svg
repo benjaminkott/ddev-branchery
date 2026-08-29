@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" id="soul-ref" viewBox="0 0 32 32" role="img" aria-label="Branchery">
+  <title>Branchery</title>
+  <!-- Every colour sits on its own shape, as a var() with a hex fallback: a page
+       that declares the tokens gets its own ink, and this file still renders on
+       its own. Nothing colours it from a style block or from the root, and no
+       comment in here may carry a double dash, which is what makes an SVG
+       malformed and a reference to it draw nothing. -->
+  <!-- L, drawn at 32, where one unit is one pixel. Stroke 2, rounding 1, gap 2.
+
+       The interior is a git graph. The project's history runs down the left with
+       a commit at either end; one branch peels away from it and lands on a
+       commit of its own, and that commit is the family's single orange in the
+       top right corner. It is the thing the product hands you: a branch with an
+       address of its own.
+
+       This mark carries no frame. The design system's own carries none either,
+       and here the frame would fence in the very thing the drawing is about.
+       The peel is two quarter arcs rather than one, which is how a branch leaves
+       a line in every git client; arcs are curves and exempt from the grid,
+       while every straight edge lands on a whole pixel. -->
+  <path stroke="var(--text-primary, #8A8378)" d="M7 7V25" fill="none" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path>
+  <path stroke="var(--text-primary, #8A8378)" d="M7 16H14A4 4 0 0 0 18 12A4 4 0 0 1 22 8H25" fill="none" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path>
+  <circle fill="var(--text-primary, #8A8378)" cx="7" cy="7" r="3"></circle>
+  <circle fill="var(--text-primary, #8A8378)" cx="7" cy="25" r="3"></circle>
+  <circle fill="var(--accent, #FF8700)" cx="25" cy="8" r="3"></circle>
+</svg>

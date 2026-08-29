@@ -1,0 +1,16 @@
+# What the build writes. The bundle and the stylesheet under public/ are
+# versioned, and both are minified output -- formatting them would only make
+# the next build undo it.
+public/app.js
+public/app.js.map
+public/app.css
+public/soul/
+public/translations/
+
+# Installed, not written here.
+node_modules/
+vendor/
+
+# Built beside the versioned bundle by the dev server and the test run.
+.dev/
+.tests/

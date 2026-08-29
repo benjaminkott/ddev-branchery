@@ -1,0 +1,22 @@
+# Whatever is created locally while developing does not belong in the image --
+# the build installs the dependencies itself.
+app/vendor
+app/node_modules
+app/tests
+app/.tests
+app/dev
+app/.dev
+app/.phpunit.cache
+app/.php-cs-fixer.cache
+app/phpstan.neon
+app/phpunit.dist.xml
+app/.php-cs-fixer.dist.php
+# Nor does what the interface is built from: the build runs on the developer's
+# machine and in the release workflow, and what the container serves is its
+# result under public/ -- the translations included.
+app/frontend
+app/scripts
+app/translations
+app/tsconfig.json
+app/package.json
+app/package-lock.json

@@ -1,0 +1,1 @@
+"use strict";(()=>{var n=document.currentScript,c=n?.dataset.key??"soul-theme",o=document.documentElement;function l(){try{let t=localStorage.getItem(c);return t==="light"||t==="dark"?t:null}catch{return null}}var e=l();e&&(o.dataset.theme=e);})();

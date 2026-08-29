@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" id="soul-ref" viewBox="0 0 24 24" role="img" aria-label="Branchery">
+  <title>Branchery</title>
+  <!-- Every colour sits on its own shape, as a var() with a hex fallback: a page
+       that declares the tokens gets its own ink, and this file still renders on
+       its own. Nothing colours it from a style block or from the root, and no
+       comment in here may carry a double dash, which is what makes an SVG
+       malformed and a reference to it draw nothing. -->
+  <!-- M, drawn at 24. Stroke stays at 2 in the smaller box, so this is the
+       heavier of the two large marks. Same reading as the L: a history with a
+       commit at either end, one branch peeling away to an orange commit of its
+       own in the top right corner.
+
+       What changed at this size: the peel is tighter, two arcs of radius 2.5
+       instead of 4, and it leaves the line at the middle of the box rather than
+       below it, because the ink of the lower commit would otherwise come within
+       one pixel of the branch. -->
+  <path stroke="var(--text-primary, #8A8378)" d="M5 6V18" fill="none" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path>
+  <path stroke="var(--text-primary, #8A8378)" d="M5 12H10A2.5 2.5 0 0 0 12.5 9.5A2.5 2.5 0 0 1 15 7H18" fill="none" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path>
+  <circle fill="var(--text-primary, #8A8378)" cx="5" cy="6" r="3"></circle>
+  <circle fill="var(--text-primary, #8A8378)" cx="5" cy="18" r="3"></circle>
+  <circle fill="var(--accent, #FF8700)" cx="18" cy="7" r="3"></circle>
+</svg>

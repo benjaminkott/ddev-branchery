@@ -1,0 +1,14 @@
+# What the tests cannot reach.
+#
+# Every operation here ends in a container, so the paths that only run against
+# a real project -- a database that already exists, a git remote that is gone --
+# are the ones a unit test is least likely to walk. Analysis walks all of them
+# without running anything, and that is what it is for: a method left behind by
+# a refactoring is a fatal error in front of a developer, days later, halfway
+# through an operation.
+parameters:
+    level: 8
+    paths:
+        - src
+        - tests
+    treatPhpDocTypesAsCertain: false

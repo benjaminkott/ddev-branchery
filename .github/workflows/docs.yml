@@ -1,0 +1,74 @@
+# The manual is a site of its own.
+#
+# It used to be rendered inside the application, out of the same files, which
+# is why it could only be read by somebody who had already installed the
+# add-on. Rendered here it is a page anybody can be sent to -- and the product
+# page in front of it is what the repository's README otherwise had to be.
+#
+# Nothing about the site is committed, and neither is the renderer that makes
+# it: "make docs" installs the theme at whatever version is current and renders
+# the sources on every push, so a site that disagrees with the manual in the
+# repository is a state that cannot arise.
+name: docs
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'branchery/docs/**'
+      - 'Makefile'
+      - '.github/workflows/docs.yml'
+  pull_request:
+    paths:
+      - 'branchery/docs/**'
+      - 'Makefile'
+      - '.github/workflows/docs.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # The theme renders with guides and finishes with a Node step that lays
+      # its own elements out before the browser gets them, so both are needed.
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
+      # Through make, so that what a workflow publishes and what a maintainer
+      # looks at are rendered by one description of how it is done.
+      - run: make docs
+
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+
+  # Only what is on main is published; a pull request is rendered to find out
+  # whether it still renders.
+  publish:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

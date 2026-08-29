@@ -1,0 +1,26 @@
+{# The theme's image, with a drawing of this repository's written into the page.
+
+   The theme links every picture, and a linked drawing renders in a document of
+   its own: the tokens in it fall back to their light values, and a frame is
+   drawn around it whatever mode the reader is in. The drawings under images/
+   are written in Soul's own diagram grammar, in the page's tokens, and inline
+   they read them -- so they follow the reader into dark and stand on the
+   ground of the band as decoration, not as a figure to open. An SVG is that
+   drawing; anything else is a picture the theme frames as it does.
+
+   Everything else is the theme's template as it stands. #}
+{%- if node.value is external_target or node.value|split('.')|last != 'svg' -%}
+{%- set source = node.value is external_target ? node.value : asset(node.value) -%}
+{%- if node.target %}<a href="{{ node.target.url }}">{% endif -%}
+<sds-figure
+    src="{{ source }}"
+    alt="{{ node.option('alt')|default('') }}"
+    {%- if node.hasOption('width') %} width="{{ node.option('width') }}"{% endif -%}
+    {%- if node.hasOption('height') %} height="{{ node.option('height') }}"{% endif -%}
+    {%- if node.hasOption('zoomable') and not node.target %} zoomable{% endif -%}
+    {%- if node.classesString %} class="{{ node.classesString }}"{% endif -%}
+></sds-figure>
+{%- if node.target %}</a>{% endif -%}
+{%- else -%}
+{{ source(node.value) }}
+{%- endif -%}

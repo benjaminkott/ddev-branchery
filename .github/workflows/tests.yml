@@ -1,0 +1,86 @@
+# The way a developer actually arrives, walked on a machine that has never seen
+# this project: "ddev add-on get", then every operation against a real DDEV
+# project. Against the stable DDEV and against its main branch both, because
+# what breaks an add-on is usually the other side moving.
+name: tests
+
+on:
+  pull_request:
+    paths-ignore:
+      - "**.md"
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - "**.md"
+
+  # An add-on can stop working without anybody touching it: a new DDEV, a new
+  # base image, a moved dependency. Nightly is how that is found before a
+  # developer finds it.
+  schedule:
+    - cron: '25 04 * * *'
+
+  workflow_dispatch:
+    inputs:
+      debug_enabled:
+        type: boolean
+        description: Debug with tmate
+        required: false
+        default: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # What can be checked without a project: the types, the unit tests and the
+  # bundle on the one side, static analysis, the PHP tests and the coding style
+  # on the other. Static analysis is the one that finds a method a refactoring
+  # left behind -- the paths that only run against a real project are the ones
+  # the tests walk least, and there such a method is a fatal error in front of
+  # a developer halfway through an operation.
+  app:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: branchery/app
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: branchery/app/package-lock.json
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          tools: composer
+      - run: npm ci
+      - run: npm run check
+      - run: composer install --no-interaction --prefer-dist
+      - run: composer stan
+      - run: composer test
+      - run: composer cs
+      # The release check, against a compose file that names another tag: it
+      # has to refuse, or the step in the image workflow guards nothing.
+      - run: sudo apt-get install -y bats
+      - run: bats ../../tests/release.bats
+
+  tests:
+    strategy:
+      matrix:
+        ddev_version: [stable, HEAD]
+      fail-fast: false
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: ddev/github-action-add-on-test@v2
+        with:
+          ddev_version: ${{ matrix.ddev_version }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          debug_enabled: ${{ github.event.inputs.debug_enabled }}
+          addon_repository: ${{ env.GITHUB_REPOSITORY }}
+          addon_ref: ${{ env.GITHUB_REF }}

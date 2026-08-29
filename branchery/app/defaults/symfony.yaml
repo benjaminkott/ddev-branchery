@@ -1,0 +1,42 @@
+# A Symfony application.
+#
+# What "profile: symfony" pulls in. The schema here is the one a project with
+# doctrine/doctrine-migrations-bundle has; a project that keeps no migrations
+# replaces setup and migrate with "doctrine:schema:update --force --complete",
+# and one with neither replaces them with nothing.
+
+docroot: public
+
+data:
+  from: source
+
+carry:
+  except:
+    - var
+    - .vscode
+    - .idea
+
+install:
+  - $BRANCHERY_PHP /usr/local/bin/composer install --no-interaction --no-progress
+
+# .env.dev.local and not .env.local: the latter is the project's own file,
+# unversioned and carried over when branching off, and it holds settings that
+# have nothing to do with a worktree. Symfony reads this one after it, so one
+# line is added and nothing of the project's is lost.
+configure:
+  - |
+    cat > .env.dev.local <<ENV
+    APP_ENV=dev
+    APP_DEBUG=1
+    DATABASE_URL="$BRANCHERY_DB_URL"
+    ENV
+
+setup:
+  - $BRANCHERY_PHP bin/console doctrine:database:create --if-not-exists --no-interaction
+  - $BRANCHERY_PHP bin/console doctrine:migrations:migrate --allow-no-migration --no-interaction
+
+migrate:
+  - $BRANCHERY_PHP bin/console doctrine:migrations:migrate --allow-no-migration --no-interaction
+
+flush:
+  - $BRANCHERY_PHP bin/console cache:clear

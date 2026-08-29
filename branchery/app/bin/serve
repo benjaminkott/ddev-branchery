@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+#
+# What the container runs.
+#
+# Only one thing happens before the server: DDEV merges the compose files as it
+# starts the project, and that merge is what "ddev describe" reads. The block
+# listing the worktrees is written into the result of it, so it has to be put
+# back once per start -- which is here, the first moment after the merge at
+# which this application runs.
+set -eu
+
+php /opt/branchery/bin/console ddev:describe >/dev/null 2>&1 || true
+
+exec php -S 0.0.0.0:80 -t /opt/branchery/public /opt/branchery/public/router.php
