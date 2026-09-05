@@ -15,8 +15,8 @@ use App\Service\ProjectDatabase;
 use App\Service\Recipes;
 use App\Service\Runtimes;
 use App\Service\VersionMap;
-use App\Service\WebContainer;
 use App\Service\WorktreeRepository;
+use App\Tests\Fake\RecordingContainer;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Filesystem\Filesystem;
 
@@ -144,7 +144,7 @@ final class DescribeInfoTest extends TestCase
         $project = new Project($this->root, $this->root, 'demo', '.worktrees');
         $files = new ManagedFiles(0, 0);
         $locks = new Locks($project, $files);
-        $web = new WebContainer('', $this->root);
+        $web = new RecordingContainer();
         $database = new ProjectDatabase($web);
 
         return new DescribeInfo(

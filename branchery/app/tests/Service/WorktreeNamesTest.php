@@ -14,8 +14,8 @@ use App\Service\ProjectDatabase;
 use App\Service\Recipes;
 use App\Service\Runtimes;
 use App\Service\VersionMap;
-use App\Service\WebContainer;
 use App\Service\WorktreeRepository;
+use App\Tests\Fake\RecordingContainer;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Filesystem\Filesystem;
@@ -46,7 +46,7 @@ final class WorktreeNamesTest extends TestCase
     private function worktrees(): WorktreeRepository
     {
         $project = new Project($this->root, '/home/dev/blog', 'blog', '.worktrees');
-        $web = new WebContainer('', '/home/dev/blog');
+        $web = new RecordingContainer();
         $files = new ManagedFiles((int) getmyuid(), (int) getmygid());
         $locks = new Locks($project, $files);
 

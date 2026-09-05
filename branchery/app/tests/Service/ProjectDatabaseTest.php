@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Service;
 
 use App\Service\ProjectDatabase;
-use App\Service\WebContainer;
+use App\Tests\Fake\RecordingContainer;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -59,6 +59,6 @@ final class ProjectDatabaseTest extends TestCase
     /** The name needs no server; nothing here reaches the web container. */
     private function database(): ProjectDatabase
     {
-        return new ProjectDatabase(new WebContainer('', ''));
+        return new ProjectDatabase(new RecordingContainer());
     }
 }

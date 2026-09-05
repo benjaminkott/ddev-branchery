@@ -6,8 +6,8 @@ namespace App\Tests\Service;
 
 use App\Service\ManagedFiles;
 use App\Service\ProjectDatabase;
-use App\Service\WebContainer;
 use App\Service\WorktreeContext;
+use App\Tests\Fake\RecordingContainer;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -60,7 +60,7 @@ final class WorktreeEnvironmentTest extends TestCase
 
     private function context(?string $nodeDirectory = null): WorktreeContext
     {
-        $web = new WebContainer('', '');
+        $web = new RecordingContainer();
 
         return new WorktreeContext(
             name: 'my-fix',

@@ -11,6 +11,7 @@ use App\Service\ManagedFiles;
 use App\Service\Project;
 use App\Service\StepReporter;
 use App\Service\WebContainer;
+use App\Tests\Fake\RecordingContainer;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Input\InputInterface;
@@ -60,7 +61,7 @@ final class WorktreeNameTest extends TestCase
         $record = static function (string $name) use (&$reached): void {
             $reached[] = $name;
         };
-        $command = new class($jobs, new WebContainer('', '/home/dev/blog'), $record) extends AbstractWorktreeCommand {
+        $command = new class($jobs, new RecordingContainer(), $record) extends AbstractWorktreeCommand {
             public function __construct(JobRunner $jobs, WebContainer $web, private readonly \Closure $record)
             {
                 parent::__construct($jobs, $web);

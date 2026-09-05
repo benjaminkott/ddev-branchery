@@ -25,6 +25,7 @@ use App\Command\SyncCommand;
 use App\Controller\ApiController;
 use App\Service\DatabaseOperations;
 use App\Service\DescribeInfo;
+use App\Service\DockerContainer;
 use App\Service\Docs;
 use App\Service\Git;
 use App\Service\Installation;
@@ -110,7 +111,9 @@ final class Container
 
     public function web(): WebContainer
     {
-        return $this->share(WebContainer::class, fn (): WebContainer => new WebContainer(
+        // The interface is what everything asks for; this is the one place that
+        // says which of them the application runs on.
+        return $this->share(WebContainer::class, fn (): WebContainer => new DockerContainer(
             containerName: $this->string('BRANCHERY_WEB_CONTAINER', ''),
             hostProjectRoot: $this->project()->hostRoot(),
         ));

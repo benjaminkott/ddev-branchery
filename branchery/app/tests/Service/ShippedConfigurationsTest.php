@@ -7,8 +7,8 @@ namespace App\Tests\Service;
 use App\Service\ManagedFiles;
 use App\Service\ProjectDatabase;
 use App\Service\Recipes;
-use App\Service\WebContainer;
 use App\Service\WorktreeContext;
+use App\Tests\Fake\RecordingContainer;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -98,7 +98,7 @@ final class ShippedConfigurationsTest extends TestCase
 
     private function context(): WorktreeContext
     {
-        $web = new WebContainer('', '');
+        $web = new RecordingContainer();
 
         return new WorktreeContext(
             name: 'my-fix',
