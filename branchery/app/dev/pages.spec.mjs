@@ -54,6 +54,63 @@ for (const [what, address, shown] of PAGES) {
 
         await expect(page.locator('#main').getByText(shown, { exact: false }).first()).toBeVisible();
         expect(broken.found(), broken.said()).toHaveLength(0);
+
+        const unreachable = await unreadable(page);
+        expect(unreachable, unreachable.join('\n  ')).toHaveLength(0);
+    });
+}
+
+/**
+ * The floor under whether the page can be used at all by somebody who is not
+ * looking at it. Not an audit -- what a page means is read by a person -- but
+ * the three that are facts rather than judgement: a control nobody can name is
+ * a control a screen reader announces as "button"; an image with no alt at all
+ * is read out as its file name, where an empty one is the way to say it carries
+ * nothing; and a page that begins at h2, or has two h1, is one whose outline
+ * says something other than what is drawn.
+ *
+ * Soul draws the controls and gets this right on its own. What is not Soul's is
+ * how they are put together here, and that is what this reads.
+ */
+async function unreadable(page) {
+    return page.evaluate(() => {
+        const said = [];
+        const name = (el) =>
+            (
+                el.getAttribute('aria-label') ??
+                el.getAttribute('label') ??
+                el.getAttribute('title') ??
+                el.textContent ??
+                ''
+            ).trim();
+
+        for (const control of document.querySelectorAll('#main button, #main a[href], sds-button, sds-link')) {
+            if (name(control) === '') {
+                said.push(`a control with no name: ${control.outerHTML.slice(0, 80)}`);
+            }
+        }
+
+        for (const image of document.images) {
+            if (!image.hasAttribute('alt')) {
+                said.push(`an image with no alt at all: ${image.getAttribute('src')}`);
+            }
+        }
+
+        const levels = [...document.querySelectorAll('#main h1, #main h2, #main h3, #main h4')].map((h) =>
+            Number(h.tagName.slice(1)),
+        );
+        const firsts = levels.filter((level) => level === 1).length;
+        if (firsts > 1) {
+            said.push(`${firsts} first-level headings on one page`);
+        }
+        levels.reduce((was, level) => {
+            if (level > was + 1) {
+                said.push(`the outline jumps from h${was} to h${level}`);
+            }
+            return level;
+        }, levels[0] ?? 1);
+
+        return said;
     });
 }
 
