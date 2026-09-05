@@ -37,7 +37,11 @@ wanted() {
         [ -n "$worktree" ] && [ -n "$version" ] || continue
         case "$worktree" in \#*) continue ;; esac
         # A worktree the map has outlived: its line says nothing about anything.
-        [ -e "${docroots}/${worktree}" ] || continue
+        # Asked of the link and not of what it points at: a docroot the build has
+        # not made yet -- "public" before composer ran -- is a link that leads
+        # nowhere, and the version is chosen a step before that. Skipped here, the
+        # worktree is served by the project's PHP until something applies this again.
+        [ -e "${docroots}/${worktree}" ] || [ -L "${docroots}/${worktree}" ] || continue
         # The project's own version is what the wildcard already serves.
         [ "$version" = "$default" ] && continue
         printf '%s %s\n' "$worktree" "$version"

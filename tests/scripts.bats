@@ -99,6 +99,18 @@ versions() {
     [ "$output" = "my-fix 8.4" ]
 }
 
+# The docroots are symlinks into the worktree, and the version is chosen one
+# step before the build creates what they point at.
+@test "a docroot link that leads nowhere yet is still a worktree" {
+    mkdir -p "${WORK}/docroots"
+    ln -s "${WORK}/nothing/public" "${WORK}/docroots/my-fix"
+    printf 'my-fix=8.4\n' > "${WORK}/php.map"
+
+    run bash -c 'source "$0"; wanted "$1" "$2" 8.3' "${SCRIPTS}/apply-php-versions.sh" "${WORK}/php.map" "${WORK}/docroots"
+
+    [ "$output" = "my-fix 8.4" ]
+}
+
 @test "a map that is not there asks for nothing rather than failing" {
     run bash -c 'source "$0"; wanted "$1" "$2" 8.3' "${SCRIPTS}/apply-php-versions.sh" "${WORK}/nothing.map" "${WORK}/docroots"
 
