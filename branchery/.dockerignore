@@ -11,6 +11,15 @@ app/.php-cs-fixer.cache
 app/phpstan.neon
 app/phpunit.dist.xml
 app/.php-cs-fixer.dist.php
+app/eslint.config.js
+app/.prettierrc.json
+app/.prettierignore
+app/playwright.config.mjs
+app/test-results
+app/playwright-report
+# What the API answers with, field by field. A file the two halves are checked
+# against before a release, and nothing the running container reads.
+app/api-answers.json
 # Nor does what the interface is built from: the build runs on the developer's
 # machine and in the release workflow, and what the container serves is its
 # result under public/ -- the translations included.
