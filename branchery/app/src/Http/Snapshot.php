@@ -20,6 +20,12 @@ use App\Project;
  * waiting at all -- every operation writes a file under jobs/, and a mark taken
  * from those is what makes the end of one visible in the next answer rather
  * than a second later.
+ *
+ * What this rests on is the size of a project: one developer, a handful of
+ * worktrees, a few hundred records at the outside. The mark is a directory
+ * scan and it is taken on every question, so what is cheap here is cheap
+ * because there is little to walk -- and a project of another order would want
+ * something other than files to ask.
  */
 final readonly class Snapshot
 {
@@ -51,6 +57,11 @@ final readonly class Snapshot
         $answer = $make();
         // Only an answer worth keeping: an error is a moment's trouble, and one
         // handed out again for a second is a moment's trouble twice.
+        //
+        // Two tabs that both find nothing kept will both write here, and neither
+        // is held back: ManagedFiles writes through a temporary file and a rename,
+        // so the worst of two writers is that the second one's answer is the one
+        // kept -- and a reader can never land on half a file.
         if ($answer->status === 200) {
             $this->files->write($file, (string) json_encode([
                 'mark' => $mark,
