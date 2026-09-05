@@ -154,8 +154,53 @@ final readonly class JobRunner
         }
         $this->files->write($directory . '/' . $id . '.started', time() . "\n");
         $this->files->write($directory . '/' . $id . '.log', '');
+        // A new record is what makes an old one one too many, so this is where
+        // the old ones go -- no timer, nothing to run by hand.
+        $this->tidy();
 
         return $id;
+    }
+
+    /**
+     * How many operations are kept a full record of, per worktree and for those
+     * about none. A history is worth having and a history nobody will read to the
+     * end is worth less than the disk it grows on: a composer install writes
+     * hundreds of kilobytes into its log, and until this there was nothing that
+     * ever took one away from a worktree that goes on existing.
+     */
+    private const int KEPT = 25;
+
+    /**
+     * The oldest records past what is kept, by what they were about.
+     *
+     * Grouped rather than counted as one heap, so a worktree built twice a day
+     * cannot push another's history out; and the operations about no worktree --
+     * a fetch -- are a group of their own, which is what they had instead of
+     * anything at all. forget() cannot reach them: they write no subject, and it
+     * is a subject it looks them up by.
+     *
+     * Nothing running is touched, whatever its age. The ids carry the time they
+     * were started, so they sort themselves.
+     */
+    private function tidy(): void
+    {
+        $directory = $this->project->jobsDirectory();
+
+        $ids = [];
+        foreach (glob($directory . '/*.status') ?: [] as $file) {
+            $ids[] = basename($file, '.status');
+        }
+        sort($ids);
+
+        $seen = [];
+        foreach (array_reverse($ids) as $id) {
+            $subject = trim((string) @file_get_contents($directory . '/' . $id . '.subject'));
+            $seen[$subject] = ($seen[$subject] ?? 0) + 1;
+            if ($seen[$subject] <= self::KEPT || $this->outcome($id)['status'] === 'running') {
+                continue;
+            }
+            $this->files->remove(...(glob($directory . '/' . $id . '.*') ?: []));
+        }
     }
 
     /**

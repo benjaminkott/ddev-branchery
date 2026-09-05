@@ -51,6 +51,99 @@ final class JobRecordTest extends TestCase
     }
 
     /**
+     * A worktree that goes on existing kept every record it ever made. Nothing
+     * took one away: forget() runs when a name is reused or a worktree is
+     * removed, and a worktree that is neither is one nobody ever swept. A
+     * composer install writes hundreds of kilobytes into its log.
+     */
+    public function testAWorktreeKeepsOnlySoManyOperations(): void
+    {
+        $kept = (new \ReflectionClassConstant(JobRunner::class, 'KEPT'))->getValue();
+        self::assertIsInt($kept);
+
+        for ($made = 0; $made < $kept + 5; ++$made) {
+            $this->job(sprintf('20260821-%03d-x', $made), [
+                'subject' => "my-fix\n",
+                'status' => "done\n",
+                'log' => 'built',
+                'started' => (string) $made,
+                'exit' => '0',
+            ]);
+        }
+
+        // Starting another is what sweeps: no timer, and nothing to run by hand.
+        $this->runner()->adopt(['worktree:pull'], 'my-fix');
+
+        $history = $this->runner()->history('my-fix');
+        self::assertCount($kept, $history, 'the history grew past what is kept');
+        // The newest, and the one just made among them.
+        self::assertSame('worktree:pull', $history[0]['command']);
+        // And nothing of what went is left lying: a file without its record reads
+        // as an operation with no log and no time.
+        $known = array_column($history, 'id');
+        foreach (glob($this->jobs . '/*') ?: [] as $file) {
+            self::assertContains(
+                preg_replace('/\.[a-z]+$/', '', basename($file)),
+                $known,
+                sprintf('%s belongs to a record that is gone', basename($file)),
+            );
+        }
+    }
+
+    /**
+     * An operation about no worktree writes no subject, and forget() looks a
+     * record up by one -- so a fetch was a record nothing could ever reach.
+     * Swept as a group of its own, or one worktree's history would push it out.
+     */
+    public function testOperationsAboutNoWorktreeAreSweptToo(): void
+    {
+        $kept = (new \ReflectionClassConstant(JobRunner::class, 'KEPT'))->getValue();
+        self::assertIsInt($kept);
+
+        for ($made = 0; $made < $kept + 5; ++$made) {
+            $this->job(sprintf('20260821-%03d-f', $made), [
+                'status' => "done\n",
+                'command' => "git:fetch\n",
+                'log' => 'fetched',
+                'started' => (string) $made,
+                'exit' => '0',
+            ]);
+        }
+        $this->job('20260821-900-w', ['subject' => "my-fix\n", 'status' => "done\n", 'started' => '900', 'exit' => '0']);
+
+        $this->runner()->adopt(['git:fetch']);
+
+        // The worktree's own record is untouched by a sweep of the others.
+        self::assertCount(1, $this->runner()->history('my-fix'));
+        $left = array_filter(
+            glob($this->jobs . '/*.status') ?: [],
+            static fn (string $file): bool => !is_file(substr($file, 0, -7) . '.subject'),
+        );
+        self::assertCount($kept, $left, 'the operations about no worktree grew past what is kept');
+    }
+
+    /** Whatever its age: a sweep that took a running operation would take its log. */
+    public function testNothingRunningIsSweptAway(): void
+    {
+        $kept = (new \ReflectionClassConstant(JobRunner::class, 'KEPT'))->getValue();
+        self::assertIsInt($kept);
+
+        $this->job('20260821-000-old', ['subject' => "my-fix\n", 'status' => "running\n", 'started' => (string) time(), 'pid' => (string) getmypid()]);
+        for ($made = 1; $made < $kept + 5; ++$made) {
+            $this->job(sprintf('20260821-%03d-x', $made), [
+                'subject' => "my-fix\n",
+                'status' => "done\n",
+                'started' => (string) $made,
+                'exit' => '0',
+            ]);
+        }
+
+        $this->runner()->adopt(['worktree:pull'], 'my-fix');
+
+        self::assertFileExists($this->jobs . '/20260821-000-old.status', 'a running operation was swept away');
+    }
+
+    /**
      * Remove a worktree and create one called the same, and the new one used to
      * open with the operations of its predecessor.
      */

@@ -55,9 +55,16 @@ steps, output, warnings and exit code. A command run through
 interface does.
 
 If a process disappears without writing an exit code, its record becomes failed
-instead of appearing to run forever. A worktree's history remains until the
-worktree is removed; a reused name starts with an empty history so it cannot
-inherit records from an older checkout.
+instead of appearing to run forever. A reused name starts with an empty history
+so it cannot inherit records from an older checkout, and removing a worktree
+takes its records with it.
+
+A worktree keeps the most recent operations rather than all of them, and the
+operations about no worktree — a fetch — are kept the same way and apart, so one
+worktree's history cannot push them out. Starting an operation is what sweeps;
+nothing running is ever swept, whatever its age. A composer install writes
+hundreds of kilobytes into its log, and a worktree that goes on existing would
+otherwise keep every one of them for as long as the project stands.
 
 ..  _architecture-trust:
 
