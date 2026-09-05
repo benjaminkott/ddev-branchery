@@ -81,6 +81,27 @@ db_databases() {
   fi
 }
 
+# Where the entry for the worktree addresses is written. The script picks the
+# server the project actually runs, and a test that names one of the two says
+# nothing whatever about the other.
+vhost_file() {
+  case "${TEST_WEBSERVER}" in
+    apache*) printf '/etc/apache2/sites-enabled/zz-branchery.conf' ;;
+    *) printf '/etc/nginx/sites-enabled/zz-branchery.conf' ;;
+  esac
+}
+
+# And how the domain reads inside it. nginx matches the worktree out of the
+# hostname with a regular expression, so its dots are escaped; Apache names the
+# same thing as a ServerAlias, where they are dots. The same fact, spelled the
+# way each server spells it.
+vhost_hostname() {
+  case "${TEST_WEBSERVER}" in
+    apache*) printf '%s' "$1" ;;
+    *) printf '%s' "${1//./\\.}" ;;
+  esac
+}
+
 # A database made outside Branchery, which is what an orphan is.
 db_create() {
   if [ "$(db_family)" = postgres ]; then
@@ -555,10 +576,13 @@ health_check() {
   echo "$output" | grep -q "https://${PROJNAME}.example.test:8041"
   grep -q "${PROJNAME}.example.test" "${TESTDIR}/.ddev/config.branchery.yaml"
 
-  # And what the scripts write, told the domain the way the container is.
+  # And what the scripts write, told the domain the way the container is. The
+  # entry goes to whichever server is in charge, and asking the other one for it
+  # is how this test passed for years while saying nothing about Apache.
   ddev exec --raw -- sudo env "DDEV_SITENAME=${PROJNAME}" DDEV_TLD=example.test bash /mnt/ddev_config/branchery/scripts/apply-vhosts.sh
-  run ddev exec --raw -- cat /etc/nginx/sites-enabled/zz-branchery.conf
-  echo "$output" | grep -qF "${PROJNAME}\\.example\\.test"
+  run ddev exec --raw -- cat "$(vhost_file)"
+  [ "$status" -eq 0 ]
+  echo "$output" | grep -qF "$(vhost_hostname "${PROJNAME}.example.test")"
 }
 
 @test "removal takes its files with it" {
