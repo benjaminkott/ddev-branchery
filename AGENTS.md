@@ -104,10 +104,18 @@ beside a `make start` rather than over it.
 arrives: `ddev add-on get`, in a project this repository has never seen, with
 the image built from the working copy. `tools/deploy.sh` does not walk that
 path -- it stages a clean copy first, which is why it kept working while `ddev
-add-on get` had been failing outright on the symlinks in `app/node_modules`. Run
-the
-suite before anything that touches `install.yaml`, the `Dockerfile` or what is
-shipped.
+add-on get` had been failing outright on the symlinks in `app/node_modules`.
+
+Run it before anything that changes **what the image contains, or where** --
+which is wider than `install.yaml`, the `Dockerfile` and the shipped files, and
+the wider reading is the one that matters. A file moving inside `app/` is none
+of those three by the letter, and it was exactly that: `Container` went a
+directory deeper and went on counting its way to the application from where it
+used to stand, so a project could find neither the shipped configurations it
+names nor the console every background operation starts. The unit tests, the
+analyser and the API contract all passed. This suite forks a worktree and asks
+for the manual, so it would have said so at once -- and it runs on every pull
+request, so what failed was reaching for it here.
 
 `bats tests/scripts.bats` needs no container at all: the two scripts in the web
 container write what they write in functions that take what they need and print
