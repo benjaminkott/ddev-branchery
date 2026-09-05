@@ -74,6 +74,13 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npm run test:pages
       - run: composer install --no-interaction --prefer-dist
+      # What is shipped, and only that: the image installs with "--no-dev", and
+      # what the interface is bundled out of goes into public/app.js. An advisory
+      # against a linter is worth a pull request from Dependabot and is not worth
+      # stopping one. This runs against a tool that reaches the Docker socket, so
+      # the half that does ship is a failure and not a note.
+      - run: composer audit --no-dev
+      - run: npm audit --omit=dev
       - run: composer stan
       - run: composer test
       - run: composer cs
