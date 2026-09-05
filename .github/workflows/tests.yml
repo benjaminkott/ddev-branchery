@@ -67,6 +67,9 @@ jobs:
       # has to refuse, or the step in the image workflow guards nothing.
       - run: sudo apt-get install -y bats
       - run: bats ../../tests/release.bats
+      # What the two scripts in the web container write. They need no container
+      # to be read, and they are the part of this add-on that breaks quietest.
+      - run: bats ../../tests/scripts.bats
 
   tests:
     strategy:

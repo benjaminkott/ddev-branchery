@@ -6,20 +6,43 @@
 ## version that deviates from the project default, an additional PHP-FPM pool
 ## runs on its own socket; the web server gets an entry for that worktree which
 ## points the handler there.
+##
+## Two halves: what is written -- the server blocks, and which worktrees ask for
+## an entry at all -- is decided by functions that take what they need and print
+## what they make. Applying it is what happens below the line further down. That
+## is what lets the first half be read by a test: no server, no pools, no root.
+## See tests/scripts.bats.
 set -euo pipefail
 
 STATE="/var/www/html/.ddev/branchery/var"
 MAP="${STATE}/php.map"
 DOCROOTS="${STATE}/docroots"
 
-DEFAULT_PHP="$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')"
-WEB_USER="$(stat -c %U /var/www/html)"
-WEB_GROUP="$(stat -c %G /var/www/html)"
-
 # The addresses hang under the project's own name.
 tld="${DDEV_SITENAME:-ddev}.${DDEV_TLD:-ddev.site}"
 
 log() { printf '[php-versions] %s\n' "$*"; }
+
+# Which worktrees ask for a PHP of their own, out of the map: one
+# "<worktree> <version>" to a line, in the map's order. Every rule about what
+# counts is here and nothing else is.
+wanted() {
+    local map="$1" docroots="$2" default="$3"
+    [ -f "$map" ] || return 0
+
+    local worktree version
+    while IFS='=' read -r worktree version; do
+        worktree="$(printf '%s' "${worktree:-}" | tr -d '[:space:]')"
+        version="$(printf '%s' "${version:-}" | tr -d '[:space:]')"
+        [ -n "$worktree" ] && [ -n "$version" ] || continue
+        case "$worktree" in \#*) continue ;; esac
+        # A worktree the map has outlived: its line says nothing about anything.
+        [ -e "${docroots}/${worktree}" ] || continue
+        # The project's own version is what the wildcard already serves.
+        [ "$version" = "$default" ] && continue
+        printf '%s %s\n' "$worktree" "$version"
+    done < "$map"
+}
 
 # Called again for a pool that is already up, this changes nothing: the entry
 # point runs on every container start, and every worktree asks for its version.
@@ -152,6 +175,14 @@ webserver() {
     esac
 }
 
+# Read rather than run: a test sources this for the functions above and applies
+# nothing. Everything below this line touches the container.
+[ "${BRANCHERY_SCRIPT_READ_ONLY:-}" = "1" ] && return 0
+
+DEFAULT_PHP="$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')"
+WEB_USER="$(stat -c %U /var/www/html)"
+WEB_GROUP="$(stat -c %G /var/www/html)"
+
 server="$(webserver)"
 case "$server" in
     nginx)
@@ -169,43 +200,34 @@ esac
 started=""
 failed=""
 
-if [ -f "$MAP" ]; then
-    while IFS='=' read -r worktree version; do
-        worktree="$(printf '%s' "${worktree:-}" | tr -d '[:space:]')"
-        version="$(printf '%s' "${version:-}" | tr -d '[:space:]')"
-        [ -n "$worktree" ] && [ -n "$version" ] || continue
-        case "$worktree" in \#*) continue ;; esac
-        [ -e "${DOCROOTS}/${worktree}" ] || continue
-        [ "$version" = "$DEFAULT_PHP" ] && continue
-
-        # A worktree whose pool is not up gets no entry: without one it is caught
-        # by the wildcard and served with the project's PHP, which answers.
-        case " $started " in
-            *" $version "*) ;;
-            *)
-                case " $failed " in
-                    *" $version "*)
-                        log "No entry for ${worktree}: PHP ${version} is not up."
-                        continue
-                        ;;
-                esac
-                if start_fpm "$version"; then
-                    started="${started} ${version}"
-                else
-                    failed="${failed} ${version}"
-                    log "No entry for ${worktree}: PHP ${version} is not up, the project's PHP serves it until it is."
+while read -r worktree version; do
+    # A worktree whose pool is not up gets no entry: without one it is caught
+    # by the wildcard and served with the project's PHP, which answers.
+    case " $started " in
+        *" $version "*) ;;
+        *)
+            case " $failed " in
+                *" $version "*)
+                    log "No entry for ${worktree}: PHP ${version} is not up."
                     continue
-                fi
-                ;;
-        esac
+                    ;;
+            esac
+            if start_fpm "$version"; then
+                started="${started} ${version}"
+            else
+                failed="${failed} ${version}"
+                log "No entry for ${worktree}: PHP ${version} is not up, the project's PHP serves it until it is."
+                continue
+            fi
+            ;;
+    esac
 
-        if [ "$server" = nginx ]; then
-            nginx_block "$worktree" "$version" >> "${target}.tmp"
-        else
-            apache_block "$worktree" "$version" >> "${target}.tmp"
-        fi
-    done < "$MAP"
-fi
+    if [ "$server" = nginx ]; then
+        nginx_block "$worktree" "$version" >> "${target}.tmp"
+    else
+        apache_block "$worktree" "$version" >> "${target}.tmp"
+    fi
+done < <(wanted "$MAP" "$DOCROOTS" "$DEFAULT_PHP")
 
 mv "${target}.tmp" "$target"
 
