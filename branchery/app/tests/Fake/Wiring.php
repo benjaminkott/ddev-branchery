@@ -17,6 +17,8 @@ use App\Git\SshAgent;
 use App\Git\WorkingCopy;
 use App\Http\ApiController;
 use App\Http\Snapshot;
+use App\Http\Starting;
+use App\Http\State;
 use App\Jobs\JobRunner;
 use App\Locking\Locks;
 use App\ManagedFiles;
@@ -35,6 +37,7 @@ use App\Runtime\VersionMap;
 use App\Runtime\VersionMap as Map;
 use App\Web\Exposure;
 use App\Web\Runtimes;
+use App\Worktree\CommitPages;
 use App\Worktree\DescribeInfo;
 use App\Worktree\Surroundings;
 use App\Worktree\WorktreeRepository;
@@ -179,12 +182,20 @@ final class Wiring
             $php,
             $this->jobs,
             $this->git,
-            $recipes,
-            $locks,
-            new Installation($this->project, 'dev'),
             new WorktreeUsage($this->project, $this->web, $database, $databases),
-            new Snapshot($this->project, $this->files),
-            new Exposure($this->project, new Ports()),
+            new State(
+                $this->project,
+                $this->worktrees,
+                $this->git,
+                $php,
+                $this->jobs,
+                $recipes,
+                new Installation($this->project, 'dev'),
+                new Exposure($this->project, new Ports()),
+                new Snapshot($this->project, $this->files),
+            ),
+            new Starting($locks, $this->jobs),
+            new CommitPages($this->project, $this->git, $recipes),
         );
     }
 

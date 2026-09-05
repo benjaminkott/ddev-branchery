@@ -152,7 +152,7 @@ describe('what both sides have to say the same way', () => {
     it('reads a page of commits as long as the container sends', () => {
         assert.equal(
             declared('../frontend/views/commits.ts', /^const PAGE = (\d+);$/m),
-            declared('../src/Http/ApiController.php', /COMMIT_PAGE = (\d+);/),
+            declared('../src/Worktree/CommitPages.php', /PAGE = (\d+);/),
         );
     });
 
@@ -164,7 +164,7 @@ describe('what both sides have to say the same way', () => {
     it('holds a branch name to what the container holds it to', () => {
         assert.equal(
             declared('../frontend/dom.ts', /^const BRANCH_PATTERN = \/(.+)\/;$/m),
-            declared('../src/Http/ApiController.php', /BRANCH_PATTERN = '#(.+)#';/),
+            declared('../src/Http/Parameters.php', /BRANCH = '#(.+)#';/),
         );
     });
 

@@ -37,6 +37,8 @@ use App\Git\WorkingCopy;
 use App\Http\ApiController;
 use App\Http\Router;
 use App\Http\Snapshot;
+use App\Http\Starting;
+use App\Http\State;
 use App\Jobs\JobRunner;
 use App\Locking\Locks;
 use App\ManagedFiles;
@@ -58,6 +60,7 @@ use App\Web\Exposure;
 use App\Web\PublishedPorts;
 use App\Web\Runtimes;
 use App\Web\WebContainer;
+use App\Worktree\CommitPages;
 use App\Worktree\DescribeInfo;
 use App\Worktree\Surroundings;
 use App\Worktree\WorktreeRepository;
@@ -455,6 +458,36 @@ final class Container
         ));
     }
 
+    /** The answer the whole page is drawn from, kept apart from the doors. */
+    public function state(): State
+    {
+        return $this->share(State::class, fn (): State => new State(
+            $this->project(),
+            $this->worktrees(),
+            $this->git(),
+            $this->php(),
+            $this->jobs(),
+            $this->recipes(),
+            $this->installation(),
+            $this->exposure(),
+            $this->snapshot(),
+        ));
+    }
+
+    public function starting(): Starting
+    {
+        return $this->share(Starting::class, fn (): Starting => new Starting($this->locks(), $this->jobs()));
+    }
+
+    public function commitPages(): CommitPages
+    {
+        return $this->share(CommitPages::class, fn (): CommitPages => new CommitPages(
+            $this->project(),
+            $this->git(),
+            $this->recipes(),
+        ));
+    }
+
     public function api(): ApiController
     {
         return $this->share(ApiController::class, fn (): ApiController => new ApiController(
@@ -464,12 +497,10 @@ final class Container
             $this->php(),
             $this->jobs(),
             $this->git(),
-            $this->recipes(),
-            $this->locks(),
-            $this->installation(),
             $this->usage(),
-            $this->snapshot(),
-            $this->exposure(),
+            $this->state(),
+            $this->starting(),
+            $this->commitPages(),
         ));
     }
 
