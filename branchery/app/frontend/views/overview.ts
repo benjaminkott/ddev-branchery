@@ -9,6 +9,7 @@ import type { RunningJob } from '../types.js';
 import type { DropdownChosen, Row, SdsDropdown } from '@typo3/soul-frontend';
 import { found, matching, matchingBranches } from '../filter.js';
 import { byBase } from '../lineage.js';
+import { keep, recall } from '../kept.js';
 import type { Branch, JobHandlers, Worktree } from '../types.js';
 import { go } from '../router.js';
 import { openCreate } from './create.js';
@@ -288,13 +289,13 @@ function rowsToExpect(): number {
     if (known > 0) {
         return known;
     }
-    const last = Number(localStorage.getItem(ROWS_KEY));
+    const last = Number(recall(ROWS_KEY));
 
     return Number.isFinite(last) && last > 0 ? last : 1;
 }
 
 function rememberRows(): void {
-    localStorage.setItem(ROWS_KEY, String(state.worktrees.length));
+    keep(ROWS_KEY, String(state.worktrees.length));
 }
 
 /**

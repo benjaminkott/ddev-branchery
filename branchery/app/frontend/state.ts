@@ -2,6 +2,7 @@
 
 import { api, ApiError } from './api.js';
 import { loadStrings, translate } from './i18n.js';
+import { keep, recall } from './kept.js';
 import { createStore, differs } from './store.js';
 import type { AppState, JobKind, RunningJob, ServerState, TrackedJob } from './types.js';
 
@@ -19,7 +20,7 @@ export const { state, subscribe } = createStore<AppState>({
     phpVersions: [],
     strings: {},
     loading: true,
-    language: localStorage.getItem(LANGUAGE_KEY) || document.documentElement.lang || 'en',
+    language: recall(LANGUAGE_KEY) || document.documentElement.lang || 'en',
     job: null,
     runningJobs: [],
     error: '',
@@ -37,7 +38,7 @@ export async function setLanguage(language: string): Promise<void> {
     state.strings = await loadStrings(language);
     state.language = language;
     document.documentElement.lang = language;
-    localStorage.setItem(LANGUAGE_KEY, language);
+    keep(LANGUAGE_KEY, language);
 
     document.querySelectorAll<HTMLElement>('[data-i18n]').forEach((element) => {
         const key = element.dataset['i18n'];
