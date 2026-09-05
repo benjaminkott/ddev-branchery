@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace App\Operation;
 
-use App\Service\DatabaseOperations;
-use App\Service\Git;
-use App\Service\Project;
-use App\Service\ProjectDatabase;
-use App\Service\Recipes;
-use App\Service\StepReporter;
-use App\Service\Surroundings;
-use App\Service\WorktreeRepository;
+use App\Config\Recipes;
+use App\Database\DatabaseOperations;
+use App\Database\ProjectDatabase;
+use App\Git\Git;
+use App\Jobs\StepReporter;
+use App\Project;
 use App\Text;
+use App\Worktree\Surroundings;
+use App\Worktree\WorktreeRepository;
 
 /**
  * Fetching a worktree's data again, and what is left on the server when a

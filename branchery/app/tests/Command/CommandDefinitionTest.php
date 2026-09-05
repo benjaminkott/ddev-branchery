@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Command;
 
-use App\Container;
+use App\Wiring\Container;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Application;
 

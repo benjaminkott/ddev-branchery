@@ -1,6 +1,6 @@
 /**
  * That the mocked API answers the same doors as the container. The house rule
- * is that dev/api.mjs mirrors src/Controller/ApiController.php; this is the
+ * is that dev/api.mjs mirrors src/Http/ApiController.php; this is the
  * part of it a machine can keep -- both sides declare their routes as a list,
  * so a route added to one and not the other is a difference two regular
  * expressions can find.
@@ -152,7 +152,7 @@ describe('what both sides have to say the same way', () => {
     it('reads a page of commits as long as the container sends', () => {
         assert.equal(
             declared('../frontend/views/commits.ts', /^const PAGE = (\d+);$/m),
-            declared('../src/Controller/ApiController.php', /COMMIT_PAGE = (\d+);/),
+            declared('../src/Http/ApiController.php', /COMMIT_PAGE = (\d+);/),
         );
     });
 
@@ -164,7 +164,7 @@ describe('what both sides have to say the same way', () => {
     it('holds a branch name to what the container holds it to', () => {
         assert.equal(
             declared('../frontend/dom.ts', /^const BRANCH_PATTERN = \/(.+)\/;$/m),
-            declared('../src/Controller/ApiController.php', /BRANCH_PATTERN = '#(.+)#';/),
+            declared('../src/Http/ApiController.php', /BRANCH_PATTERN = '#(.+)#';/),
         );
     });
 
@@ -188,7 +188,7 @@ describe('what both sides have to say the same way', () => {
      * and the two written in this one are held to being the same text.
      */
     it('makes of a branch a name the container would accept', () => {
-        const pattern = new RegExp(declared('../src/Service/Project.php', /NAME_PATTERN = '\/(.+)\/';/));
+        const pattern = new RegExp(declared('../src/Project.php', /NAME_PATTERN = '\/(.+)\/';/));
         for (const branch of ['feature/checkout', 'release/13.4', 'RENOVATE/Symfony_7', '13.4', 'a...b']) {
             assert.match(slug(branch), pattern, branch);
         }

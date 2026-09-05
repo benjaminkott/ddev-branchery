@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Contract;
 
-use App\Controller\ApiController;
+use App\Http\ApiController;
 use App\Http\Response;
 use App\Http\Router;
 use App\Tests\Fake\Wiring;

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Git;
 
-use App\Service\CommandResult;
-use App\Service\Project;
-use App\Service\WebContainer;
+use App\CommandResult;
+use App\Project;
+use App\Web\WebContainer;
 
 /**
  * How a git command is run, and who is told when one of them writes.

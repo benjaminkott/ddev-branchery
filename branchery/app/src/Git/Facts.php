@@ -6,9 +6,7 @@ namespace App\Git;
 
 use App\Model\Branch;
 use App\Model\WorktreeState;
-use App\Service\GitOutput;
-use App\Service\Lineage;
-use App\Service\Project;
+use App\Project;
 
 /**
  * What the repository says about itself, kept for as long as one request.

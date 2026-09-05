@@ -4,20 +4,20 @@ declare(strict_types=1);
 
 namespace App\Operation;
 
-use App\Service\Build;
-use App\Service\DatabaseOperations;
-use App\Service\DescribeInfo;
-use App\Service\Git;
-use App\Service\NodeVersions;
-use App\Service\PhpVersions;
-use App\Service\Project;
-use App\Service\ProjectDatabase;
-use App\Service\Recipe;
-use App\Service\Recipes;
-use App\Service\StepReporter;
-use App\Service\Surroundings;
-use App\Service\WorktreeContext;
-use App\Service\WorktreeRepository;
+use App\Config\Build;
+use App\Config\Recipe;
+use App\Config\Recipes;
+use App\Config\WorktreeContext;
+use App\Database\DatabaseOperations;
+use App\Database\ProjectDatabase;
+use App\Git\Git;
+use App\Jobs\StepReporter;
+use App\Project;
+use App\Runtime\NodeVersions;
+use App\Runtime\PhpVersions;
+use App\Worktree\DescribeInfo;
+use App\Worktree\Surroundings;
+use App\Worktree\WorktreeRepository;
 
 /**
  * Building a worktree that already stands on disk.

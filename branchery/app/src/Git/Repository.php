@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace App\Git;
 
-use App\Service\CommandResult;
-use App\Service\GitOutput;
-use App\Service\Locks;
-use App\Service\Project;
+use App\CommandResult;
+use App\Locking\Locks;
+use App\Project;
 
 /**
  * Everything that changes the repository: worktrees made and taken away,

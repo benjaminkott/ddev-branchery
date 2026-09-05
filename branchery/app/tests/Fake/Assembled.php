@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace App\Tests\Fake;
 
 use App\Git\Facts;
+use App\Git\Git;
 use App\Git\History;
 use App\Git\Repository;
 use App\Git\Runner;
 use App\Git\WorkingCopy;
-use App\Service\Git;
-use App\Service\Locks;
-use App\Service\Project;
-use App\Service\WebContainer;
+use App\Locking\Locks;
+use App\Project;
+use App\Web\WebContainer;
 
 /**
  * The pieces of git put together the one way they go together.

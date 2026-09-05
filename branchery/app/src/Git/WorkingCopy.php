@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Git;
 
-use App\Service\GitOutput;
-
 /**
  * What a checkout has that is not committed, and what it carries that git was
  * told to ignore.

@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Operation;
 
-use App\Service\ManagedFiles;
-use App\Service\NodeVersions;
-use App\Service\PhpVersions;
-use App\Service\Project;
-use App\Service\ProjectDatabase;
-use App\Service\Recipes;
-use App\Service\WebContainer;
-use App\Service\WorktreeContext;
+use App\Config\Recipes;
+use App\Config\WorktreeContext;
+use App\Database\ProjectDatabase;
+use App\ManagedFiles;
+use App\Project;
+use App\Runtime\NodeVersions;
+use App\Runtime\PhpVersions;
+use App\Web\WebContainer;
 
 /**
  * What a recipe line is told about the worktree it runs for.

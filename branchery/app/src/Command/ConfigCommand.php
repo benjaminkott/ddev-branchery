@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Command;
 
-use App\Service\DescribeInfo;
-use App\Service\WorktreeManager;
-use App\Service\WorktreeRepository;
+use App\Operation\WorktreeManager;
+use App\Worktree\DescribeInfo;
+use App\Worktree\WorktreeRepository;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;

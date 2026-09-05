@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Fake;
 
-use App\Service\PublishedPorts;
+use App\Web\PublishedPorts;
 
 /** Containers that publish what a test says they publish, and nothing else. */
 final class Ports implements PublishedPorts

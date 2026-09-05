@@ -4,12 +4,22 @@ declare(strict_types=1);
 
 namespace App\Tests\Fake;
 
-use App\Controller\ApiController;
+use App\Addon\Installation;
+use App\Config\Recipes;
+use App\Database\DatabaseOperations;
+use App\Database\ProjectDatabase;
 use App\Git\Facts;
+use App\Git\Git;
 use App\Git\History;
 use App\Git\Repository;
 use App\Git\Runner;
+use App\Git\SshAgent;
 use App\Git\WorkingCopy;
+use App\Http\ApiController;
+use App\Http\Snapshot;
+use App\Jobs\JobRunner;
+use App\Locking\Locks;
+use App\ManagedFiles;
 use App\Operation\BranchMoves;
 use App\Operation\CarriedFiles;
 use App\Operation\Contexts;
@@ -17,35 +27,25 @@ use App\Operation\DataTransfer;
 use App\Operation\Preflight;
 use App\Operation\Provisioning;
 use App\Operation\Removal;
-use App\Service\DatabaseOperations;
-use App\Service\DescribeInfo;
-use App\Service\Exposure;
-use App\Service\Git;
-use App\Service\Installation;
-use App\Service\JobRunner;
-use App\Service\Locks;
-use App\Service\ManagedFiles;
-use App\Service\NodeVersions;
-use App\Service\PhpVersions;
-use App\Service\Project;
-use App\Service\ProjectDatabase;
-use App\Service\Recipes;
-use App\Service\Runtimes;
-use App\Service\Snapshot;
-use App\Service\SshAgent;
-use App\Service\Surroundings;
-use App\Service\VersionMap;
-use App\Service\VersionMap as Map;
-use App\Service\WorktreeManager;
-use App\Service\WorktreeRepository;
-use App\Service\WorktreeUsage;
+use App\Operation\WorktreeManager;
+use App\Project;
+use App\Runtime\NodeVersions;
+use App\Runtime\PhpVersions;
+use App\Runtime\VersionMap;
+use App\Runtime\VersionMap as Map;
+use App\Web\Exposure;
+use App\Web\Runtimes;
+use App\Worktree\DescribeInfo;
+use App\Worktree\Surroundings;
+use App\Worktree\WorktreeRepository;
+use App\Worktree\WorktreeUsage;
 use Symfony\Component\Filesystem\Filesystem;
 
 /**
  * The graph an operation runs in, over a directory that is thrown away
  * afterwards and a container that runs nothing.
  *
- * Written out rather than taken from App\Container: that one reads the
+ * Written out rather than taken from App\Wiring\Container: that one reads the
  * environment and decides which container the application runs on, which is the
  * one decision a test has to make for itself. What is kept from it is the
  * shape -- if the two ever disagree, this is wired wrongly.
@@ -75,11 +75,11 @@ final class Wiring
         );
         $this->web = new RecordingContainer();
         $this->files = new ManagedFiles((int) getmyuid(), (int) getmygid());
-        // One of them for the whole graph, as App\Container has it: flock is per
+        // One of them for the whole graph, as App\Wiring\Container has it: flock is per
         // open file, so a second Locks holding the same key blocks against the
         // first from inside the very process that holds it.
         $locks = $this->locks = new Locks($this->project, $this->files);
-        // One Runner for the whole graph, as App\Container has it: it is what
+        // One Runner for the whole graph, as App\Wiring\Container has it: it is what
         // tells Facts that a command wrote, and a second one tells nobody.
         $runner = new Runner($this->project, $this->web);
         $this->git = new Git(
@@ -105,7 +105,7 @@ final class Wiring
         );
         $this->jobs = new JobRunner($this->project, $this->files, '/opt/branchery/bin/console');
 
-        // The pieces an operation is made of, wired as App\Container wires them.
+        // The pieces an operation is made of, wired as App\Wiring\Container wires them.
         $databases = new DatabaseOperations($this->web, $database);
         $describe = new DescribeInfo($this->project, $this->worktrees, $database, $this->files);
         $surroundings = new Surroundings($this->project, $this->git, $this->files, $this->web);

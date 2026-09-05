@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Command;
 
-use App\Service\JobRunner;
-use App\Service\Project;
-use App\Service\StepReporter;
-use App\Service\WebContainer;
-use App\Service\WorktreeManager;
+use App\Jobs\JobRunner;
+use App\Jobs\StepReporter;
+use App\Operation\WorktreeManager;
+use App\Project;
+use App\Web\WebContainer;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;

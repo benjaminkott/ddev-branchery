@@ -6,12 +6,12 @@ namespace App\Tests\Command;
 
 use App\Command\AbstractJobCommand;
 use App\Command\AbstractWorktreeCommand;
-use App\Service\JobRunner;
-use App\Service\ManagedFiles;
-use App\Service\Project;
-use App\Service\StepReporter;
-use App\Service\WebContainer;
+use App\Jobs\JobRunner;
+use App\Jobs\StepReporter;
+use App\ManagedFiles;
+use App\Project;
 use App\Tests\Fake\RecordingContainer;
+use App\Web\WebContainer;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Input\InputInterface;

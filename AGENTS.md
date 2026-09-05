@@ -337,10 +337,26 @@ the state the change is about.
 
 ## Where things are
 
+A namespace under `src/` says what a thing is, and it only says that for as
+long as it can be read on its own -- so **no two of them may need each other**.
+`App\` itself holds the leaves (`Project`, `ManagedFiles`, `CommandResult`,
+`Text`) and nothing there depends on anything of ours; `App\Wiring` is the
+composition root and nothing depends on it. `tests/LayersTest.php` walks the
+graph the imports draw and fails on any way back to where it started -- a cycle
+between namespaces is invisible to the compiler, to the analyser and to every
+other test, and it is what turned the old `Service\` into forty classes under a
+name that had stopped meaning anything.
+
 | | |
 |---|---|
-| `branchery/app/src/` | the REST API and the console, PHP |
+| `branchery/app/src/` | the REST API and the console, PHP -- and at the top level the leaves everything is made of |
+| `branchery/app/src/Wiring/` | what is wired to what, and the one place the environment is read |
 | `branchery/app/src/Operation/` | what an operation is made of -- the order it is put in is `WorktreeManager` |
+| `branchery/app/src/Http/` | what a request becomes: the routes, the controller, the answer |
+| `branchery/app/src/Config/` | what a project says about how its branches are built, and what running that means |
+| `branchery/app/src/Worktree/` | what a worktree is, beside the operations that make one |
+| `branchery/app/src/Git/`, `Database/`, `Runtime/`, `Web/` | the tools, each behind the one name that reaches it |
+| `branchery/app/src/Jobs/`, `Locking/`, `Addon/` | a long operation, what may run beside it, and what this add-on itself is |
 | `branchery/app/api-answers.json` | what the API answers with, field by field -- both halves are checked against it |
 | `branchery/app/frontend/` | the interface, TypeScript -- and beside `app.ts` the rules it applies, each one testable without a browser |
 | `branchery/app/frontend/views/` | the pages, the dialogs and the pieces they are drawn from |

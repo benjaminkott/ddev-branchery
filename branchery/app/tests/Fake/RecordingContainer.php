@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Fake;
 
-use App\Service\CommandResult;
-use App\Service\WebContainer;
+use App\CommandResult;
+use App\Web\WebContainer;
 
 /**
  * A web container that runs nothing and remembers everything.

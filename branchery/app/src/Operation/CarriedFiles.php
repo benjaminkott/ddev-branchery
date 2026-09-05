@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Operation;
 
-use App\Service\Git;
-use App\Service\Project;
-use App\Service\Recipes;
-use App\Service\StepReporter;
-use App\Service\WebContainer;
+use App\Config\Recipes;
+use App\Git\Git;
+use App\Jobs\StepReporter;
+use App\Project;
 use App\Text;
+use App\Web\WebContainer;
 
 /**
  * What a fork brings over from the checkout it was cut from.

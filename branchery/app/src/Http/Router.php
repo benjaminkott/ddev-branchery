@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http;
 
-use App\Controller\ApiController;
-
 /**
  * What a request becomes: the routes as a table, and the answer a refusal is
  * given back as.

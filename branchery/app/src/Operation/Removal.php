@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace App\Operation;
 
-use App\Service\DatabaseOperations;
-use App\Service\DescribeInfo;
-use App\Service\Git;
-use App\Service\ManagedFiles;
-use App\Service\NodeVersions;
-use App\Service\PhpVersions;
-use App\Service\Project;
-use App\Service\ProjectDatabase;
-use App\Service\StepReporter;
-use App\Service\Surroundings;
-use App\Service\WorktreeRepository;
+use App\Database\DatabaseOperations;
+use App\Database\ProjectDatabase;
+use App\Git\Git;
+use App\Jobs\StepReporter;
+use App\ManagedFiles;
+use App\Project;
+use App\Runtime\NodeVersions;
+use App\Runtime\PhpVersions;
+use App\Worktree\DescribeInfo;
+use App\Worktree\Surroundings;
+use App\Worktree\WorktreeRepository;
 
 /**
  * Taking a worktree away, and everything that was made for it.

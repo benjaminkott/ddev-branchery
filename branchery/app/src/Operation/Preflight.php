@@ -4,19 +4,19 @@ declare(strict_types=1);
 
 namespace App\Operation;
 
-use App\Service\Build;
-use App\Service\DatabaseOperations;
-use App\Service\Git;
-use App\Service\JobRunner;
-use App\Service\LockFile;
-use App\Service\PhpVersions;
-use App\Service\Project;
-use App\Service\ProjectDatabase;
-use App\Service\Recipe;
-use App\Service\Recipes;
-use App\Service\StepReporter;
-use App\Service\WorktreeRepository;
+use App\Config\Build;
+use App\Config\LockFile;
+use App\Config\Recipe;
+use App\Config\Recipes;
+use App\Database\DatabaseOperations;
+use App\Database\ProjectDatabase;
+use App\Git\Git;
+use App\Jobs\JobRunner;
+use App\Jobs\StepReporter;
+use App\Project;
+use App\Runtime\PhpVersions;
 use App\Text;
+use App\Worktree\WorktreeRepository;
 
 /**
  * What is asked before a worktree exists.

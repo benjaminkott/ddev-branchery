@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Git;
 
-use App\Service\GitOutput;
-
 /**
  * What a branch carries: the commits on it, what one of them changed, and how
  * far it stands from what the remote has.

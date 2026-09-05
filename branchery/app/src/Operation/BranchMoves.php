@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Operation;
 
-use App\Service\Git;
-use App\Service\SshAgent;
-use App\Service\StepReporter;
-use App\Service\WorktreeRepository;
+use App\Git\Git;
+use App\Git\SshAgent;
+use App\Jobs\StepReporter;
 use App\Text;
+use App\Worktree\WorktreeRepository;
 
 /**
  * The three operations that move a checkout rather than build one: bringing a
