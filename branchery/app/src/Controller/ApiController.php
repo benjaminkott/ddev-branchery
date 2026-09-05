@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\Http\BusyException;
 use App\Http\MissingException;
 use App\Http\Response;
+use App\Service\Exposure;
 use App\Service\Git;
 use App\Service\GitOutput;
 use App\Service\Installation;
@@ -39,6 +40,7 @@ final class ApiController
         private readonly Installation $installation,
         private readonly WorktreeUsage $usage,
         private readonly Snapshot $snapshot,
+        private readonly Exposure $exposure,
     ) {
     }
 
@@ -80,6 +82,10 @@ final class ApiController
             // Updated to another version and waiting for a restart. Said here, or a
             // developer who updated sees nothing change and cannot find out why.
             'updateWaiting' => $this->installation->updateWaiting(),
+            // The one thing this application's safety rests on, asked rather than
+            // assumed: null while the port is the developer's own machine's, and
+            // otherwise what put it on the network beside them.
+            'exposed' => $this->exposure->beyondThisMachine(),
         ]);
     }
 

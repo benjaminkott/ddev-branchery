@@ -28,6 +28,7 @@ export const { state, subscribe } = createStore<AppState>({
     recipeProblem: null,
     unconfigured: false,
     updateWaiting: false,
+    exposed: null,
 });
 
 export function t(key: string, params: Record<string, string | number> = {}): string {
@@ -116,6 +117,7 @@ async function load(): Promise<RunningJob[]> {
     put('recipeProblem', data.recipeProblem ?? null);
     put('unconfigured', data.unconfigured === true);
     put('updateWaiting', data.updateWaiting ?? false);
+    put('exposed', data.exposed ?? null);
     put('runningJobs', data.runningJobs ?? []);
 
     return state.runningJobs;

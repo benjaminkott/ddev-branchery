@@ -19,6 +19,7 @@ use App\Operation\Provisioning;
 use App\Operation\Removal;
 use App\Service\DatabaseOperations;
 use App\Service\DescribeInfo;
+use App\Service\Exposure;
 use App\Service\Git;
 use App\Service\Installation;
 use App\Service\JobRunner;
@@ -183,6 +184,7 @@ final class Wiring
             new Installation($this->project, 'dev'),
             new WorktreeUsage($this->project, $this->web, $database, $databases),
             new Snapshot($this->project, $this->files),
+            new Exposure($this->project, new Ports()),
         );
     }
 

@@ -165,6 +165,7 @@ export function createApi() {
             // A version installed but not yet built into the image: set it in the
             // fixtures to see what the shell says about it.
             updateWaiting: world.updateWaiting ?? false,
+            exposed: world.exposed ?? null,
         });
     }
 

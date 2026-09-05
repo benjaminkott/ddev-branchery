@@ -38,7 +38,9 @@ use App\Operation\Removal;
 use App\Service\DatabaseOperations;
 use App\Service\DescribeInfo;
 use App\Service\DockerContainer;
+use App\Service\DockerPorts;
 use App\Service\Docs;
+use App\Service\Exposure;
 use App\Service\Git;
 use App\Service\Installation;
 use App\Service\JobRunner;
@@ -48,6 +50,7 @@ use App\Service\NodeVersions;
 use App\Service\PhpVersions;
 use App\Service\Project;
 use App\Service\ProjectDatabase;
+use App\Service\PublishedPorts;
 use App\Service\Recipes;
 use App\Service\Runtimes;
 use App\Service\Snapshot;
@@ -271,6 +274,21 @@ final class Container
         return is_file($file) ? trim((string) file_get_contents($file)) : 'dev';
     }
 
+    /**
+     * Asked of the daemon rather than of a configuration file: "bind_all_interfaces"
+     * can be set for this machine and not for this project, and a project without
+     * the router publishes for itself. What is true is what docker did.
+     */
+    public function ports(): PublishedPorts
+    {
+        return $this->share(DockerPorts::class, fn (): PublishedPorts => new DockerPorts());
+    }
+
+    public function exposure(): Exposure
+    {
+        return $this->share(Exposure::class, fn (): Exposure => new Exposure($this->project(), $this->ports()));
+    }
+
     public function locks(): Locks
     {
         return $this->share(Locks::class, fn (): Locks => new Locks($this->project(), $this->files()));
@@ -450,6 +468,7 @@ final class Container
             $this->installation(),
             $this->usage(),
             $this->snapshot(),
+            $this->exposure(),
         ));
     }
 

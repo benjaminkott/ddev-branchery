@@ -87,6 +87,22 @@ function paintUpdateWaiting(): void {
 }
 
 /**
+ * The API asks nobody who they are, and that is right for one reason: the port
+ * is on the developer's own machine. Where that stopped being true, saying so is
+ * the only thing this application can do about it -- and the only thing it
+ * should, since a lock here would be a lock on a tool that sits beside a shell
+ * which could do all of it anyway.
+ */
+function paintExposed(): void {
+    const by = state.exposed;
+    paintNote('#exposed', by !== null, () => ({
+        tone: 'warn',
+        heading: t('exposed.heading'),
+        body: t(by === 'router' ? 'exposed.router' : 'exposed.container'),
+    }));
+}
+
+/**
  * Nothing is guessed, so a project with no configuration gets exactly what it
  * asked for: a checkout at an address, with nothing installed. A reasonable
  * thing to want and a terrible thing to discover, so it is said at the top.
@@ -154,6 +170,7 @@ function render(route: Route = currentRoute()): void {
     shown = route;
     paintBar();
     paintOffline();
+    paintExposed();
     paintUpdateWaiting();
     watchTheOthers();
     paintRecipeProblem();

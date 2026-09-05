@@ -83,8 +83,16 @@ DDEV binds its router to the loopback address by default, which is what puts the
 interface on the developer's own machine and nowhere else. A project or a global
 configuration that sets ``bind_all_interfaces: true`` -- usually to try a site on
 a phone -- takes that boundary away, and Branchery is then reachable from every
-machine on the same network, as a shell. Branchery cannot see that setting and
-does not warn about it.
+machine on the same network, as a shell. The same is true of a project that omits
+the DDEV router: the port is then published straight out of the container, on
+every interface the machine has.
+
+Branchery asks the Docker daemon what its port is actually bound to, and says so
+over the page when the answer is anything but this machine. That is the whole of
+the reaction: it adds no lock, because a lock in front of a tool that sits beside
+a shell able to do all of it anyway would be a lock on the wrong door. What it
+removes is the silence -- the boundary is the network, and a developer whose
+interface has left it can now find that out from the interface.
 
 If you need a site on another device, expose the project and leave Branchery out
 of it: run ``ddev branchery`` from a terminal instead of opening the interface,

@@ -345,6 +345,13 @@ export interface ServerState {
      * worked is the worst shape one can take.
      */
     updateWaiting: boolean;
+    /**
+     * What puts this interface on the network beside the developer, where
+     * something does. The API asks nobody who they are, and that is right only
+     * because the port is the developer's own machine's -- so the one case where
+     * that stopped being true is said rather than left silent.
+     */
+    exposed: string | null;
 }
 
 export interface AppState extends ServerState {

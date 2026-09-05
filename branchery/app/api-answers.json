@@ -39,7 +39,8 @@
             "runningJobs": "[@running]",
             "recipeProblem": "?string",
             "unconfigured": "bool",
-            "updateWaiting": "bool"
+            "updateWaiting": "bool",
+            "exposed": "?string"
         },
         "worktree": {
             "name": "string",

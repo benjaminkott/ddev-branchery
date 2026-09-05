@@ -116,6 +116,9 @@ export function createWorld() {
         recipeProblem: null,
         unconfigured: false,
         updateWaiting: false,
+        // Null while the port is the developer's own machine's. "router" and
+        // "container" are the two ways it stops being -- see Exposure.
+        exposed: null,
         projectPhp: '8.3',
         // The same application as the worktrees cut from it, so it has a type and
         // a way in like they do. Named as DDEV names the project, which is what
