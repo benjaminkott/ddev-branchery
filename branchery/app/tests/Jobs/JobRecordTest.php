@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Jobs;
 
 use App\Jobs\JobRunner;
+use App\Jobs\Records;
 use App\ManagedFiles;
 use App\Project;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -16,6 +17,7 @@ use Symfony\Component\Filesystem\Filesystem;
  * lives under the worktree's name, and a name comes back.
  */
 #[CoversClass(JobRunner::class)]
+#[CoversClass(Records::class)]
 final class JobRecordTest extends TestCase
 {
     private string $root;
@@ -35,11 +37,10 @@ final class JobRecordTest extends TestCase
 
     private function runner(): JobRunner
     {
-        return new JobRunner(
-            new Project($this->root, '/var/www/html', 'test', '.worktrees'),
-            new ManagedFiles((int) getmyuid(), (int) getmygid()),
-            '/opt/branchery/bin/console',
-        );
+        $project = new Project($this->root, '/var/www/html', 'test', '.worktrees');
+        $files = new ManagedFiles((int) getmyuid(), (int) getmygid());
+
+        return new JobRunner($project, $files, new Records($project, $files), '/opt/branchery/bin/console');
     }
 
     /** @param array<string, string> $files */
@@ -58,7 +59,7 @@ final class JobRecordTest extends TestCase
      */
     public function testAWorktreeKeepsOnlySoManyOperations(): void
     {
-        $kept = (new \ReflectionClassConstant(JobRunner::class, 'KEPT'))->getValue();
+        $kept = (new \ReflectionClassConstant(Records::class, 'KEPT'))->getValue();
         self::assertIsInt($kept);
 
         for ($made = 0; $made < $kept + 5; ++$made) {
@@ -97,7 +98,7 @@ final class JobRecordTest extends TestCase
      */
     public function testOperationsAboutNoWorktreeAreSweptToo(): void
     {
-        $kept = (new \ReflectionClassConstant(JobRunner::class, 'KEPT'))->getValue();
+        $kept = (new \ReflectionClassConstant(Records::class, 'KEPT'))->getValue();
         self::assertIsInt($kept);
 
         for ($made = 0; $made < $kept + 5; ++$made) {
@@ -125,7 +126,7 @@ final class JobRecordTest extends TestCase
     /** Whatever its age: a sweep that took a running operation would take its log. */
     public function testNothingRunningIsSweptAway(): void
     {
-        $kept = (new \ReflectionClassConstant(JobRunner::class, 'KEPT'))->getValue();
+        $kept = (new \ReflectionClassConstant(Records::class, 'KEPT'))->getValue();
         self::assertIsInt($kept);
 
         $this->job('20260821-000-old', ['subject' => "my-fix\n", 'status' => "running\n", 'started' => (string) time(), 'pid' => (string) getmypid()]);

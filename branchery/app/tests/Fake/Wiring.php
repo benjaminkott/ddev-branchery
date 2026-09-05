@@ -19,6 +19,7 @@ use App\Http\State;
 use App\Installation;
 use App\Jobs\JobRunner;
 use App\Jobs\Locks;
+use App\Jobs\Records;
 use App\ManagedFiles;
 use App\Operation\BranchMoves;
 use App\Operation\CarriedFiles;
@@ -106,7 +107,12 @@ final class Wiring
             $database,
             $recipes,
         );
-        $this->jobs = new JobRunner($this->project, $this->files, '/opt/branchery/bin/console');
+        $this->jobs = new JobRunner(
+            $this->project,
+            $this->files,
+            new Records($this->project, $this->files),
+            '/opt/branchery/bin/console',
+        );
 
         // The pieces an operation is made of, wired as App\Container wires them.
         $databases = new Databases($this->web, $database);

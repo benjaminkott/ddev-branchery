@@ -7,6 +7,7 @@ namespace App\Tests\Command;
 use App\Command\AbstractJobCommand;
 use App\Command\AbstractWorktreeCommand;
 use App\Jobs\JobRunner;
+use App\Jobs\Records;
 use App\Jobs\StepReporter;
 use App\ManagedFiles;
 use App\Project;
@@ -52,11 +53,9 @@ final class WorktreeNameTest extends TestCase
      */
     private function command(array &$reached): AbstractWorktreeCommand
     {
-        $jobs = new JobRunner(
-            new Project($this->root, '/home/dev/blog', 'blog', '.worktrees'),
-            new ManagedFiles((int) getmyuid(), (int) getmygid()),
-            '/opt/branchery/bin/console',
-        );
+        $project = new Project($this->root, '/home/dev/blog', 'blog', '.worktrees');
+        $files = new ManagedFiles((int) getmyuid(), (int) getmygid());
+        $jobs = new JobRunner($project, $files, new Records($project, $files), '/opt/branchery/bin/console');
 
         $record = static function (string $name) use (&$reached): void {
             $reached[] = $name;

@@ -16,12 +16,6 @@ use App\Project;
 final readonly class JobRunner
 {
     /**
-     * How a step announces itself in the log. The seconds are optional: an
-     * operation started before they were counted does not carry them.
-     */
-    private const string MARKER = '/^##STEP (\d+)\/(\d+) (?:\+(\d+)s )?(.*)$/';
-
-    /**
      * How long an operation may go without saying which process it is. It writes
      * that as its first act, so anything beyond a moment means it never got to.
      */
@@ -30,6 +24,7 @@ final readonly class JobRunner
     public function __construct(
         private Project $project,
         private ManagedFiles $files,
+        private Records $records,
         private string $consoleBinary,
     ) {
     }
@@ -158,51 +153,19 @@ final readonly class JobRunner
         $this->files->write($directory . '/' . $id . '.log', '');
         // A new record is what makes an old one one too many, so this is where
         // the old ones go -- no timer, nothing to run by hand.
-        $this->tidy();
+        $this->records->tidy($this->stillWorking(...));
 
         return $id;
     }
 
     /**
-     * How many operations are kept a full record of, per worktree and for those
-     * about none. A history is worth having and a history nobody will read to the
-     * end is worth less than the disk it grows on: a composer install writes
-     * hundreds of kilobytes into its log, and until this there was nothing that
-     * ever took one away from a worktree that goes on existing.
+     * Whether an operation is still going, as the records have to ask it: they
+     * hold the files and this holds what the files cannot say, an operation that
+     * died hard leaving a status that reads "running" for good.
      */
-    private const int KEPT = 25;
-
-    /**
-     * The oldest records past what is kept, by what they were about.
-     *
-     * Grouped rather than counted as one heap, so a worktree built twice a day
-     * cannot push another's history out; and the operations about no worktree --
-     * a fetch -- are a group of their own, which is what they had instead of
-     * anything at all. forget() cannot reach them: they write no subject, and it
-     * is a subject it looks them up by.
-     *
-     * Nothing running is touched, whatever its age. The ids carry the time they
-     * were started, so they sort themselves.
-     */
-    private function tidy(): void
+    private function stillWorking(string $id): bool
     {
-        $directory = $this->project->jobsDirectory();
-
-        $ids = [];
-        foreach (glob($directory . '/*.status') ?: [] as $file) {
-            $ids[] = basename($file, '.status');
-        }
-        sort($ids);
-
-        $seen = [];
-        foreach (array_reverse($ids) as $id) {
-            $subject = trim((string) @file_get_contents($directory . '/' . $id . '.subject'));
-            $seen[$subject] = ($seen[$subject] ?? 0) + 1;
-            if ($seen[$subject] <= self::KEPT || $this->outcome($id)['status'] === 'running') {
-                continue;
-            }
-            $this->files->remove(...(glob($directory . '/' . $id . '.*') ?: []));
-        }
+        return $this->outcome($id)['status'] === 'running';
     }
 
     /**
@@ -297,17 +260,19 @@ final readonly class JobRunner
      * Only the markers, which are a handful however long the log is -- as opposed
      * to taking the whole log apart to draw one line of text.
      *
+     * Without the seconds, which the marker also carries: what the caller is told
+     * about the step it is on is the three fields the contract names, and a
+     * fourth would be a field the interface was never written against.
+     *
      * @return ?array{no: int, total: int, label: string}
      */
     private static function stepIn(string $log): ?array
     {
-        $found = preg_match_all(self::MARKER . 'm', $log, $matches, PREG_SET_ORDER);
-        if ($found === false || $found === 0) {
-            return null;
-        }
-        $last = $matches[$found - 1];
+        $marker = StepMarker::last($log);
 
-        return ['no' => (int) $last[1], 'total' => (int) $last[2], 'label' => trim($last[4])];
+        return $marker === null
+            ? null
+            : ['no' => $marker['no'], 'total' => $marker['total'], 'label' => $marker['label']];
     }
 
     /**
@@ -379,20 +344,11 @@ final readonly class JobRunner
             step: self::stepIn($log),
             steps: $this->steps($log, $outcome['status'], $outcome['elapsed'], $carried),
             elapsed: $outcome['elapsed'],
-            log: self::readable(substr($log, $carried)),
+            log: StepMarker::readable(substr($log, $carried)),
             size: $size,
             partial: $carried > 0,
             interrupted: $outcome['interrupted'],
         );
-    }
-
-    /**
-     * The markers become what they say: a log that is only steps would otherwise
-     * arrive as an empty block.
-     */
-    private static function readable(string $log): string
-    {
-        return (string) preg_replace(self::MARKER . 'm', '[$1/$2] $4', $log);
     }
 
     /**
@@ -415,8 +371,9 @@ final readonly class JobRunner
         // With the offsets, which is how a step is told from the bytes it holds.
         $lines = preg_split('/\R/', $log, -1, PREG_SPLIT_OFFSET_CAPTURE) ?: [];
         foreach ($lines as [$line, $from]) {
-            if (preg_match(self::MARKER, $line, $hit) === 1) {
-                $at = (int) $hit[3];
+            $marker = StepMarker::read($line);
+            if ($marker !== null) {
+                $at = $marker['seconds'];
                 if ($current !== null) {
                     // What passed between this marker and the one before it is how long that
                     // step took.
@@ -424,12 +381,12 @@ final readonly class JobRunner
                 }
                 // The reporter ends the work with the number it is already on, which
                 // closes the step rather than opening another one.
-                if ($current !== null && $steps[$current]['no'] === (int) $hit[1]) {
+                if ($current !== null && $steps[$current]['no'] === $marker['no']) {
                     continue;
                 }
                 $steps[] = [
-                    'no' => (int) $hit[1],
-                    'label' => trim($hit[4]),
+                    'no' => $marker['no'],
+                    'label' => $marker['label'],
                     'output' => [],
                     'state' => 'done',
                     'seconds' => 0,
@@ -478,7 +435,7 @@ final readonly class JobRunner
         $directory = $this->project->jobsDirectory();
 
         $history = [];
-        foreach (array_reverse($this->about($subject)) as $id) {
+        foreach (array_reverse($this->records->about($subject)) as $id) {
             $outcome = $this->outcome($id);
             $history[] = [
                 'id' => $id,
@@ -506,39 +463,17 @@ final readonly class JobRunner
      */
     public function forget(string $subject): int
     {
-        $directory = $this->project->jobsDirectory();
         $forgotten = 0;
 
-        foreach ($this->about($subject) as $id) {
-            if ($this->outcome($id)['status'] === 'running') {
+        foreach ($this->records->about($subject) as $id) {
+            if ($this->stillWorking($id)) {
                 continue;
             }
-            // Everything written under that id, whatever it is called. A file left
-            // behind here is a job that is half gone -- read as an operation with no
-            // log and no time.
-            $this->files->remove(...(glob($directory . '/' . $id . '.*') ?: []));
+            $this->records->remove($id);
             ++$forgotten;
         }
 
         return $forgotten;
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function about(string $subject): array
-    {
-        $files = glob($this->project->jobsDirectory() . '/*.subject') ?: [];
-        sort($files);
-
-        $ids = [];
-        foreach ($files as $file) {
-            if (trim((string) @file_get_contents($file)) === $subject) {
-                $ids[] = basename($file, '.subject');
-            }
-        }
-
-        return $ids;
     }
 
     /**
@@ -554,19 +489,17 @@ final readonly class JobRunner
     public function running(): array
     {
         $directory = $this->project->jobsDirectory();
-        $files = glob($directory . '/*.status') ?: [];
-        sort($files);
 
         $running = [];
-        foreach ($files as $file) {
+        foreach ($this->records->all() as $record) {
+            $id = self::safe($record);
             // The status file first: there is one for every operation the project ever
             // ran, and one that is over says so right here. What an outcome reads
             // beyond it is worth reading only about one that may still be working.
-            if (trim((string) @file_get_contents($file)) !== 'running') {
+            if (trim((string) @file_get_contents($directory . '/' . $id . '.status')) !== 'running') {
                 continue;
             }
-            $id = self::safe(basename($file, '.status'));
-            if ($this->outcome($id)['status'] !== 'running') {
+            if (!$this->stillWorking($id)) {
                 continue;
             }
             $running[] = [

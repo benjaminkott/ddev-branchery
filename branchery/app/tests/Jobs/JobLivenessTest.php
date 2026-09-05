@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Jobs;
 
 use App\Jobs\JobRunner;
+use App\Jobs\Records;
 use App\ManagedFiles;
 use App\Project;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -38,11 +39,10 @@ final class JobLivenessTest extends TestCase
 
     private function runner(): JobRunner
     {
-        return new JobRunner(
-            new Project($this->root, '/var/www/html', 'test', '.worktrees'),
-            new ManagedFiles((int) getmyuid(), (int) getmygid()),
-            '/opt/branchery/bin/console',
-        );
+        $project = new Project($this->root, '/var/www/html', 'test', '.worktrees');
+        $files = new ManagedFiles((int) getmyuid(), (int) getmygid());
+
+        return new JobRunner($project, $files, new Records($project, $files), '/opt/branchery/bin/console');
     }
 
     /** @param array<string, string> $files */

@@ -10,13 +10,10 @@ use Symfony\Component\Console\Formatter\OutputFormatter;
  * Reports the progress of an operation.
  *
  * Two readers, one stream, and every line is written in both forms at once: the
- * marker "##STEP n/total +12s label" the interface turns into a list of steps,
- * and the readable form a terminal shows. Which of the two goes where is the
+ * marker the interface turns into a list of steps, which StepMarker spells, and
+ * the readable form a terminal shows. Which of the two goes where is the
  * writer's to decide -- decided here, an operation run from a terminal left a
  * log the interface could not read a single step out of.
- *
- * The seconds are counted from the start, which is what makes a step's own
- * duration knowable: what passed between its marker and the next.
  */
 final class StepReporter
 {
@@ -65,7 +62,7 @@ final class StepReporter
     {
         ++$this->current;
         ($this->writer)(
-            sprintf('##STEP %d/%d +%ds %s', $this->current, $this->total, $this->elapsed(), self::text($label)),
+            StepMarker::line($this->current, $this->total, $this->elapsed(), self::text($label)),
             sprintf('<fg=cyan;options=bold>[%d/%d]</> <options=bold>%s</>', $this->current, $this->total, self::text($label)),
         );
     }
@@ -77,7 +74,7 @@ final class StepReporter
         // took would be read as a step of its own. In the colour of what it ended
         // as -- a green tick over work half done is the ending nobody reads twice.
         ($this->writer)(
-            sprintf('##STEP %d/%d +%ds %s', $this->current, $this->current, $this->elapsed(), self::text($label)),
+            StepMarker::line($this->current, $this->current, $this->elapsed(), self::text($label)),
             sprintf(
                 $this->concerns === [] ? '<fg=green;options=bold>✓ %s</>' : '<fg=yellow;options=bold>⚠ %s</>',
                 self::text($label),

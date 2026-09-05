@@ -37,6 +37,7 @@ use App\Http\Snapshot;
 use App\Http\State;
 use App\Jobs\JobRunner;
 use App\Jobs\Locks;
+use App\Jobs\Records;
 use App\Operation\BranchMoves;
 use App\Operation\CarriedFiles;
 use App\Operation\Checks;
@@ -340,6 +341,9 @@ final class Container
         return $this->share(JobRunner::class, fn (): JobRunner => new JobRunner(
             $this->project(),
             $this->files(),
+            // Not shared on its own: the one service that reads the records is,
+            // so there is one of these anyway.
+            new Records($this->project(), $this->files()),
             // Background operations start the console of this very application.
             consoleBinary: self::home() . '/bin/console',
         ));
