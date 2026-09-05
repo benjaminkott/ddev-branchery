@@ -551,8 +551,16 @@ final readonly class Recipe
         if (!is_string($value)) {
             throw new \RuntimeException(sprintf('%s: "docroot" has to be a path, or "" for the checkout itself.', self::FILE));
         }
+        $docroot = trim(trim($value), '/');
+        // The same rule every other path in this file is held to. It is the one
+        // the web server is pointed at, so a path leading out of the checkout is a
+        // worktree quietly serving something that is not it -- and this file can
+        // arrive with a branch, committed by somebody else.
+        if (in_array('..', explode('/', $docroot), true)) {
+            throw new \RuntimeException(sprintf('%s: "docroot" is a path inside the checkout, and "%s" leads out of it.', self::FILE, $docroot));
+        }
 
-        return trim(trim($value), '/');
+        return $docroot;
     }
 
     /** @param array<mixed> $data */

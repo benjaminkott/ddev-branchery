@@ -281,6 +281,25 @@ final class RecipeTest extends TestCase
         self::assertSame('public', Recipe::fromArray(['docroot' => '/public/'])->docroot);
     }
 
+    /**
+     * The web server is pointed at it, and this file can arrive with a branch
+     * somebody else committed: a docroot leading out of the checkout is a worktree
+     * that quietly serves something which is not it.
+     */
+    public function testADocrootThatLeadsOutOfTheCheckoutIsRefused(): void
+    {
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessageMatches('/leads out of it/');
+
+        Recipe::fromArray(['docroot' => '../../etc']);
+    }
+
+    /** A dot in a name is not a way out: only the segment that is one. */
+    public function testADocrootMayHoldADotInAName(): void
+    {
+        self::assertSame('.Build/Web', Recipe::fromArray(['docroot' => '.Build/Web'])->docroot);
+    }
+
     public function testAFileThatIsNotYamlSaysSoAndNamesTheFile(): void
     {
         $file = tempnam(sys_get_temp_dir(), 'recipe');
