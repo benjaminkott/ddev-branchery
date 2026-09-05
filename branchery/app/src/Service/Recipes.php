@@ -112,8 +112,11 @@ final class Recipes
     public function shipped(string $name): Recipe
     {
         if (!array_key_exists($name, $this->shipped)) {
+            // The name before the path it would make: a shipped file is named and
+            // never pointed at, so a name that is not one is answered here rather
+            // than by asking the disk about whatever it composes.
             $file = $this->defaultsDirectory . '/' . $name . '.yaml';
-            $this->shipped[$name] = is_file($file) && $this->isPlain($name) ? Recipe::fromFile($file) : null;
+            $this->shipped[$name] = $this->isPlain($name) && is_file($file) ? Recipe::fromFile($file) : null;
         }
 
         return $this->shipped[$name] ?? throw new \RuntimeException(sprintf('%s names "%s", which is not one of the shipped configurations. There is %s.', Recipe::FILE, $name, implode(', ', $this->names())));
