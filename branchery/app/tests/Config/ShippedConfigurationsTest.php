@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Tests\Config;
 
+use App\Config\Place;
 use App\Config\Recipes;
-use App\Config\WorktreeContext;
-use App\Database\ProjectDatabase;
 use App\ManagedFiles;
 use App\Tests\Fake\RecordingContainer;
+use App\Web\DatabaseServer;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -96,11 +96,11 @@ final class ShippedConfigurationsTest extends TestCase
         return new Recipes(sys_get_temp_dir(), self::DIRECTORY);
     }
 
-    private function context(): WorktreeContext
+    private function context(): Place
     {
         $web = new RecordingContainer();
 
-        return new WorktreeContext(
+        return new Place(
             name: 'my-fix',
             branch: 'bugfix/my-fix',
             url: 'https://my-fix.blog.ddev.site/',
@@ -109,7 +109,7 @@ final class ShippedConfigurationsTest extends TestCase
             phpBinary: 'php',
             binDirectory: 'vendor/bin',
             docroot: 'public',
-            database: new ProjectDatabase($web),
+            database: new DatabaseServer($web),
             databaseName: 'branchery_my_fix',
             web: $web,
             files: new ManagedFiles(0, 0),

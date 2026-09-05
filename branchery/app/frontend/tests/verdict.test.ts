@@ -7,7 +7,7 @@
 
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
-import { hasResult, titleOf, whyItStopped } from '../verdict.js';
+import { hasResult, titleOf, whyItStopped } from '../rules/verdict.js';
 
 describe('the verdict of an operation', () => {
     it('is titled by how it stands', () => {

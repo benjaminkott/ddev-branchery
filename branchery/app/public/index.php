@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
+use App\Container;
 use App\Http\Origin;
 use App\Http\Response;
-use App\Wiring\Container;
 
 require_once dirname(__DIR__) . '/vendor/autoload.php';
 

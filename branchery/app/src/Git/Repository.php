@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Git;
 
 use App\CommandResult;
-use App\Locking\Locks;
+use App\Jobs\Locks;
 use App\Project;
 
 /**

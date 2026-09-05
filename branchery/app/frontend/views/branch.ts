@@ -13,9 +13,9 @@
 import { html, nothing, type TemplateResult } from 'lit';
 import { api } from '../api.js';
 import { formatWhen, saying } from '../dom.js';
-import { reader } from '../reading.js';
+import { reader } from '../rules/reading.js';
 import { errorSentence, state, t } from '../state.js';
-import { aside } from '../aside.js';
+import { aside } from '../rules/aside.js';
 import type { BranchDetail, JobHandlers } from '../types.js';
 import { backTo } from './back.js';
 import { commitLog } from './commits.js';

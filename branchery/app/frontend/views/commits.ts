@@ -12,7 +12,7 @@ import { html, nothing, type TemplateResult } from 'lit';
 import type { Column, Row } from '@typo3/soul-frontend';
 import { formatWhen, saying } from '../dom.js';
 import { state, t } from '../state.js';
-import type { Reading } from '../reading.js';
+import type { Reading } from '../rules/reading.js';
 import type { Commits } from '../types.js';
 
 /**

@@ -9,10 +9,10 @@ use App\Git\GitOutput;
 use App\Jobs\JobRunner;
 use App\Operation\WorktreeManager;
 use App\Project;
-use App\Runtime\PhpVersions;
 use App\Worktree\CommitPages;
-use App\Worktree\WorktreeRepository;
-use App\Worktree\WorktreeUsage;
+use App\Worktree\PhpVersions;
+use App\Worktree\Usage;
+use App\Worktree\Worktrees;
 
 /**
  * REST API of the management application. Long-running operations answer with
@@ -29,14 +29,14 @@ final class ApiController
 {
     public function __construct(
         private readonly Project $project,
-        private readonly WorktreeRepository $worktrees,
+        private readonly Worktrees $worktrees,
         private readonly WorktreeManager $manager,
         private readonly PhpVersions $php,
         private readonly JobRunner $jobs,
         private readonly Git $git,
-        private readonly WorktreeUsage $usage,
+        private readonly Usage $usage,
         private readonly State $state,
-        private readonly Starting $starting,
+        private readonly Operations $starting,
         private readonly CommitPages $pages,
     ) {
     }

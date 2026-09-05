@@ -4,7 +4,7 @@
 
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
-import { byBase } from '../lineage.js';
+import { byBase } from '../rules/lineage.js';
 import type { Worktree } from '../types.js';
 
 function row(name: string, base: Worktree['base']): Worktree {

@@ -8,7 +8,7 @@ use App\Git\Git;
 use App\Git\SshAgent;
 use App\Jobs\StepReporter;
 use App\Text;
-use App\Worktree\WorktreeRepository;
+use App\Worktree\Worktrees;
 
 /**
  * The three operations that move a checkout rather than build one: bringing a
@@ -26,7 +26,7 @@ final readonly class BranchMoves
 {
     public function __construct(
         private Git $git,
-        private WorktreeRepository $worktrees,
+        private Worktrees $worktrees,
         private SshAgent $ssh,
     ) {
     }

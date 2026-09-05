@@ -170,21 +170,21 @@ final readonly class Build
      * Without a reporter where the caller reports nothing at all: those moments are
      * not a build and have no log.
      */
-    public function at(string $moment, WorktreeContext $context, ?StepReporter $reporter = null): void
+    public function at(string $moment, Place $place, ?StepReporter $reporter = null): void
     {
         foreach ($this->lines($moment) as $command) {
             try {
                 if ($command->kind === 'composer') {
-                    $context->composer(...$command->arguments());
+                    $place->composer(...$command->arguments());
                 } else {
-                    $context->shell($command->line);
+                    $place->shell($command->line);
                 }
             } catch (\RuntimeException $failure) {
                 if (!$command->optional) {
                     throw $failure;
                 }
                 // The message names the line already, both for composer and for a shell
-                // line -- see WorktreeContext.
+                // line -- see Place.
                 $reporter?->warn(sprintf('The recipe calls this line optional, and the build went on without it. %s', $failure->getMessage()));
             }
         }

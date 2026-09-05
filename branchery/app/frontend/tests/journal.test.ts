@@ -1,7 +1,7 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { gather, unread } from '../journal.js';
+import { gather, unread } from '../rules/journal.js';
 import type { Job, JobStepAnswer } from '../types.js';
 
 function answer(over: Partial<Job>): Job {

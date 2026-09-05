@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Worktree;
 
-use App\Config\WorktreeContext;
+use App\Config\Place;
 use App\Git\Git;
 use App\Jobs\StepReporter;
 use App\ManagedFiles;
@@ -137,7 +137,7 @@ final readonly class Surroundings
                 '%s is under version control and is left as the branch has it. This worktree answers at %s'
                 . ' -- configuration.md, "Where the addresses come from", says how a project points its sites there.',
                 $left,
-                WorktreeContext::hostOf($url),
+                Place::hostOf($url),
             ));
         }
 

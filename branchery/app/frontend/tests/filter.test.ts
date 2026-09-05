@@ -5,7 +5,7 @@
 
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
-import { matching, matchingBranches } from '../filter.js';
+import { matching, matchingBranches } from '../rules/filter.js';
 import type { Branch, Worktree } from '../types.js';
 
 /**

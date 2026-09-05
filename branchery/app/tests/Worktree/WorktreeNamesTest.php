@@ -5,17 +5,17 @@ declare(strict_types=1);
 namespace App\Tests\Worktree;
 
 use App\Config\Recipes;
-use App\Database\ProjectDatabase;
-use App\Locking\Locks;
+use App\Jobs\Locks;
 use App\ManagedFiles;
 use App\Project;
-use App\Runtime\NodeVersions;
-use App\Runtime\PhpVersions;
-use App\Runtime\VersionMap;
 use App\Tests\Fake\Assembled;
 use App\Tests\Fake\RecordingContainer;
+use App\Web\DatabaseServer;
 use App\Web\Runtimes;
-use App\Worktree\WorktreeRepository;
+use App\Worktree\NodeVersions;
+use App\Worktree\PhpVersions;
+use App\Worktree\VersionMap;
+use App\Worktree\Worktrees;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Filesystem\Filesystem;
@@ -27,7 +27,7 @@ use Symfony\Component\Filesystem\Filesystem;
  * existence check that only asked the filesystem said yes to both, and every
  * operation that trusted it was one step from working on the whole checkout.
  */
-#[CoversClass(WorktreeRepository::class)]
+#[CoversClass(Worktrees::class)]
 final class WorktreeNamesTest extends TestCase
 {
     private string $root;
@@ -43,20 +43,20 @@ final class WorktreeNamesTest extends TestCase
         (new Filesystem())->remove($this->root);
     }
 
-    private function worktrees(): WorktreeRepository
+    private function worktrees(): Worktrees
     {
         $project = new Project($this->root, '/home/dev/blog', 'blog', '.worktrees');
         $web = new RecordingContainer();
         $files = new ManagedFiles((int) getmyuid(), (int) getmygid());
         $locks = new Locks($project, $files);
 
-        return new WorktreeRepository(
+        return new Worktrees(
             $project,
             $files,
             new PhpVersions($project, $web, new VersionMap($project->stateDirectory() . '/php.map', $files, $locks), new Runtimes($web), $locks),
             new NodeVersions($web, new VersionMap($project->stateDirectory() . '/node.map', $files, $locks), new Runtimes($web)),
             Assembled::git($project, $web, $locks),
-            new ProjectDatabase($web),
+            new DatabaseServer($web),
             new Recipes($this->root, \dirname(__DIR__, 2) . '/defaults'),
         );
     }

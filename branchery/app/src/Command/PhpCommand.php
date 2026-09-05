@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Command;
 
 use App\Operation\WorktreeManager;
-use App\Runtime\PhpVersions;
-use App\Worktree\WorktreeRepository;
+use App\Worktree\PhpVersions;
+use App\Worktree\Worktrees;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -19,7 +19,7 @@ final class PhpCommand extends Command
 {
     public function __construct(
         private readonly WorktreeManager $manager,
-        private readonly WorktreeRepository $worktrees,
+        private readonly Worktrees $worktrees,
         private readonly PhpVersions $php,
     ) {
         parent::__construct();

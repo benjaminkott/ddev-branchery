@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace App\Operation;
 
-use App\Database\DatabaseOperations;
-use App\Database\ProjectDatabase;
 use App\Git\Git;
 use App\Jobs\StepReporter;
 use App\ManagedFiles;
 use App\Project;
-use App\Runtime\NodeVersions;
-use App\Runtime\PhpVersions;
-use App\Worktree\DescribeInfo;
+use App\Web\Databases;
+use App\Web\DatabaseServer;
+use App\Worktree\Description;
+use App\Worktree\NodeVersions;
+use App\Worktree\PhpVersions;
 use App\Worktree\Surroundings;
-use App\Worktree\WorktreeRepository;
+use App\Worktree\Worktrees;
 
 /**
  * Taking a worktree away, and everything that was made for it.
@@ -34,15 +34,15 @@ final readonly class Removal
     public function __construct(
         private Project $project,
         private Git $git,
-        private WorktreeRepository $worktrees,
+        private Worktrees $worktrees,
         private ManagedFiles $files,
-        private ProjectDatabase $database,
-        private DatabaseOperations $databases,
+        private DatabaseServer $database,
+        private Databases $databases,
         private PhpVersions $php,
         private NodeVersions $node,
         private Surroundings $surroundings,
-        private DescribeInfo $describe,
-        private Preflight $preflight,
+        private Description $describe,
+        private Checks $preflight,
     ) {
     }
 

@@ -9,7 +9,7 @@
 
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
-import { type Action, actions, type Offer, wandered } from '../actions.js';
+import { type Action, actions, type Offer, wandered } from '../rules/actions.js';
 import type { Worktree } from '../types.js';
 
 /** A worktree in the ordinary state: on its branch, in step, nothing pending. */

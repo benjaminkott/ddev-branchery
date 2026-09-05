@@ -5,19 +5,19 @@ declare(strict_types=1);
 namespace App\Operation;
 
 use App\Config\Build;
+use App\Config\Place;
 use App\Config\Recipe;
 use App\Config\Recipes;
-use App\Config\WorktreeContext;
-use App\Database\DatabaseOperations;
-use App\Database\ProjectDatabase;
 use App\Git\Git;
 use App\Jobs\StepReporter;
 use App\Project;
-use App\Runtime\NodeVersions;
-use App\Runtime\PhpVersions;
-use App\Worktree\DescribeInfo;
+use App\Web\Databases;
+use App\Web\DatabaseServer;
+use App\Worktree\Description;
+use App\Worktree\NodeVersions;
+use App\Worktree\PhpVersions;
 use App\Worktree\Surroundings;
-use App\Worktree\WorktreeRepository;
+use App\Worktree\Worktrees;
 
 /**
  * Building a worktree that already stands on disk.
@@ -37,15 +37,15 @@ final readonly class Provisioning
     public function __construct(
         private Project $project,
         private Git $git,
-        private WorktreeRepository $worktrees,
+        private Worktrees $worktrees,
         private Recipes $recipes,
-        private ProjectDatabase $database,
-        private DatabaseOperations $databases,
+        private DatabaseServer $database,
+        private Databases $databases,
         private PhpVersions $php,
         private NodeVersions $node,
         private Surroundings $surroundings,
-        private DescribeInfo $describe,
-        private Contexts $contexts,
+        private Description $describe,
+        private Places $places,
     ) {
     }
 
@@ -89,29 +89,29 @@ final readonly class Provisioning
         $this->choosePhpVersion($name, $build, $php, $reporter);
         $this->chooseNodeVersion($name, $build, $reporter);
 
-        $context = $this->contexts->of($name, $branch);
+        $place = $this->places->of($name, $branch);
 
         $reporter->step('Installing dependencies');
-        $build->at('install', $context, $reporter);
+        $build->at('install', $place, $reporter);
 
         $reporter->step('Writing the configuration');
-        $build->at('configure', $context, $reporter);
-        $this->surroundings->writeEditorConfiguration($name, $context->url);
+        $build->at('configure', $place, $reporter);
+        $this->surroundings->writeEditorConfiguration($name, $place->url);
 
-        $reporter->step(sprintf('Preparing the database (%s)', $context->databaseName));
+        $reporter->step(sprintf('Preparing the database (%s)', $place->databaseName));
         if ($fresh) {
             // Asked for in the interface with what it costs written out.
-            $reporter->note(sprintf('Dropping %s -- the application is installed anew.', $context->databaseName));
-            $this->databases->drop($context->databaseName);
+            $reporter->note(sprintf('Dropping %s -- the application is installed anew.', $place->databaseName));
+            $this->databases->drop($place->databaseName);
         }
-        $this->databases->create($context->databaseName);
+        $this->databases->create($place->databaseName);
 
         $data = $build->data();
         // Nothing is copied unless the configuration asks for it: a database a
         // checkout cannot read is worse than an empty one.
         $sourceDatabase = match (true) {
             $copyFrom === null, $data['from'] !== 'source' => null,
-            $copyFrom === self::PROJECT_SOURCE => ProjectDatabase::PROJECT_DATABASE,
+            $copyFrom === self::PROJECT_SOURCE => DatabaseServer::PROJECT_DATABASE,
             default => $this->database->nameFor($copyFrom),
         };
         // Asked for and nothing to take: a fresh installation is what it needs.
@@ -122,7 +122,7 @@ final readonly class Provisioning
 
         if ($sourceDatabase !== null) {
             $reporter->note(sprintf('Copying the database from %s', $sourceDatabase));
-            $this->databases->copy($sourceDatabase, $context->databaseName);
+            $this->databases->copy($sourceDatabase, $place->databaseName);
             // A site points at its root page by uid, and those uids came with the
             // data -- so what reads them comes along, its addresses put on ours.
             $this->surroundings->bring(
@@ -130,20 +130,20 @@ final readonly class Provisioning
                 $name,
                 $data['bring'],
             );
-            $this->surroundings->retargetSites($name, $context->url, $data['addresses'], $reporter);
-            $this->fitOrInstall($build, $context, $reporter);
-        } elseif ($this->databases->tables($context->databaseName) > 0 && $build->does('migrate')) {
+            $this->surroundings->retargetSites($name, $place->url, $data['addresses'], $reporter);
+            $this->fitOrInstall($build, $place, $reporter);
+        } elseif ($this->databases->tables($place->databaseName) > 0 && $build->does('migrate')) {
             // Data of its own is what is being worked on, so it is fitted to the code
             // rather than installed over -- which the application refuses anyway,
             // making "build this again" an offer only an empty worktree could take up.
             $reporter->note('The database already holds an installation; fitting it to this code.');
-            $build->at('migrate', $context, $reporter);
+            $build->at('migrate', $place, $reporter);
         } else {
-            $build->at('setup', $context, $reporter);
+            $build->at('setup', $place, $reporter);
         }
 
         $reporter->step('Finishing up');
-        $build->at('flush', $context, $reporter);
+        $build->at('flush', $place, $reporter);
         $this->reportEmptyDocroot($directory, $docroot, $reporter);
         // The commit this was built for: a checkout that has moved on since has
         // dependencies and a schema made for other code.
@@ -164,19 +164,19 @@ final readonly class Provisioning
         $directory = $this->project->worktreeDirectory($name);
         $build = $this->recipes->for($directory);
 
-        $context = $this->contexts->of($name, $branch);
+        $place = $this->places->of($name, $branch);
         $this->git->repairPaths($name);
-        $build->at('configure', $context);
+        $build->at('configure', $place);
         // Generated configuration like any other: they carry the address and the
         // path the debugger maps, and both can have moved.
-        $this->surroundings->writeEditorConfiguration($name, $context->url);
+        $this->surroundings->writeEditorConfiguration($name, $place->url);
         // What the configuration says now and not what was stored at build time:
         // this is how a moved docroot reaches the link.
         $docroot = $build->docroot();
         $this->worktrees->store($name, ['docroot' => $docroot]);
         $this->surroundings->linkDocroot($name, $docroot);
-        $this->surroundings->retargetSites($name, $context->url, $build->data()['addresses']);
-        $build->at('flush', $context);
+        $this->surroundings->retargetSites($name, $place->url, $build->data()['addresses']);
+        $build->at('flush', $place);
         $this->describe->refresh();
     }
 
@@ -201,7 +201,7 @@ final readonly class Provisioning
 
         // Compiled caches can hold traces of the version it ran on before.
         $this->recipes->quietly($this->project->worktreeDirectory($name))
-            ->at('flush', $this->contexts->of($name, $worktree->branch));
+            ->at('flush', $this->places->of($name, $worktree->branch));
         $this->describe->refresh();
     }
 
@@ -211,7 +211,7 @@ final readonly class Provisioning
      * an application can fit one state of its data to another state of its code is
      * written nowhere readable beforehand.
      */
-    private function fitOrInstall(Build $build, WorktreeContext $context, StepReporter $reporter): void
+    private function fitOrInstall(Build $build, Place $place, StepReporter $reporter): void
     {
         // Only where something will actually run: a project with no "migrate"
         // would be told about an attempt nobody makes.
@@ -220,15 +220,15 @@ final readonly class Provisioning
         }
 
         try {
-            $build->at('migrate', $context, $reporter);
+            $build->at('migrate', $place, $reporter);
         } catch (\RuntimeException) {
             // Said and not quoted: what failed wrote its own account into the log a
             // moment ago, and repeating it makes two walls of text.
             $reporter->note('The data does not fit this code -- what the attempt said stands above.');
             $reporter->note('Installing the application instead; the copied data is dropped.');
-            $this->databases->drop($context->databaseName);
-            $this->databases->create($context->databaseName);
-            $build->at('setup', $context, $reporter);
+            $this->databases->drop($place->databaseName);
+            $this->databases->create($place->databaseName);
+            $build->at('setup', $place, $reporter);
         }
     }
 

@@ -6,7 +6,7 @@ namespace App\Command;
 
 use App\Model\Worktree;
 use App\Text;
-use App\Worktree\WorktreeRepository;
+use App\Worktree\Worktrees;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -22,7 +22,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 #[AsCommand('worktree:list', 'List the worktrees and what each one runs on')]
 final class ListWorktreesCommand extends Command
 {
-    public function __construct(private readonly WorktreeRepository $worktrees)
+    public function __construct(private readonly Worktrees $worktrees)
     {
         parent::__construct();
     }

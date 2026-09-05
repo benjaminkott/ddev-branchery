@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Tests\Operation;
 
+use App\Jobs\Locks;
 use App\Jobs\StepReporter;
-use App\Locking\Locks;
 use App\Operation\BranchMoves;
 use App\Operation\CarriedFiles;
+use App\Operation\Checks;
 use App\Operation\DataTransfer;
-use App\Operation\Preflight;
 use App\Operation\Provisioning;
 use App\Operation\Removal;
 use App\Operation\WorktreeManager;
@@ -32,7 +32,7 @@ use PHPUnit\Framework\TestCase;
  * walked from here: neither half is worth anything without the other.
  */
 #[CoversClass(WorktreeManager::class)]
-#[CoversClass(Preflight::class)]
+#[CoversClass(Checks::class)]
 #[CoversClass(CarriedFiles::class)]
 #[CoversClass(Provisioning::class)]
 #[CoversClass(Removal::class)]

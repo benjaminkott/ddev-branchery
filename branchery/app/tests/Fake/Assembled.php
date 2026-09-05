@@ -10,7 +10,7 @@ use App\Git\History;
 use App\Git\Repository;
 use App\Git\Runner;
 use App\Git\WorkingCopy;
-use App\Locking\Locks;
+use App\Jobs\Locks;
 use App\Project;
 use App\Web\WebContainer;
 

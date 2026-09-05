@@ -6,7 +6,7 @@
 
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
-import { afterWizard, routeOf, stillOn, wizardAsked } from '../routes.js';
+import { afterWizard, routeOf, stillOn, wizardAsked } from '../rules/routes.js';
 
 describe('routeOf', () => {
     it('reads the kinds of address there are', () => {

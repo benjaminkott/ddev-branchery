@@ -13,9 +13,9 @@
 import { html, nothing, type TemplateResult } from 'lit';
 import { api } from '../api.js';
 import { buildWayOut, formatWhen } from '../dom.js';
-import { reader } from '../reading.js';
+import { reader } from '../rules/reading.js';
 import { errorSentence, state, t } from '../state.js';
-import { aside } from '../aside.js';
+import { aside } from '../rules/aside.js';
 import type { ChangeDiff, CommitDetail } from '../types.js';
 import { backTo } from './back.js';
 import { waiting } from './waiting.js';

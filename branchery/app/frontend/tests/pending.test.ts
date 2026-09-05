@@ -8,7 +8,7 @@
 
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
-import { pendingCreations } from '../pending.js';
+import { pendingCreations } from '../rules/pending.js';
 import type { RunningJob } from '../types.js';
 
 const job = (command: string, subject: string): RunningJob => ({ id: command + subject, command, subject, step: null });

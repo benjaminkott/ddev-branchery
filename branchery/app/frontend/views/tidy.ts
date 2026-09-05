@@ -12,7 +12,7 @@ import { html, render } from 'lit';
 import { api } from '../api.js';
 import { reportError, t } from '../state.js';
 import type { JobHandlers, Worktree } from '../types.js';
-import { finished, losesNothing } from '../finished.js';
+import { finished, losesNothing } from '../rules/finished.js';
 import { closeWizard, runFlow, setStage } from './wizard.js';
 
 export type TidyHandlers = Pick<JobHandlers, 'onJob'>;

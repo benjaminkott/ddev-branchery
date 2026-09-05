@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Tests\Config;
 
-use App\Config\WorktreeContext;
-use App\Database\ProjectDatabase;
+use App\Config\Place;
 use App\ManagedFiles;
 use App\Tests\Fake\RecordingContainer;
+use App\Web\DatabaseServer;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -53,16 +53,16 @@ final class WorktreeEnvironmentTest extends TestCase
     /** What a site is found by is the host, and the host alone. */
     public function testItReadsTheHostOutOfTheAddress(): void
     {
-        self::assertSame('my-fix.blog.ddev.site', WorktreeContext::hostOf('https://my-fix.blog.ddev.site/'));
-        self::assertSame('blog.ddev.site', WorktreeContext::hostOf('https://blog.ddev.site/some/path'));
-        self::assertSame('', WorktreeContext::hostOf(''));
+        self::assertSame('my-fix.blog.ddev.site', Place::hostOf('https://my-fix.blog.ddev.site/'));
+        self::assertSame('blog.ddev.site', Place::hostOf('https://blog.ddev.site/some/path'));
+        self::assertSame('', Place::hostOf(''));
     }
 
-    private function context(?string $nodeDirectory = null): WorktreeContext
+    private function context(?string $nodeDirectory = null): Place
     {
         $web = new RecordingContainer();
 
-        return new WorktreeContext(
+        return new Place(
             name: 'my-fix',
             branch: 'bugfix/my-fix',
             url: 'https://my-fix.blog.ddev.site/',
@@ -71,7 +71,7 @@ final class WorktreeEnvironmentTest extends TestCase
             phpBinary: 'php',
             binDirectory: 'vendor/bin',
             docroot: 'public',
-            database: new ProjectDatabase($web),
+            database: new DatabaseServer($web),
             databaseName: 'branchery_my_fix',
             web: $web,
             files: new ManagedFiles(0, 0),

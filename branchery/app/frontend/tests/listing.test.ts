@@ -10,7 +10,7 @@
 
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
-import { heading, listing, type ListState } from '../listing.js';
+import { heading, listing, type ListState } from '../rules/listing.js';
 
 /** A project that answered, with a dozen worktrees and no filter typed. */
 function list(said: Partial<ListState> = {}): ListState {

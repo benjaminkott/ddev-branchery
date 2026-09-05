@@ -4,20 +4,20 @@ import { api } from '../api.js';
 import { html, nothing, type TemplateResult } from 'lit';
 import { buildButton, buildWayOut, formatWhen, host, maybe, repositoryName, saying } from '../dom.js';
 import { busyWith, doingWord, reportError, setError, state, t } from '../state.js';
-import { pendingCreations } from '../pending.js';
+import { pendingCreations } from '../rules/pending.js';
 import type { RunningJob } from '../types.js';
 import type { DropdownChosen, Row, SdsDropdown } from '@typo3/soul-frontend';
-import { found, matching, matchingBranches } from '../filter.js';
-import { byBase } from '../lineage.js';
+import { found, matching, matchingBranches } from '../rules/filter.js';
+import { byBase } from '../rules/lineage.js';
 import { keep, recall } from '../kept.js';
 import type { Branch, JobHandlers, Worktree } from '../types.js';
 import { go } from '../router.js';
 import { openCreate } from './create.js';
-import { finished } from '../finished.js';
+import { finished } from '../rules/finished.js';
 import { bar } from './waiting.js';
 import { openTidy } from './tidy.js';
 import { View } from './view.js';
-import { heading, listing, type ListState } from '../listing.js';
+import { heading, listing, type ListState } from '../rules/listing.js';
 
 export type OverviewHandlers = JobHandlers;
 

@@ -8,7 +8,7 @@
 
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
-import { poll, type Timers } from '../polling.js';
+import { poll, type Timers } from '../rules/polling.js';
 
 /** A clock that only moves when told to. */
 function clock(): Timers & { run(): void; scheduled(): number } {

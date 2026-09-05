@@ -7,7 +7,7 @@ namespace App\Tests\Git;
 use App\Git\Facts;
 use App\Git\Git;
 use App\Git\Runner;
-use App\Locking\Locks;
+use App\Jobs\Locks;
 use App\ManagedFiles;
 use App\Project;
 use App\Tests\Fake\Assembled;

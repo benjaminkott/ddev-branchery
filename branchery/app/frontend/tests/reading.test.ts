@@ -4,7 +4,7 @@
 
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
-import { reader } from '../reading.js';
+import { reader } from '../rules/reading.js';
 
 /** The sentence a failure reads as, standing in for the interface's own. */
 const sentence = (error: unknown): string => (error instanceof Error ? error.message : 'unknown');

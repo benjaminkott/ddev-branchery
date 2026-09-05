@@ -9,7 +9,7 @@
 
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
-import { latch } from '../inflight.js';
+import { latch } from '../rules/inflight.js';
 
 function deferred(): { promise: Promise<void>; settle(): void } {
     let settle = (): void => {};

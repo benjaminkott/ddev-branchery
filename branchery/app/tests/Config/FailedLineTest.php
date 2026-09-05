@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Config;
 
 use App\CommandResult;
-use App\Config\WorktreeContext;
+use App\Config\Place;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
@@ -17,7 +17,7 @@ use PHPUnit\Framework\TestCase;
  * thing worth reading, and the first line of a screenful of composer output is
  * never the line that says what went wrong.
  */
-#[CoversClass(WorktreeContext::class)]
+#[CoversClass(Place::class)]
 final class FailedLineTest extends TestCase
 {
     public function testTheReasonNamesTheLineAndItsStatusAndNotWhatItWrote(): void
@@ -26,7 +26,7 @@ final class FailedLineTest extends TestCase
 
         self::assertSame(
             'composer install --no-interaction failed with exit status 2.',
-            WorktreeContext::failed('composer install --no-interaction', $result),
+            Place::failed('composer install --no-interaction', $result),
         );
     }
 }

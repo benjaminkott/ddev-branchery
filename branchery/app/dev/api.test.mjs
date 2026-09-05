@@ -177,7 +177,7 @@ describe('what both sides have to say the same way', () => {
      */
     it('names a checkout in an address the same way on both sides', () => {
         assert.equal(
-            declared('../frontend/routes.ts', /^const CHECKOUT = '(.+)';$/m),
+            declared('../frontend/rules/routes.ts', /^const CHECKOUT = '(.+)';$/m),
             declared('../src/Http/Router.php', /\$name = '\(\?<name>(.+)\)';/),
         );
     });

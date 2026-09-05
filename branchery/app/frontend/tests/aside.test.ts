@@ -11,7 +11,7 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { aside } from '../aside.js';
+import { aside } from '../rules/aside.js';
 
 describe('what was read beside a view', () => {
     it('says the page is new, and then that it is not', () => {

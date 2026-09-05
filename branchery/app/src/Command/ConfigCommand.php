@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Command;
 
 use App\Operation\WorktreeManager;
-use App\Worktree\DescribeInfo;
-use App\Worktree\WorktreeRepository;
+use App\Worktree\Description;
+use App\Worktree\Worktrees;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -18,8 +18,8 @@ final class ConfigCommand extends Command
 {
     public function __construct(
         private readonly WorktreeManager $manager,
-        private readonly WorktreeRepository $worktrees,
-        private readonly DescribeInfo $describe,
+        private readonly Worktrees $worktrees,
+        private readonly Description $describe,
     ) {
         parent::__construct();
     }

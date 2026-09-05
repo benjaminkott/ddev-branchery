@@ -57,6 +57,12 @@ final class LayersTest extends TestCase
             if (!$file instanceof \SplFileInfo || $file->getExtension() !== 'php') {
                 continue;
             }
+            // The composition root is what draws the graph and is not in it: it
+            // reaches every namespace by definition and nothing reaches it, so
+            // counting it would make one cycle of the whole application.
+            if ($file->getFilename() === 'Container.php') {
+                continue;
+            }
             $source = (string) file_get_contents($file->getPathname());
             if (preg_match('/^namespace ([^;]+);/m', $source, $where) !== 1) {
                 continue;

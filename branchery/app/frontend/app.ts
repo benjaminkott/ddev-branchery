@@ -7,7 +7,7 @@ import { loadLanguages } from './i18n.js';
 import { refresh, setError, setLanguage, state, subscribe, t } from './state.js';
 import type { DropdownChosen, SdsNavMain } from '@typo3/soul-frontend';
 import { currentRoute, onRoute, type Route } from './router.js';
-import { afterWizard, stillOn, wizardAsked } from './routes.js';
+import { afterWizard, stillOn, wizardAsked } from './rules/routes.js';
 import { operationEnded } from './ended.js';
 import { View } from './views/view.js';
 // The pages, for the elements they define. Which of them is open is decided in

@@ -14,7 +14,7 @@
 import { nothing, render, type TemplateResult } from 'lit';
 import type { SdsButton, SdsProgress } from '@typo3/soul-frontend';
 import { maybe, query, setButtonLabel } from '../dom.js';
-import { latch } from '../inflight.js';
+import { latch } from '../rules/inflight.js';
 import { t } from '../state.js';
 
 /** What a step reaches back for while it is on the stage. */

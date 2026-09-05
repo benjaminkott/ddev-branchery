@@ -4,10 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Fake;
 
-use App\Addon\Installation;
 use App\Config\Recipes;
-use App\Database\DatabaseOperations;
-use App\Database\ProjectDatabase;
 use App\Git\Facts;
 use App\Git\Git;
 use App\Git\History;
@@ -16,39 +13,42 @@ use App\Git\Runner;
 use App\Git\SshAgent;
 use App\Git\WorkingCopy;
 use App\Http\ApiController;
+use App\Http\Operations;
 use App\Http\Snapshot;
-use App\Http\Starting;
 use App\Http\State;
+use App\Installation;
 use App\Jobs\JobRunner;
-use App\Locking\Locks;
+use App\Jobs\Locks;
 use App\ManagedFiles;
 use App\Operation\BranchMoves;
 use App\Operation\CarriedFiles;
-use App\Operation\Contexts;
+use App\Operation\Checks;
 use App\Operation\DataTransfer;
-use App\Operation\Preflight;
+use App\Operation\Places;
 use App\Operation\Provisioning;
 use App\Operation\Removal;
 use App\Operation\WorktreeManager;
 use App\Project;
-use App\Runtime\NodeVersions;
-use App\Runtime\PhpVersions;
-use App\Runtime\VersionMap;
-use App\Runtime\VersionMap as Map;
+use App\Web\Databases;
+use App\Web\DatabaseServer;
 use App\Web\Exposure;
 use App\Web\Runtimes;
 use App\Worktree\CommitPages;
-use App\Worktree\DescribeInfo;
+use App\Worktree\Description;
+use App\Worktree\NodeVersions;
+use App\Worktree\PhpVersions;
 use App\Worktree\Surroundings;
-use App\Worktree\WorktreeRepository;
-use App\Worktree\WorktreeUsage;
+use App\Worktree\Usage;
+use App\Worktree\VersionMap;
+use App\Worktree\VersionMap as Map;
+use App\Worktree\Worktrees;
 use Symfony\Component\Filesystem\Filesystem;
 
 /**
  * The graph an operation runs in, over a directory that is thrown away
  * afterwards and a container that runs nothing.
  *
- * Written out rather than taken from App\Wiring\Container: that one reads the
+ * Written out rather than taken from App\Container: that one reads the
  * environment and decides which container the application runs on, which is the
  * one decision a test has to make for itself. What is kept from it is the
  * shape -- if the two ever disagree, this is wired wrongly.
@@ -58,7 +58,7 @@ final class Wiring
     public readonly Project $project;
     public readonly RecordingContainer $web;
     public readonly Git $git;
-    public readonly WorktreeRepository $worktrees;
+    public readonly Worktrees $worktrees;
     public readonly WorktreeManager $manager;
     public readonly JobRunner $jobs;
     public readonly ManagedFiles $files;
@@ -78,11 +78,11 @@ final class Wiring
         );
         $this->web = new RecordingContainer();
         $this->files = new ManagedFiles((int) getmyuid(), (int) getmygid());
-        // One of them for the whole graph, as App\Wiring\Container has it: flock is per
+        // One of them for the whole graph, as App\Container has it: flock is per
         // open file, so a second Locks holding the same key blocks against the
         // first from inside the very process that holds it.
         $locks = $this->locks = new Locks($this->project, $this->files);
-        // One Runner for the whole graph, as App\Wiring\Container has it: it is what
+        // One Runner for the whole graph, as App\Container has it: it is what
         // tells Facts that a command wrote, and a second one tells nobody.
         $runner = new Runner($this->project, $this->web);
         $this->git = new Git(
@@ -95,9 +95,9 @@ final class Wiring
         $runtimes = new Runtimes($this->web);
         $php = new PhpVersions($this->project, $this->web, $this->map('php'), $runtimes, $locks);
         $node = new NodeVersions($this->web, $this->map('node'), $runtimes);
-        $database = new ProjectDatabase($this->web);
+        $database = new DatabaseServer($this->web);
         $recipes = new Recipes($root, \dirname(__DIR__, 2) . '/defaults');
-        $this->worktrees = new WorktreeRepository(
+        $this->worktrees = new Worktrees(
             $this->project,
             $this->files,
             $php,
@@ -108,13 +108,13 @@ final class Wiring
         );
         $this->jobs = new JobRunner($this->project, $this->files, '/opt/branchery/bin/console');
 
-        // The pieces an operation is made of, wired as App\Wiring\Container wires them.
-        $databases = new DatabaseOperations($this->web, $database);
-        $describe = new DescribeInfo($this->project, $this->worktrees, $database, $this->files);
+        // The pieces an operation is made of, wired as App\Container wires them.
+        $databases = new Databases($this->web, $database);
+        $describe = new Description($this->project, $this->worktrees, $database, $this->files);
         $surroundings = new Surroundings($this->project, $this->git, $this->files, $this->web);
-        $contexts = new Contexts($this->project, $recipes, $php, $node, $database, $this->web, $this->files);
+        $places = new Places($this->project, $recipes, $php, $node, $database, $this->web, $this->files);
         $carried = new CarriedFiles($this->project, $this->git, $recipes, $this->web);
-        $preflight = new Preflight(
+        $preflight = new Checks(
             $this->project,
             $this->git,
             $recipes,
@@ -145,7 +145,7 @@ final class Wiring
                 $node,
                 $surroundings,
                 $describe,
-                $contexts,
+                $places,
             ),
             new Removal(
                 $this->project,
@@ -169,7 +169,7 @@ final class Wiring
                 $databases,
                 $surroundings,
                 $this->worktrees,
-                $contexts,
+                $places,
             ),
         );
         // The API over the same graph. What it answers with is the one thing the
@@ -182,7 +182,7 @@ final class Wiring
             $php,
             $this->jobs,
             $this->git,
-            new WorktreeUsage($this->project, $this->web, $database, $databases),
+            new Usage($this->project, $this->web, $database, $databases),
             new State(
                 $this->project,
                 $this->worktrees,
@@ -194,7 +194,7 @@ final class Wiring
                 new Exposure($this->project, new Ports()),
                 new Snapshot($this->project, $this->files),
             ),
-            new Starting($locks, $this->jobs),
+            new Operations($locks, $this->jobs),
             new CommitPages($this->project, $this->git, $recipes),
         );
     }

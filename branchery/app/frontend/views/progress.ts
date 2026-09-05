@@ -12,11 +12,11 @@ import type { SdsButton } from '@typo3/soul-frontend';
 import { api } from '../api.js';
 import { buildButton, formatDuration, maybe, runSteps, setButtonLabel } from '../dom.js';
 import { EDITOR } from '../editor.js';
-import { gather, unread } from '../journal.js';
-import { poll } from '../polling.js';
+import { gather, unread } from '../rules/journal.js';
+import { poll } from '../rules/polling.js';
 import { kindOf, operationName, refresh, state, stateWords, subscribe, t, trackJob } from '../state.js';
 import type { JobKind, TrackedJob } from '../types.js';
-import { hasResult, titleOf, whyItStopped } from '../verdict.js';
+import { hasResult, titleOf, whyItStopped } from '../rules/verdict.js';
 import {
     closeWizard,
     flowOpen,

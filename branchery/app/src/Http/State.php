@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Http;
 
-use App\Addon\Installation;
 use App\Config\Recipes;
 use App\Git\Git;
+use App\Installation;
 use App\Jobs\JobRunner;
 use App\Project;
-use App\Runtime\PhpVersions;
 use App\Web\Exposure;
-use App\Worktree\WorktreeRepository;
+use App\Worktree\PhpVersions;
+use App\Worktree\Worktrees;
 
 /**
  * The one answer the whole page is drawn from.
@@ -27,7 +27,7 @@ final readonly class State
 {
     public function __construct(
         private Project $project,
-        private WorktreeRepository $worktrees,
+        private Worktrees $worktrees,
         private Git $git,
         private PhpVersions $php,
         private JobRunner $jobs,

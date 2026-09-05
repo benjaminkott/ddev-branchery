@@ -8,7 +8,7 @@
 
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
-import { finished } from '../finished.js';
+import { finished } from '../rules/finished.js';
 import type { Worktree } from '../types.js';
 
 function worktree(values: Partial<Worktree> & { name: string }): Worktree {

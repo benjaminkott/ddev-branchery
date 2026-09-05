@@ -7,7 +7,7 @@
 import { EDITOR } from '../editor.js';
 import { formatBytes, formatWhen, host } from '../dom.js';
 import { state, t } from '../state.js';
-import { wandered } from '../actions.js';
+import { wandered } from '../rules/actions.js';
 import type { DiskUsage, Worktree } from '../types.js';
 import { type FactGroup, sinceBase } from './facts.js';
 

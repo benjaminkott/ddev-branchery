@@ -13,9 +13,9 @@
  * address rather than in a fragment of its own: there is one fragment.
  */
 
-import { routeOf, type Route } from './routes.js';
+import { routeOf, type Route } from './rules/routes.js';
 
-export type { Route } from './routes.js';
+export type { Route } from './rules/routes.js';
 
 const listeners: ((route: Route) => void)[] = [];
 

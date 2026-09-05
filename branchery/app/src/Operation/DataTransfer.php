@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace App\Operation;
 
 use App\Config\Recipes;
-use App\Database\DatabaseOperations;
-use App\Database\ProjectDatabase;
 use App\Git\Git;
 use App\Jobs\StepReporter;
 use App\Project;
 use App\Text;
+use App\Web\Databases;
+use App\Web\DatabaseServer;
 use App\Worktree\Surroundings;
-use App\Worktree\WorktreeRepository;
+use App\Worktree\Worktrees;
 
 /**
  * Fetching a worktree's data again, and what is left on the server when a
@@ -32,19 +32,19 @@ final readonly class DataTransfer
         private Project $project,
         private Git $git,
         private Recipes $recipes,
-        private ProjectDatabase $database,
-        private DatabaseOperations $databases,
+        private DatabaseServer $database,
+        private Databases $databases,
         private Surroundings $surroundings,
-        private WorktreeRepository $worktrees,
-        private Contexts $contexts,
+        private Worktrees $worktrees,
+        private Places $places,
     ) {
     }
 
     public function sync(string $name, ?string $from, string $branch, StepReporter $reporter): void
     {
-        $source = $from !== null ? $this->database->nameFor($from) : ProjectDatabase::PROJECT_DATABASE;
+        $source = $from !== null ? $this->database->nameFor($from) : DatabaseServer::PROJECT_DATABASE;
         $target = $this->database->nameFor($name);
-        $context = $this->contexts->of($name, $branch);
+        $place = $this->places->of($name, $branch);
 
         $build = $this->recipes->for($this->project->worktreeDirectory($name));
         $data = $build->data();
@@ -58,15 +58,15 @@ final readonly class DataTransfer
         // data -- so what reads them comes along, its addresses put back on ours.
         $reporter->step('Putting the addresses back');
         $this->surroundings->bring($from, $name, $data['bring']);
-        $this->surroundings->retargetSites($name, $context->url, $data['addresses'], $reporter);
+        $this->surroundings->retargetSites($name, $place->url, $data['addresses'], $reporter);
 
         // The data was written by another state of the code, and half of it would
         // be read against a shape it does not have.
         $reporter->step('Fitting the data to this code');
-        $build->at('migrate', $context, $reporter);
+        $build->at('migrate', $place, $reporter);
 
         $reporter->step('Flushing caches');
-        $build->at('flush', $context, $reporter);
+        $build->at('flush', $place, $reporter);
         $reporter->finish();
     }
 
@@ -96,7 +96,7 @@ final readonly class DataTransfer
     /** Only ever what this add-on made. */
     public function drop(string $database): void
     {
-        if (!str_starts_with($database, ProjectDatabase::PREFIX)) {
+        if (!str_starts_with($database, DatabaseServer::PREFIX)) {
             throw new \InvalidArgumentException(sprintf('"%s" is not a database of this add-on.', $database));
         }
 

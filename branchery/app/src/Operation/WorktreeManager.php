@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace App\Operation;
 
 use App\Git\Git;
+use App\Jobs\Lock;
+use App\Jobs\Locks;
 use App\Jobs\StepReporter;
-use App\Locking\Lock;
-use App\Locking\Locks;
 use App\ManagedFiles;
 use App\Model\Worktree;
 use App\Project;
-use App\Worktree\WorktreeRepository;
+use App\Worktree\Worktrees;
 
 /**
  * Every operation on a worktree, as the order of its steps.
@@ -30,10 +30,10 @@ final readonly class WorktreeManager
     public function __construct(
         private Project $project,
         private Git $git,
-        private WorktreeRepository $worktrees,
+        private Worktrees $worktrees,
         private ManagedFiles $files,
         private Locks $locks,
-        private Preflight $preflight,
+        private Checks $preflight,
         private CarriedFiles $carried,
         private Provisioning $provisioning,
         private Removal $removal,
