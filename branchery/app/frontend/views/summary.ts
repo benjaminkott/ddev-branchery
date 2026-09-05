@@ -7,6 +7,7 @@
 import { EDITOR } from '../editor.js';
 import { formatBytes, formatWhen, host } from '../dom.js';
 import { state, t } from '../state.js';
+import { wandered } from '../actions.js';
 import type { DiskUsage, Worktree } from '../types.js';
 import { type FactGroup, sinceBase } from './facts.js';
 
@@ -28,7 +29,7 @@ export interface Usage {
  * facts: a state that asks for something is a note carrying the press that
  * answers it, and everything else is a fact among facts.
  */
-export function settledFacts(worktree: Worktree, usage: Usage): FactGroup[] {
+export function summaryFacts(worktree: Worktree, usage: Usage): FactGroup[] {
     return [
         {
             // The name is the worktree's and the branch is what it stands on -- two
@@ -196,13 +197,4 @@ function standing(worktree: Worktree): string {
     ];
 
     return apart.length === 0 ? t('detail.inStep') : apart.join(' · ');
-}
-
-/**
- * An ordinary state and not a fault: it is what trying a patch in a worktree
- * looks like from the outside. What it means for the page is that the name, the
- * address and the database are named after a branch that is not in the directory.
- */
-export function wandered(worktree: Worktree): boolean {
-    return worktree.madeFor !== null && worktree.madeFor !== worktree.branch;
 }

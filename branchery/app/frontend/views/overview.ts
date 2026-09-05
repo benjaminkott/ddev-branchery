@@ -17,6 +17,7 @@ import { finished } from '../finished.js';
 import { bar } from './waiting.js';
 import { openTidy } from './tidy.js';
 import { View } from './view.js';
+import { heading, listing, type ListState } from '../listing.js';
 
 export type OverviewHandlers = JobHandlers;
 
@@ -58,6 +59,19 @@ export class OverviewView extends View {
     protected override arrived(): void {
         window.addEventListener('keydown', this.reachedByKey);
         this.untilLeft(() => window.removeEventListener('keydown', this.reachedByKey));
+    }
+
+    /** What both questions about the list are answered out of -- see listing.ts. */
+    private listState(all: Worktree[], shown: number, pending: number): ListState {
+        return {
+            unreachable: state.unreachable,
+            loading: state.loading,
+            entries: all.length,
+            total: state.worktrees.length,
+            shown,
+            pending,
+            filtered: this.needle.trim() !== '',
+        };
     }
 
     override render(): TemplateResult {
@@ -203,27 +217,29 @@ export class OverviewView extends View {
      * scrolls rather than folding rows into cards. This is read on a desk.
      */
     private list(all: Worktree[], shown: Worktree[]): TemplateResult | typeof nothing {
-        // The note over the page already says the project cannot be asked; "no
-        // worktree yet" under it would be a second answer, and a wrong one.
-        if (state.unreachable && all.length === 0) {
-            return nothing;
-        }
         // A worktree on its way has no directory and so no row; its operation
         // stands in for it, so the list never says "none" while one is being made.
         const pending = pendingCreations(
             state.runningJobs,
             all.map((worktree) => worktree.name),
         ).filter((job) => found(job.subject, this.needle));
-        const empty = this.needle.trim() === '' ? t('table.empty') : t('overview.noMatch');
-        if (!state.loading && shown.length === 0 && pending.length === 0) {
-            return html`<p class="branchery-list__empty">${empty}</p>`;
+
+        const said = listing(this.listState(all, shown.length, pending.length));
+        if (said.shown === 'nothing') {
+            return nothing;
         }
+        if (said.shown === 'empty') {
+            return html`<p class="branchery-list__empty">${t(
+                said.because === 'noMatch' ? 'overview.noMatch' : 'table.empty',
+            )}</p>`;
+        }
+        const waiting = said.shown === 'waiting';
 
         // What is being made stands first: a row at the end of a long list is one
         // nobody sees arrive.
         return html`
         <sds-table
-            ?loading=${state.loading}
+            ?loading=${waiting}
             loading-rows=${rowsToExpect()}
             .columns=${[
                 { head: t('table.worktree'), cls: 'sds-td-name' },
@@ -231,7 +247,7 @@ export class OverviewView extends View {
                 { head: t('table.php'), fit: true },
                 { head: '', cls: 'sds-td-into' },
             ]}
-            .rows=${state.loading ? [] : [...pending.map(making), ...shown.map(row)]}></sds-table>`;
+            .rows=${waiting ? [] : [...pending.map(making), ...shown.map(row)]}></sds-table>`;
     }
 
     /**
@@ -241,20 +257,10 @@ export class OverviewView extends View {
      * sentence twice.
      */
     private listHead(all: Worktree[], shown: number): TemplateResult | typeof nothing {
-        // Nothing is drawn under it, so nothing is said over it.
-        if (state.unreachable && all.length === 0) {
-            return nothing;
-        }
-        const total = state.worktrees.length;
+        const said = heading(this.listState(all, shown, 0));
 
         // Only this list: the branches have a heading of their own.
-        return html`<h2 class="sds-h3">${
-            state.loading || total === 0
-                ? t('nav.worktrees')
-                : this.needle.trim() === ''
-                  ? t('overview.worktrees', { count: total })
-                  : t('overview.matching', { shown, total })
-        }</h2>`;
+        return said === null ? nothing : html`<h2 class="sds-h3">${t(said.key, said.params)}</h2>`;
     }
 
     /**

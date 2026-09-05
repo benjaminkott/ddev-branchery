@@ -19,12 +19,13 @@ import { busyWith, errorSentence, operationName, state, stateWords, t } from '..
 import { whyItStopped } from '../verdict.js';
 import { aside } from '../aside.js';
 import { onOperationEnded } from '../ended.js';
+import { type Action, actions, type Offer } from '../actions.js';
 import type { Change, ChangeDiff, DiskUsage, Job, JobHandlers, JobSummary, Worktree } from '../types.js';
 import { openEdit } from './edit.js';
 import { backTo } from './back.js';
 import { commitLog } from './commits.js';
 import { shownGroup } from './facts.js';
-import { settledFacts, wandered } from './settled.js';
+import { summaryFacts } from './summary.js';
 import { closeChanges, onChangesClose, showChanges, shownChanges } from './changes.js';
 import { discard, provision, pull, remove, restore, sync } from './operations.js';
 import { fileList, keepDiff, type Shown, toggleFile } from './files.js';
@@ -279,7 +280,7 @@ export class WorktreeView extends View {
 
         <section class="sds-band sds-band--quiet">
             <h2 class="sds-h3">${t('detail.settled')}</h2>
-            <div class="sds-facts-set">${settledFacts(worktree, {
+            <div class="sds-facts-set">${summaryFacts(worktree, {
                 value: this.usage.of(worktree.name),
                 trouble: this.usage.trouble(worktree.name),
             }).map(shownGroup)}</div>
@@ -503,51 +504,57 @@ export class WorktreeView extends View {
         </section>`;
     }
 
+    /**
+     * Which of them are offered and which are held is a decision, and it is
+     * offered() that makes it -- see there. What is left here is what each of
+     * them is as a control: the word on it, its weight, and what it sets going.
+     */
     private buildBar(worktree: Worktree): { doing: SdsButton[]; undoing: SdsButton[]; held: Set<SdsButton> } {
-        const handlers = this.handlers;
-        const dropping = buildButton(
-            t('table.discard'),
-            'danger',
-            () => void discard(worktree, handlers, this.log.of(worktree.name)),
-        );
-        const removing = buildButton(t('table.remove'), 'danger', () => void remove(worktree, handlers));
         const held = new Set<SdsButton>();
-        if (worktree.changes > 0) {
-            held.add(dropping);
-            dropping.title = t('detail.discardBlocked');
+        const make = (offer: Offer): SdsButton => {
+            const button = this.pressFor(offer.action, worktree);
+            if (offer.held !== null) {
+                // What the container refuses on its own grounds is not offered as if
+                // it were not -- the reason stands on the button.
+                held.add(button);
+                button.title = t(offer.held);
+            }
+
+            return button;
+        };
+        const plan = actions(worktree);
+
+        return { doing: plan.doing.map(make), undoing: plan.undoing.map(make), held };
+    }
+
+    private pressFor(action: Action, worktree: Worktree): SdsButton {
+        const handlers = this.handlers;
+        switch (action) {
+            case 'restore':
+                return buildButton(
+                    t('table.restore', { branch: worktree.madeFor ?? '' }),
+                    'secondary',
+                    () => void restore(worktree, handlers),
+                );
+            case 'pull':
+                return buildButton(t('table.pull'), 'secondary', () => void pull(worktree, handlers));
+            case 'edit':
+                return buildButton(t('table.edit'), 'secondary', () => openEdit(worktree));
+            case 'sync':
+                return buildButton(t('table.sync'), 'secondary', () => void sync(worktree, handlers));
+            case 'provision':
+                return buildButton(t('table.provision'), 'secondary', () =>
+                    openProvision(worktree, (fresh) => provision(worktree.name, fresh, handlers)),
+                );
+            case 'discard':
+                return buildButton(
+                    t('table.discard'),
+                    'danger',
+                    () => void discard(worktree, handlers, this.log.of(worktree.name)),
+                );
+            case 'remove':
+                return buildButton(t('table.remove'), 'danger', () => void remove(worktree, handlers));
         }
-
-        // Offered where there is a remote to bring from, live where it has
-        // something to bring: pressed on a branch that had everything already, it
-        // ran a whole operation to say so.
-        const pulling = buildButton(t('table.pull'), 'secondary', () => void pull(worktree, handlers));
-        if (worktree.behind === 0) {
-            held.add(pulling);
-            pulling.title = t('detail.pullBlocked');
-        }
-        const onBranch = wandered(worktree)
-            ? [
-                  buildButton(
-                      t('table.restore', { branch: worktree.madeFor ?? '' }),
-                      'secondary',
-                      () => void restore(worktree, handlers),
-                  ),
-              ]
-            : worktree.behind === null
-              ? []
-              : [pulling];
-
-        const doing = [
-            ...onBranch,
-            buildButton(t('table.edit'), 'secondary', () => openEdit(worktree)),
-            buildButton(t('table.sync'), 'secondary', () => void sync(worktree, handlers)),
-            buildButton(t('table.provision'), 'secondary', () =>
-                openProvision(worktree, (fresh) => provision(worktree.name, fresh, handlers)),
-            ),
-        ];
-        const undoing = [...((worktree.ahead ?? 0) > 0 ? [dropping] : []), removing];
-
-        return { doing, undoing, held };
     }
 
     /**

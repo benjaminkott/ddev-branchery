@@ -160,6 +160,14 @@ compose file leaves open.
   reading the code has to walk past it.
 - **Do not name counts of things.** "Fourteen services", "eleven routes" --
   every one of those is wrong at the next commit, and nobody updates them.
+- **A name is a thing, not something that happened to it.** A participle
+  standing where a noun belongs -- `Asked`, `Offered`, `Settled` -- names
+  nothing the reader can hold: they have to rebuild the sentence it was cut out
+  of before they know what they have. What reads a request is `Parameters`,
+  what may be done to a worktree is `actions`, what a page states about one is
+  its `summary`. Where the plain noun is dull, the dull one is right: a name is
+  read a hundred times and worked out once. A predicate is the exception, since
+  there it is a question and English asks it that way -- `wandered(worktree)`.
 - **The mock mirrors the container**, and no longer only as a promise.
   `api-answers.json` says what every door answers with, field by field, and
   three readers are held to it: the container's own answers
