@@ -195,6 +195,8 @@ export function trackJob(id: string, expected: string | null = null, kind: JobKi
         steps: [],
         elapsed: 0,
         log: '',
+        size: 0,
+        partial: false,
         interrupted: false,
     };
     state.job = job;

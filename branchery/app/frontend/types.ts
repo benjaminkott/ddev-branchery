@@ -228,6 +228,14 @@ export interface JobStepDetail {
     seconds: number;
 }
 
+/**
+ * As the container sends one: the output is left out where the step cannot have
+ * moved since the caller last asked, and what was kept for it stands.
+ */
+export interface JobStepAnswer extends Omit<JobStepDetail, 'output'> {
+    output: string | null;
+}
+
 export interface Job {
     id: string;
     status: 'running' | 'done' | 'failed' | 'unknown';
@@ -237,9 +245,17 @@ export interface Job {
     command: string;
     step: JobStep | null;
     /** Every step that has begun, in order. */
-    steps: JobStepDetail[];
+    steps: JobStepAnswer[];
     elapsed: number;
+    /** The whole of it, or only what was written since -- see `partial`. */
     log: string;
+    /**
+     * How much of the log this answer accounts for. It goes back as `since` on
+     * the next question and means nothing else here.
+     */
+    size: number;
+    /** The log has to be added to what was gathered, not put in its place. */
+    partial: boolean;
     /**
      * It did not end; it stopped. The process is gone without an exit code and
      * the log breaks off mid-sentence.
@@ -263,8 +279,12 @@ export interface JobSummary {
  */
 export type JobKind = 'create' | 'sync' | 'pull' | 'restore' | 'discard' | 'remove' | 'fetch';
 
-/** A running operation together with the worktree it concerns. */
-export interface TrackedJob extends Job {
+/**
+ * A running operation together with the worktree it concerns -- and with the
+ * log and the steps as they were gathered, which is what a page draws.
+ */
+export interface TrackedJob extends Omit<Job, 'steps'> {
+    steps: JobStepDetail[];
     expected: string | null;
     kind: JobKind;
 }

@@ -58,7 +58,7 @@ final readonly class Router
             ['GET', '#^/api/branch/commits$#', fn (): Response => $api->branchCommits($query)],
             ['POST', '#^/api/fetch$#', fn (): Response => $api->fetch($this->payload($body))],
             ['GET', '#^/api/php-versions$#', fn (): Response => $api->phpVersions()],
-            ['GET', '#^/api/jobs/(?<id>[A-Za-z0-9-]+)$#', fn (array $v): Response => $api->job($v['id'])],
+            ['GET', '#^/api/jobs/(?<id>[A-Za-z0-9-]+)$#', fn (array $v): Response => $api->job($v['id'], $query)],
         ];
 
         // The path decides which routes are candidates, the method which of them

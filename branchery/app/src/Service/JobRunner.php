@@ -289,13 +289,37 @@ final readonly class JobRunner
     /** How much of the end of a log is enough to find the step in. */
     private const int TAIL = 65_536;
 
-    public function state(string $id): JobState
+    /**
+     * How far a log may be reported into while it is still being written: up to
+     * its last complete line. A tool writing mid-line would otherwise put half a
+     * marker in one answer and half in the next, and neither half reads as a step.
+     */
+    private static function wholeLines(string $log): int
+    {
+        $last = strrpos($log, "\n");
+
+        return $last === false ? 0 : $last + 1;
+    }
+
+    /**
+     * @param int $since how much of the log the caller already has, as JobState
+     *                   reported it last. The page asks once a second and a
+     *                   composer install writes hundreds of kilobytes, so what
+     *                   has already been read is not sent again.
+     */
+    public function state(string $id, int $since = 0): JobState
     {
         $id = self::safe($id);
         $directory = $this->project->jobsDirectory();
 
         $outcome = $this->outcome($id);
         $log = (string) @file_get_contents($directory . '/' . $id . '.log');
+
+        $size = $outcome['status'] === 'running' ? self::wholeLines($log) : \strlen($log);
+        $log = substr($log, 0, $size);
+        // Past the end of what is there: the file was replaced under the caller,
+        // so it is given the whole of the new one rather than a slice of it.
+        $carried = $since > 0 && $since <= $size ? $since : 0;
 
         return new JobState(
             id: $id,
@@ -306,13 +330,22 @@ final readonly class JobRunner
             subject: trim((string) @file_get_contents($directory . '/' . $id . '.subject')),
             command: trim((string) @file_get_contents($directory . '/' . $id . '.command')),
             step: self::stepIn($log),
-            steps: $this->steps($log, $outcome['status'], $outcome['elapsed']),
+            steps: $this->steps($log, $outcome['status'], $outcome['elapsed'], $carried),
             elapsed: $outcome['elapsed'],
-            // The markers become what they say: a log that is only steps would
-            // otherwise arrive as an empty block.
-            log: (string) preg_replace(self::MARKER . 'm', '[$1/$2] $4', $log),
+            log: self::readable(substr($log, $carried)),
+            size: $size,
+            partial: $carried > 0,
             interrupted: $outcome['interrupted'],
         );
+    }
+
+    /**
+     * The markers become what they say: a log that is only steps would otherwise
+     * arrive as an empty block.
+     */
+    private static function readable(string $log): string
+    {
+        return (string) preg_replace(self::MARKER . 'm', '[$1/$2] $4', $log);
     }
 
     /**
@@ -320,14 +353,21 @@ final readonly class JobRunner
      * which the current position has to be found. The log is kept beside it, whole,
      * because that is what gets copied into a bug report.
      *
-     * @return list<array{no: int, label: string, output: string, state: string, seconds: int}>
+     * @param int $since what the caller already has, in bytes of the log. The
+     *                   output of a step that was over before that cannot have
+     *                   gained a line since, so it is left out and the caller
+     *                   keeps what it was given.
+     *
+     * @return list<array{no: int, label: string, output: ?string, state: string, seconds: int}>
      */
-    private function steps(string $log, string $status, int $elapsed): array
+    private function steps(string $log, string $status, int $elapsed, int $since = 0): array
     {
         $steps = [];
         $current = null;
 
-        foreach (preg_split('/\R/', $log) ?: [] as $line) {
+        // With the offsets, which is how a step is told from the bytes it holds.
+        $lines = preg_split('/\R/', $log, -1, PREG_SPLIT_OFFSET_CAPTURE) ?: [];
+        foreach ($lines as [$line, $from]) {
             if (preg_match(self::MARKER, $line, $hit) === 1) {
                 $at = (int) $hit[3];
                 if ($current !== null) {
@@ -347,6 +387,9 @@ final readonly class JobRunner
                     'state' => 'done',
                     'seconds' => 0,
                     'at' => $at,
+                    // Where in the log this step begins. The next one's start is
+                    // where it ends, which is what says whether it has moved.
+                    'from' => $from,
                 ];
                 $current = array_key_last($steps);
                 continue;
@@ -363,11 +406,12 @@ final readonly class JobRunner
         }
 
         $finished = [];
-        foreach ($steps as $step) {
+        foreach ($steps as $index => $step) {
+            $ends = $steps[$index + 1]['from'] ?? \strlen($log);
             $finished[] = [
                 'no' => $step['no'],
                 'label' => $step['label'],
-                'output' => implode("\n", $step['output']),
+                'output' => $since > 0 && $ends <= $since ? null : implode("\n", $step['output']),
                 'state' => $step['state'],
                 'seconds' => $step['seconds'],
             ];

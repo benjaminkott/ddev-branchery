@@ -70,9 +70,17 @@ function containerKeys(method) {
     return [...body.matchAll(/^ {12}'(\w+)' =>/gm)].map((hit) => hit[1]);
 }
 
+/** The keys a model writes when it is handed to Response::json. */
+function modelKeys(model) {
+    const php = readFileSync(resolve(here, `../src/Model/${model}.php`), 'utf8');
+    const from = php.indexOf('public function jsonSerialize()');
+
+    return [...php.slice(from).matchAll(/^ {12}'(\w+)' =>/gm)].map((hit) => hit[1]);
+}
+
 /** A request as the interface makes it, and the answer as it reads it. */
-function call(api, method, path, payload = undefined) {
-    const answer = api.dispatch(method, path, payload === undefined ? '' : JSON.stringify(payload));
+function call(api, method, path, payload = undefined, query = {}) {
+    const answer = api.dispatch(method, path, payload === undefined ? '' : JSON.stringify(payload), query);
 
     return { status: answer.status, body: JSON.parse(answer.body) };
 }
@@ -92,6 +100,45 @@ describe('the state the whole page is drawn from', () => {
         assert.deepEqual([...mock].sort(), [...container].sort());
     });
 });
+
+describe('how an operation reports itself', () => {
+    /** As the state does: the fields are the container's, or one of them is a lie. */
+    it('says what JobState says', () => {
+        const api = createApi();
+        const started = call(api, 'POST', '/api/worktrees/feature-checkout/pull');
+        const mock = Object.keys(call(api, 'GET', `/api/jobs/${started.body.job}`).body);
+        const container = modelKeys('JobState');
+
+        assert.ok(container.length > 0, 'no fields were read out of the container');
+        assert.deepEqual([...mock].sort(), [...container].sort());
+    });
+
+    /**
+     * The page asks once a second and glues the answers together, so a mock that
+     * sends the whole log every time would hide the one thing that can go wrong
+     * with that -- see journal.ts and JobLogTailTest.
+     */
+    it('sends only what was written since, and the halves are the whole', () => {
+        const api = createApi();
+        const started = call(api, 'POST', '/api/worktrees/feature-checkout/pull');
+        const whole = call(api, 'GET', `/api/jobs/${started.body.job}`).body;
+        assert.equal(whole.partial, false);
+        assert.ok(whole.size > 0);
+
+        const rest = call(api, 'GET', `/api/jobs/${started.body.job}`, undefined, {
+            since: String(whole.size),
+        }).body;
+
+        assert.equal(rest.partial, true);
+        assert.equal(whole.log + rest.log, whole.log);
+        // Every step was over before that look, so none of them says anything again.
+        assert.deepEqual(
+            rest.steps.map((step) => step.output),
+            rest.steps.map(() => null),
+        );
+    });
+});
+
 
 describe('what the mock refuses the way the container does', () => {
     /**

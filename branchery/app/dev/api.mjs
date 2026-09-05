@@ -89,7 +89,7 @@ export function createApi() {
         ['POST', /^\/api\/fetch$/, (_, payload) => fetch(payload)],
         ['GET', /^\/api\/php-versions$/, () => json(world.phpVersions)],
         ['GET', /^\/api\/worktrees\/(?<name>[a-z0-9-]+)\/jobs$/, (v) => json(history(v.name))],
-        ['GET', /^\/api\/jobs\/(?<id>[A-Za-z0-9-]+)$/, (v) => json(jobState(v.id))],
+        ['GET', /^\/api\/jobs\/(?<id>[A-Za-z0-9-]+)$/, (v, _body, query) => json(jobState(v.id, since(query)))],
     ];
 
     /**
@@ -707,7 +707,27 @@ export function createApi() {
             });
     }
 
-    function jobState(id) {
+    /** How much of a log the caller says it has already, as JobRunner reads it. */
+    function since(query) {
+        return Math.max(0, Number.parseInt(query.since ?? '0', 10) || 0);
+    }
+
+    /**
+     * Up to the last complete line, the way JobRunner reports a log that is still
+     * being written -- so the interface meets the same half-written state here
+     * that it meets against a container.
+     */
+    function wholeLines(log) {
+        const last = log.lastIndexOf('\n');
+
+        return last === -1 ? 0 : last + 1;
+    }
+
+    /**
+     * @param {number} since how much of the log the caller has already, which is
+     *                       what the last answer reported as its size
+     */
+    function jobState(id, since = 0) {
         const job = world.jobs.get(id);
         if (!job) {
             // Same as JobRunner for an id it has no files for.
@@ -720,6 +740,8 @@ export function createApi() {
                 steps: [],
                 elapsed: 0,
                 log: '',
+                size: 0,
+                partial: false,
                 interrupted: false,
             };
         }
@@ -730,6 +752,16 @@ export function createApi() {
         const steps = [];
         let step = null;
         let passed = 0;
+        let written = 0;
+
+        /** One line into the log, answering where in it that line begins. */
+        const write = (line) => {
+            const from = log.length === 0 ? 0 : written + 1;
+            log.push(line);
+            written = from + line.length;
+
+            return from;
+        };
 
         for (const [index, entry] of job.steps.entries()) {
             if (index > last || elapsed < passed) {
@@ -738,13 +770,19 @@ export function createApi() {
             step = { no: index + 1, total: job.steps.length, label: entry.label };
             // The shape JobRunner hands out: the steps as data for the list, and in
             // the log as well -- that one is read as a whole.
-            log.push(`[${step.no}/${step.total}] ${entry.label}`, ...entry.lines);
+            const from = write(`[${step.no}/${step.total}] ${entry.label}`);
+            for (const line of entry.lines) {
+                write(line);
+            }
             steps.push({
                 no: step.no,
                 label: entry.label,
                 output: entry.lines.join('\n'),
                 state: 'done',
                 seconds: entry.seconds,
+                // Where this step begins. The next one's start is where it ends,
+                // which is what says whether it has moved -- as in JobRunner.
+                from,
             });
             passed += entry.seconds;
         }
@@ -765,7 +803,9 @@ export function createApi() {
                           // the page lifts the reason out of the log by.
                           '✗ composer install --no-interaction --no-progress failed with exit status 1.',
                       ];
-            log.push(...said);
+            for (const line of said) {
+                write(line);
+            }
             if (steps.length > 0) {
                 const stopped = steps[steps.length - 1];
                 stopped.state = 'failed';
@@ -776,9 +816,23 @@ export function createApi() {
             step = { ...step, no: step.total };
         }
 
+        const whole = log.join('\n');
+        // While it is being written a log is only reported up to its last complete
+        // line, exactly as JobRunner does it.
+        const size = running ? wholeLines(whole) : whole.length;
+        const carried = since > 0 && since <= size ? since : 0;
+
         return {
             id,
-            steps,
+            steps: steps.map((entry, index) => ({
+                no: entry.no,
+                label: entry.label,
+                // Left out where the step was over before the caller's last look:
+                // it cannot have written another line since.
+                output: carried > 0 && (steps[index + 1]?.from ?? size) <= carried ? null : entry.output,
+                state: entry.state,
+                seconds: entry.seconds,
+            })),
             status: running ? 'running' : job.failsAt === null ? 'done' : 'failed',
             // What it is about and what it runs, as JobRunner reports them: a page
             // opened while it was already running has nothing else to learn it from.
@@ -786,7 +840,9 @@ export function createApi() {
             command: job.command,
             step,
             elapsed: Math.min(elapsed, passed),
-            log: log.join('\n'),
+            log: whole.slice(carried, size),
+            size,
+            partial: carried > 0,
             // The container reports an operation whose process is gone as one that
             // stopped. Nothing here can stop, so it is always false -- and it is here
             // so the shape matches.

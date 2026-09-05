@@ -498,9 +498,16 @@ final class ApiController
         return Response::json($this->php->available());
     }
 
-    public function job(string $id): Response
+    /**
+     * Asked once a second while an operation runs, so it is asked for what has
+     * happened since rather than for everything again -- "since" is what the last
+     * answer reported as its size.
+     *
+     * @param array<string, mixed> $query
+     */
+    public function job(string $id, array $query = []): Response
     {
-        return Response::json($this->jobs->state($id));
+        return Response::json($this->jobs->state($id, max(0, (int) $this->text($query, 'since'))));
     }
 
     /**

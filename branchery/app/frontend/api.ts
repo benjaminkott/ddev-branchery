@@ -158,7 +158,13 @@ export const api = {
             body: JSON.stringify(remote !== undefined ? { remote } : {}),
         }),
 
-    job: (id: string): Promise<Job> => request<Job>(`jobs/${encodeURIComponent(id)}`),
+    /**
+     * What has happened since the last look, which is what `since` says -- the
+     * size the last answer reported. Asked once a second while an operation runs,
+     * and its log is the largest thing this interface ever reads.
+     */
+    job: (id: string, since = 0): Promise<Job> =>
+        request<Job>(`jobs/${encodeURIComponent(id)}${since > 0 ? `?since=${since}` : ''}`),
 
     /** Everything that was done to one worktree, newest first. */
     worktreeJobs: (name: string): Promise<JobSummary[]> => request(`worktrees/${encodeURIComponent(name)}/jobs`),

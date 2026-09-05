@@ -12,6 +12,7 @@ import type { SdsButton } from '@typo3/soul-frontend';
 import { api } from '../api.js';
 import { buildButton, formatDuration, maybe, runSteps, setButtonLabel } from '../dom.js';
 import { EDITOR } from '../editor.js';
+import { gather, unread } from '../journal.js';
 import { poll } from '../polling.js';
 import { kindOf, operationName, refresh, state, stateWords, subscribe, t, trackJob } from '../state.js';
 import type { JobKind, TrackedJob } from '../types.js';
@@ -64,6 +65,9 @@ export function watchJob(
     letGo?.();
     let current = trackJob(id, expected, kind ?? 'create');
     let staged = onStage;
+    // What has been read of the log so far. The container is asked for the rest
+    // of it and not for the whole of it again -- see journal.ts.
+    let journal = unread;
 
     // Only what the reader asked for takes the screen. Work started in a
     // terminal is followed all the same, but a dialog opening by itself over
@@ -106,13 +110,16 @@ export function watchJob(
     // middle with nothing left to draw it forward. A question that fails is
     // simply asked again.
     letGo = poll(
-        () => api.job(id),
+        () => api.job(id, journal.size),
         (job) => {
             if (mine !== generation) {
                 return false;
             }
+            journal = gather(journal, job);
             current = {
                 ...job,
+                log: journal.log,
+                steps: journal.steps,
                 expected: expected ?? (job.subject === '' ? null : job.subject),
                 kind: kind ?? kindOf(job.command),
             };

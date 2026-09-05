@@ -12,6 +12,7 @@ import { html, nothing, render, type TemplateResult } from 'lit';
 import type { RunStep, SdsButton } from '@typo3/soul-frontend';
 import { api } from '../api.js';
 import { buildButton, buildWayOut, formatDuration, formatWhen, query, runSteps, saying } from '../dom.js';
+import { gather, unread } from '../journal.js';
 import { reader } from '../reading.js';
 import { currentRoute } from '../router.js';
 import { stillOn } from '../routes.js';
@@ -649,7 +650,9 @@ async function readJob(id: string): Promise<void> {
         // gone, and asking again would say the same thing.
         const gone = job.status === 'unknown' && job.steps.length === 0;
         opened.set(id, {
-            steps: runSteps(job.steps),
+            // An operation that is over is read once and in full, so nothing is
+            // gathered here -- the rule is the same one either way.
+            steps: runSteps(gather(unread, job).steps),
             trouble: gone ? t('detail.noLog') : '',
             settled: true,
             stopped: stoppedAt(job),
