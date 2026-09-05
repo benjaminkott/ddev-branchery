@@ -119,6 +119,34 @@ describe('the answers the mock hands out', () => {
 });
 
 /**
+ * The other half of the file: what a door answers when it will not answer.
+ *
+ * The status is what the interface reads and acts on -- a 409 puts "come back
+ * in a moment" on the page, a 404 says the thing is gone, a 400 says what was
+ * asked for cannot be done. Both sides decided it apart from one another, and
+ * on the container's side it was decided in public/index.php, which nothing
+ * could reach to check.
+ */
+describe('what the mock refuses, and with which answer', () => {
+    const api = createApi();
+
+    for (const refusal of contract.refusals) {
+        it(`${refusal.ask} is ${refusal.status}`, () => {
+            const [method, address] = refusal.ask.split(' ');
+            const got = call(api, method, address, refusal.body);
+
+            assert.equal(got.status, refusal.status, `${refusal.ask}: ${JSON.stringify(got.body)}`);
+            if (refusal.says !== null) {
+                assert.ok(
+                    String(got.body.error ?? '').includes(refusal.says),
+                    `${refusal.ask} said ${JSON.stringify(got.body.error)}, not ${JSON.stringify(refusal.says)}`,
+                );
+            }
+        });
+    }
+});
+
+/**
  * The third reader of the same file: the interface declares these shapes as
  * TypeScript, by hand, and nothing held the two together -- which is how a
  * field the container never sends came to be typed as one it always does.

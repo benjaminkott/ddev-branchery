@@ -6,7 +6,10 @@
         "container itself -- see tests/Contract/ApiAnswersTest.php and dev/answers.test.mjs.",
         "A type is 'string', 'int', 'bool' or 'mixed'; '?T' is that or null; '[T]' is a list of T;",
         "'@name' is one of the shapes below. Extra fields are a mismatch too: a mock that answers",
-        "with more than the container does is a mock the interface is written against wrongly."
+        "with more than the container does is a mock the interface is written against wrongly.",
+        "'refusals' is the other half: what a door answers when it will not answer. The status is",
+        "what the interface reads and acts on -- a 409 puts 'come back' on the page, a 404 says the",
+        "thing is gone -- and both sides used to decide it apart from one another."
     ],
     "answers": {
         "GET /api/state": "@state",
@@ -25,6 +28,133 @@
         "GET /api/php-versions": "[string]",
         "GET /api/jobs/{id}": "@job"
     },
+    "refusals": [
+        {
+            "ask": "GET /api/worktrees/nowhere/usage",
+            "status": 404,
+            "says": "Unknown worktree."
+        },
+        {
+            "ask": "GET /api/worktrees/nowhere/commits",
+            "status": 404,
+            "says": "Unknown worktree."
+        },
+        {
+            "ask": "GET /api/worktrees/nowhere/commits/9b31d02",
+            "status": 404,
+            "says": "Unknown worktree."
+        },
+        {
+            "ask": "GET /api/worktrees/nowhere/commits/9b31d02/diff?path=a.php",
+            "status": 404,
+            "says": "Unknown worktree."
+        },
+        {
+            "ask": "GET /api/worktrees/nowhere/changes",
+            "status": 404,
+            "says": "Unknown worktree."
+        },
+        {
+            "ask": "GET /api/worktrees/nowhere/changes/diff?path=a.php",
+            "status": 404,
+            "says": "Unknown worktree."
+        },
+        {
+            "ask": "PATCH /api/worktrees/nowhere",
+            "status": 404,
+            "says": "Unknown worktree."
+        },
+        {
+            "ask": "DELETE /api/worktrees/nowhere",
+            "status": 404,
+            "says": "Unknown worktree."
+        },
+        {
+            "ask": "POST /api/worktrees/nowhere/provision",
+            "status": 404,
+            "says": "Unknown worktree."
+        },
+        {
+            "ask": "POST /api/worktrees/nowhere/sync",
+            "status": 404,
+            "says": "Unknown worktree."
+        },
+        {
+            "ask": "POST /api/worktrees/nowhere/pull",
+            "status": 404,
+            "says": "Unknown worktree."
+        },
+        {
+            "ask": "POST /api/worktrees/nowhere/restore",
+            "status": 404,
+            "says": "Unknown worktree."
+        },
+        {
+            "ask": "POST /api/worktrees/nowhere/discard",
+            "status": 404,
+            "says": "Unknown worktree."
+        },
+        {
+            "ask": "GET /api/worktrees/nowhere/jobs",
+            "status": 200,
+            "says": null
+        },
+        {
+            "ask": "POST /api/worktrees",
+            "status": 400,
+            "says": "lowercase letters",
+            "body": {
+                "mode": "fork",
+                "branch": "feature/x",
+                "name": "Not A Name"
+            }
+        },
+        {
+            "ask": "GET /api/branch?branch=--%20--upload-pack%3Dtouch",
+            "status": 400,
+            "says": "Invalid branch name."
+        },
+        {
+            "ask": "GET /api/branch/commits?branch=--%20--upload-pack%3Dtouch",
+            "status": 400,
+            "says": "Invalid branch name."
+        },
+        {
+            "ask": "GET /api/worktrees/preview?branch=--%20--upload-pack%3Dtouch",
+            "status": 400,
+            "says": "Invalid branch name."
+        },
+        {
+            "ask": "DELETE /api/state",
+            "status": 405,
+            "says": "Method not allowed."
+        },
+        {
+            "ask": "GET /api/nothing-here",
+            "status": 404,
+            "says": "Unknown endpoint."
+        },
+        {
+            "ask": "GET /api/worktrees/../changes",
+            "status": 404,
+            "says": "Unknown endpoint."
+        },
+        {
+            "ask": "GET /api/worktrees/.hidden/changes",
+            "status": 404,
+            "says": "Unknown endpoint."
+        },
+        {
+            "ask": "GET /api/worktrees/demo/commits/HEAD",
+            "status": 404,
+            "says": "Unknown endpoint."
+        },
+        {
+            "ask": "GET /api/worktrees/demo/commits/--all",
+            "status": 404,
+            "says": "Unknown endpoint."
+        }
+    ],
     "shapes": {
         "state": {
             "tld": "string",

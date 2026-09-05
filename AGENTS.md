@@ -165,7 +165,9 @@ compose file leaves open.
   three readers are held to it: the container's own answers
   (`tests/Contract/ApiAnswersTest.php`), the mock's (`dev/answers.test.mjs`) and
   the interfaces in `frontend/types.ts`. A field added on one side and not the
-  others fails there rather than reading exactly as it did.
+  others fails there rather than reading exactly as it did. The same file holds
+  what a door answers when it will not answer: the status is what the interface
+  acts on, and both sides used to decide it apart from one another.
 - **The layout of the sources is not an opinion.** Prettier writes it, and
   `npm run check` refuses what was not run through it. It is told to leave the
   inside of a `html` template alone, because whitespace in one of those is

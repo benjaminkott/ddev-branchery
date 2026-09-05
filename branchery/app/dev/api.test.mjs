@@ -117,43 +117,6 @@ describe('what the mock refuses the way the container does', () => {
         assert.equal(answer.body.error, 'Unknown worktree.');
     });
 
-    /**
-     * Every door that names a worktree refuses one it does not know, and says what
-     * the container says. The way that goes wrong is a single door left out of it.
-     */
-    it('refuses a name it does not know, wherever a name is given', () => {
-        const api = createApi();
-        for (const [method, path] of [
-            ['GET', '/api/worktrees/nowhere/usage'],
-            ['GET', '/api/worktrees/nowhere/commits'],
-            ['GET', '/api/worktrees/nowhere/commits/9b31d02'],
-            ['GET', '/api/worktrees/nowhere/commits/9b31d02/diff'],
-            ['GET', '/api/worktrees/nowhere/changes'],
-            ['GET', '/api/worktrees/nowhere/changes/diff'],
-            ['PATCH', '/api/worktrees/nowhere'],
-            ['DELETE', '/api/worktrees/nowhere'],
-            ['POST', '/api/worktrees/nowhere/provision'],
-            ['POST', '/api/worktrees/nowhere/sync'],
-            ['POST', '/api/worktrees/nowhere/pull'],
-            ['POST', '/api/worktrees/nowhere/restore'],
-            ['POST', '/api/worktrees/nowhere/discard'],
-        ]) {
-            const answer = call(api, method, path);
-            assert.equal(answer.status, 404, `${method} ${path}`);
-            assert.equal(answer.body.error, 'Unknown worktree.', `${method} ${path}`);
-        }
-    });
-
-    /**
-     * The one door under a worktree that does not, and the container does not
-     * either: a history outlives the thing it is about.
-     */
-    it('still hands over the history of a worktree that is gone', () => {
-        const answer = call(createApi(), 'GET', '/api/worktrees/nowhere/jobs');
-        assert.equal(answer.status, 200);
-        assert.deepEqual(answer.body, []);
-    });
-
     /** The container names the project's own checkout after the DDEV project. */
     it('names the project entry as DDEV names the project', () => {
         const world = createWorld();

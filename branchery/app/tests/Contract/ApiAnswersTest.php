@@ -6,6 +6,7 @@ namespace App\Tests\Contract;
 
 use App\Controller\ApiController;
 use App\Http\Response;
+use App\Http\Router;
 use App\Tests\Fake\Wiring;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
@@ -269,6 +270,45 @@ final class ApiAnswersTest extends TestCase
     }
 
     /**
+     * The other half of the file: what a door answers when it will not answer.
+     * Asked through the router, because the status a refusal comes back with is
+     * the router's to decide and the interface reads it.
+     */
+    public function testEveryRefusalIsTheOneTheContractWritesDown(): void
+    {
+        $router = new Router($this->wiring->api);
+        $refusals = self::contract()['refusals'];
+        self::assertNotSame([], $refusals, 'no refusals were read out of the contract');
+
+        foreach ($refusals as $refusal) {
+            [$method, $address] = explode(' ', $refusal['ask'], 2);
+            [$path, $asked] = array_pad(explode('?', $address, 2), 2, '');
+            parse_str($asked, $parsed);
+            // As the server hands it over: what stood behind the question mark,
+            // by name. A list where a value was expected is a malformed request
+            // and the controller says so for itself.
+            $query = [];
+            foreach ($parsed as $name => $value) {
+                $query[(string) $name] = $value;
+            }
+
+            $answer = $router->dispatch(
+                $method,
+                $path,
+                isset($refusal['body']) ? (string) json_encode($refusal['body']) : '',
+                $query,
+            );
+
+            self::assertSame($refusal['status'], $answer->status, $refusal['ask'] . ': ' . $answer->body);
+            if ($refusal['says'] !== null) {
+                $said = json_decode($answer->body, true);
+                self::assertIsArray($said);
+                self::assertStringContainsString($refusal['says'], (string) ($said['error'] ?? ''), $refusal['ask']);
+            }
+        }
+    }
+
+    /**
      * The refs as git prints them for BRANCH_FORMAT: where the branch is, when it
      * moved, the commit it stands on and what that commit says. Tabs, because that
      * is the "%09" in the format the two callers share.
@@ -285,7 +325,7 @@ final class ApiAnswersTest extends TestCase
     }
 
     /**
-     * @return array{answers: array<string, string>, shapes: array<string, array<string, string>>}
+     * @return array{answers: array<string, string>, shapes: array<string, array<string, string>>, refusals: list<array{ask: string, status: int, says: ?string, body?: array<string, mixed>}>}
      */
     private static function contract(): array
     {
@@ -293,11 +333,12 @@ final class ApiAnswersTest extends TestCase
         self::assertIsArray($read);
         self::assertIsArray($read['answers'] ?? null);
         self::assertIsArray($read['shapes'] ?? null);
+        self::assertIsArray($read['refusals'] ?? null);
 
         // On a variable rather than on the return: a docblock that hangs on
         // nothing is demoted to a plain comment by the coding-style pass, and the
         // analyser then stops seeing the type it is here to state.
-        /** @var array{answers: array<string, string>, shapes: array<string, array<string, string>>} $contract */
+        /** @var array{answers: array<string, string>, shapes: array<string, array<string, string>>, refusals: list<array{ask: string, status: int, says: ?string, body?: array<string, mixed>}>} $contract */
         $contract = $read;
 
         return $contract;
