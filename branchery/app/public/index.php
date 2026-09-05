@@ -3,11 +3,8 @@
 declare(strict_types=1);
 
 use App\Container;
-use App\Http\BusyException;
-use App\Http\MissingException;
 use App\Http\Origin;
 use App\Http\Response;
-use App\Http\Router;
 
 require_once dirname(__DIR__) . '/vendor/autoload.php';
 
@@ -15,7 +12,7 @@ require_once dirname(__DIR__) . '/vendor/autoload.php';
 // takes the status code with it. They belong in the server's log.
 ini_set('display_errors', 'stderr');
 
-$router = new Router(Container::fromEnvironment());
+$container = Container::fromEnvironment();
 $path = parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?: '/';
 
 // Before anything is read or run: this API asks nobody who they are, so a
@@ -26,26 +23,17 @@ if (Origin::isForeign($_SERVER)) {
     exit;
 }
 
+// What a request becomes -- the answer and the refusal both -- is the router's;
+// what is left here is the plumbing around it. The last catch is for what
+// happens before there is a router at all: an environment this cannot be built
+// from is still a request somebody is waiting on.
 try {
-    $response = $router->dispatch(
+    $response = $container->router()->dispatch(
         (string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'),
         $path,
         (string) file_get_contents('php://input'),
         $_GET,
     );
-} catch (BusyException $exception) {
-    // Nothing is wrong with the request or with this: the worktree it is about
-    // is already being worked on. Said as a conflict, because a 500 reads as a
-    // server that broke -- and this one is asking the caller to come back.
-    $response = Response::json(['error' => $exception->getMessage()], 409);
-} catch (MissingException $exception) {
-    // What was asked about is not here, and the message says which of them:
-    // a worktree that was removed, a branch that was pruned, a commit an old
-    // address still names. Not a fault and not the caller's mistake.
-    $response = Response::json(['error' => $exception->getMessage()], 404);
-} catch (InvalidArgumentException $exception) {
-    // What the caller asked for cannot be done, and the message says why.
-    $response = Response::json(['error' => $exception->getMessage()], 400);
 } catch (Throwable $exception) {
     $response = Response::json(['error' => $exception->getMessage()], 500);
 }

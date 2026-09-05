@@ -4,23 +4,55 @@ declare(strict_types=1);
 
 namespace App\Http;
 
-use App\Container;
+use App\Controller\ApiController;
 
 /**
- * The routes, written as a table. A path is matched by one regular expression
- * each, and what a segment may contain is part of that expression -- so a name
- * that is not a worktree name never reaches the code behind it.
+ * What a request becomes: the routes as a table, and the answer a refusal is
+ * given back as.
+ *
+ * A path is matched by one regular expression each, and what a segment may
+ * contain is part of that expression -- so a name that is not a worktree name
+ * never reaches the code behind it.
+ *
+ * The refusals are here rather than in the entry point, where they were: which
+ * status a caller is told to come back with is a decision the interface and the
+ * mocked API are both written against, and it was made in the one file nothing
+ * can reach to check.
  */
 final readonly class Router
 {
-    public function __construct(private Container $container)
+    public function __construct(private ApiController $api)
     {
     }
 
     /** @param array<string, mixed> $query what stood behind the question mark */
     public function dispatch(string $method, string $path, string $body, array $query = []): Response
     {
-        $api = $this->container->api();
+        try {
+            return $this->answer($method, $path, $body, $query);
+        } catch (BusyException $exception) {
+            // Nothing is wrong with the request or with this: the worktree it is
+            // about is already being worked on. Said as a conflict, because a 500
+            // reads as a server that broke -- and this one is asking the caller to
+            // come back.
+            return Response::json(['error' => $exception->getMessage()], 409);
+        } catch (MissingException $exception) {
+            // What was asked about is not here, and the message says which of them:
+            // a worktree that was removed, a branch that was pruned, a commit an old
+            // address still names. Not a fault and not the caller's mistake.
+            return Response::json(['error' => $exception->getMessage()], 404);
+        } catch (\InvalidArgumentException $exception) {
+            // What the caller asked for cannot be done, and the message says why.
+            return Response::json(['error' => $exception->getMessage()], 400);
+        } catch (\Throwable $exception) {
+            return Response::json(['error' => $exception->getMessage()], 500);
+        }
+    }
+
+    /** @param array<string, mixed> $query */
+    private function answer(string $method, string $path, string $body, array $query): Response
+    {
+        $api = $this->api;
         // Wider than a worktree name, which is Project::NAME_PATTERN: the same
         // doors reach the project's own checkout, and that name is DDEV's -- where
         // a dot and a capital are allowed. What is not a worktree is still held to

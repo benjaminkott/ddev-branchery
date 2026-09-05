@@ -28,6 +28,7 @@ use App\Git\History;
 use App\Git\Repository;
 use App\Git\Runner;
 use App\Git\WorkingCopy;
+use App\Http\Router;
 use App\Operation\BranchMoves;
 use App\Operation\CarriedFiles;
 use App\Operation\Contexts;
@@ -470,6 +471,12 @@ final class Container
             $this->snapshot(),
             $this->exposure(),
         ));
+    }
+
+    /** What a request becomes, and what it is dispatched to. */
+    public function router(): Router
+    {
+        return $this->share(Router::class, fn (): Router => new Router($this->api()));
     }
 
     public function snapshot(): Snapshot
