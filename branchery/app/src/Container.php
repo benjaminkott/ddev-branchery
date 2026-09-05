@@ -118,6 +118,32 @@ final class Container
         return new self($env);
     }
 
+    /**
+     * The same graph, around the three things that cannot be read off an
+     * environment: which project, which container the tools are run in, and what
+     * is published to the machine.
+     *
+     * For tests, and it is here rather than beside them on purpose. Written out
+     * there it was a second wiring of the same graph -- one that said of itself
+     * that if the two ever disagreed it was the wrong one, with nothing to say
+     * whether they had. Everything a test does not decide is this file's, which
+     * is the only way the graph a test walks is the graph that runs.
+     *
+     * @param array<string, string> $env for the few settings that are read off
+     *                                   one -- who the files written belong to
+     */
+    public static function around(Project $project, WebContainer $web, PublishedPorts $ports, array $env = []): self
+    {
+        $container = new self($env);
+        $container->shared = [
+            Project::class => $project,
+            WebContainer::class => $web,
+            PublishedPorts::class => $ports,
+        ];
+
+        return $container;
+    }
+
     public function project(): Project
     {
         return $this->share(Project::class, function (): Project {
@@ -289,7 +315,7 @@ final class Container
      */
     public function ports(): PublishedPorts
     {
-        return $this->share(DockerPorts::class, fn (): PublishedPorts => new DockerPorts());
+        return $this->share(PublishedPorts::class, fn (): PublishedPorts => new DockerPorts());
     }
 
     public function exposure(): Exposure

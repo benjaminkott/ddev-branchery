@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Tests;
 
 use App\Container;
+use App\Project;
+use App\Tests\Fake\Ports;
+use App\Tests\Fake\RecordingContainer;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -12,11 +15,11 @@ use PHPUnit\Framework\TestCase;
 /**
  * That the graph this application actually runs on can be built.
  *
- * Everything else here wires its own -- see App\Tests\Fake\Wiring, which says of
- * itself that if the two ever disagree, it is wired wrongly. Nothing checked
- * that they agree, and nothing went through the real one at all: a container
- * that could not build a thing would have been found by whoever started the
- * application, which is a developer and not a run of this suite.
+ * It is the only graph there is: App\Tests\Fake\Wiring asks for this one around
+ * a project of its own, so what an operation is walked through here is what a
+ * developer gets. Before that it was a second wiring standing beside this file,
+ * and a container that could not build a thing would have been found by whoever
+ * started the application rather than by a run of this suite.
  *
  * Building is free of side effects -- every constructor here stores what it was
  * given -- so the whole graph can be asked for without a project, a container or
@@ -81,5 +84,32 @@ final class GraphTest extends TestCase
             $container->{$service}(),
             sprintf('%s() answers with a new one every time it is asked', $service),
         );
+    }
+
+    /**
+     * The three a test hands in are the three it gets back.
+     *
+     * Asked here because of what a wrong answer does rather than because it is
+     * likely: every test in this suite runs on this graph, and a container that
+     * quietly handed back its own would put the whole suite on the docker socket
+     * of whoever ran it -- running the tools against real projects, in a test
+     * that says it is talking to nothing.
+     */
+    public function testTheGraphAroundSomethingIsBuiltAroundIt(): void
+    {
+        $project = new Project(
+            projectRoot: '/tmp/nowhere',
+            hostProjectRoot: '/tmp/nowhere',
+            projectName: 'blog',
+            worktrees: '.worktrees',
+        );
+        $web = new RecordingContainer();
+        $ports = new Ports();
+
+        $container = Container::around($project, $web, $ports);
+
+        self::assertSame($project, $container->project());
+        self::assertSame($web, $container->web());
+        self::assertSame($ports, $container->ports());
     }
 }
