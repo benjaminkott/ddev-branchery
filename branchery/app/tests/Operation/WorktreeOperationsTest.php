@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Operation;
 
 use App\Jobs\StepReporter;
+use App\Locking\Locks;
 use App\Operation\BranchMoves;
 use App\Operation\CarriedFiles;
 use App\Operation\DataTransfer;
@@ -75,6 +76,37 @@ final class WorktreeOperationsTest extends TestCase
             $web->ran('worktree add -B'),
             'the checkout reset the branch onto its remote: ' . implode("\n", $web->lines()),
         );
+    }
+
+    /**
+     * The worktree is claimed for the whole of an operation, and the claim is
+     * held by nothing but a local variable's life -- `$claim = $this->claim(...)`,
+     * never read again. Nothing about that is a type or a call the analyser can
+     * follow, so a cleanup that drops the assignment as unused drops the
+     * exclusion with it, and every other test here goes on passing.
+     *
+     * Asked of a second Locks over the same files, which is what another process
+     * is: flock is per open file, so this one blocks against the operation's.
+     */
+    public function testAWorktreeIsClaimedForTheWholeOfAnOperation(): void
+    {
+        $web = $this->wiring->web;
+        $web->answer('rev-parse --verify --quiet refs/heads/my-fix', 'refs/heads/my-fix');
+
+        $beside = new Locks($this->wiring->project, $this->wiring->files);
+        $key = Locks::forWorktree('my-fix');
+        $seen = [];
+        $web->whileRunning('worktree add', static function () use ($beside, $key, &$seen): void {
+            $seen[] = $beside->heldElsewhere($key);
+        });
+
+        $this->wiring->manager->add('my-fix', null, $this->reporter());
+
+        self::assertNotSame([], $seen, 'no checkout ran, so nothing was asked about the claim');
+        self::assertNotContains(false, $seen, 'the worktree was not claimed while it was being built');
+        // And let go of at the far end, or the next operation on it would wait
+        // for a process that has finished.
+        self::assertFalse($beside->heldElsewhere($key), 'the claim outlived the operation');
     }
 
     /**

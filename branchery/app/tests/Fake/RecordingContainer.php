@@ -33,6 +33,9 @@ final class RecordingContainer implements WebContainer
     /** @var (\Closure(string): void)|null */
     private ?\Closure $sink = null;
 
+    /** @var list<array{string, \Closure(): void}> */
+    private array $watchers = [];
+
     /**
      * What to say to a command whose line carries $match. The first one that
      * matches answers, so a test may put the special case before the general one.
@@ -40,6 +43,23 @@ final class RecordingContainer implements WebContainer
     public function answer(string $match, string $output = '', int $exitCode = 0, string $errorOutput = ''): self
     {
         $this->answers[] = [$match, new CommandResult($exitCode, $output, $errorOutput)];
+
+        return $this;
+    }
+
+    /**
+     * What to look at while a command carrying $match is running.
+     *
+     * The only way to ask a question about the middle of an operation, and some
+     * questions have an answer nowhere else: whether the worktree is claimed
+     * while it is being built is true only between the claim and the release,
+     * and both ends of that are inside one call.
+     *
+     * @param \Closure(): void $watcher
+     */
+    public function whileRunning(string $match, \Closure $watcher): self
+    {
+        $this->watchers[] = [$match, $watcher];
 
         return $this;
     }
@@ -56,7 +76,13 @@ final class RecordingContainer implements WebContainer
     public function run(array $command, ?string $workingDirectory = null, bool $stream = false, array $environment = []): CommandResult
     {
         $this->ran[] = $command;
-        $result = $this->answerTo(implode(' ', $command));
+        $ran = implode(' ', $command);
+        foreach ($this->watchers as [$match, $watcher]) {
+            if (str_contains($ran, $match)) {
+                $watcher();
+            }
+        }
+        $result = $this->answerTo($ran);
 
         // As the real one does: what work writes goes into the operation's log,
         // and a step whose output never arrives reads as a step that did nothing.
