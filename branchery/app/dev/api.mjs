@@ -55,31 +55,39 @@ export function createApi() {
         ['POST', /^\/api\/worktrees$/, (_, payload) => create(payload)],
         // Before the pattern that would swallow it, as in the container.
         ['GET', /^\/api\/worktrees\/preview$/, (_, _payload, query) => preview(query)],
-        ['PATCH', /^\/api\/worktrees\/(?<name>[a-z0-9-]+)$/, (v, payload) => update(v.name, payload)],
-        ['POST', /^\/api\/worktrees\/(?<name>[a-z0-9-]+)\/provision$/, (v, payload) => provision(v.name, payload)],
-        ['POST', /^\/api\/worktrees\/(?<name>[a-z0-9-]+)\/sync$/, (v, payload) => sync(v.name, payload)],
-        ['POST', /^\/api\/worktrees\/(?<name>[a-z0-9-]+)\/pull$/, (v) => pull(v.name)],
-        ['POST', /^\/api\/worktrees\/(?<name>[a-z0-9-]+)\/restore$/, (v) => restore(v.name)],
-        ['POST', /^\/api\/worktrees\/(?<name>[a-z0-9-]+)\/discard$/, (v) => discard(v.name)],
-        ['GET', /^\/api\/worktrees\/(?<name>[a-z0-9-]+)\/commits$/, (v, _payload, query) => commits(v.name, query)],
+        ['PATCH', /^\/api\/worktrees\/(?<name>[A-Za-z0-9][A-Za-z0-9.-]*)$/, (v, payload) => update(v.name, payload)],
+        [
+            'POST',
+            /^\/api\/worktrees\/(?<name>[A-Za-z0-9][A-Za-z0-9.-]*)\/provision$/,
+            (v, payload) => provision(v.name, payload),
+        ],
+        ['POST', /^\/api\/worktrees\/(?<name>[A-Za-z0-9][A-Za-z0-9.-]*)\/sync$/, (v, payload) => sync(v.name, payload)],
+        ['POST', /^\/api\/worktrees\/(?<name>[A-Za-z0-9][A-Za-z0-9.-]*)\/pull$/, (v) => pull(v.name)],
+        ['POST', /^\/api\/worktrees\/(?<name>[A-Za-z0-9][A-Za-z0-9.-]*)\/restore$/, (v) => restore(v.name)],
+        ['POST', /^\/api\/worktrees\/(?<name>[A-Za-z0-9][A-Za-z0-9.-]*)\/discard$/, (v) => discard(v.name)],
         [
             'GET',
-            /^\/api\/worktrees\/(?<name>[a-z0-9-]+)\/commits\/(?<sha>[0-9a-f]{4,40})$/,
+            /^\/api\/worktrees\/(?<name>[A-Za-z0-9][A-Za-z0-9.-]*)\/commits$/,
+            (v, _payload, query) => commits(v.name, query),
+        ],
+        [
+            'GET',
+            /^\/api\/worktrees\/(?<name>[A-Za-z0-9][A-Za-z0-9.-]*)\/commits\/(?<sha>[0-9a-f]{4,40})$/,
             (v) => commit(v.name, v.sha),
         ],
         [
             'GET',
-            /^\/api\/worktrees\/(?<name>[a-z0-9-]+)\/commits\/(?<sha>[0-9a-f]{4,40})\/diff$/,
+            /^\/api\/worktrees\/(?<name>[A-Za-z0-9][A-Za-z0-9.-]*)\/commits\/(?<sha>[0-9a-f]{4,40})\/diff$/,
             (v, _payload, query) => commitDiff(v.name, v.sha, query),
         ],
-        ['GET', /^\/api\/worktrees\/(?<name>[a-z0-9-]+)\/changes$/, (v) => changes(v.name)],
+        ['GET', /^\/api\/worktrees\/(?<name>[A-Za-z0-9][A-Za-z0-9.-]*)\/changes$/, (v) => changes(v.name)],
         [
             'GET',
-            /^\/api\/worktrees\/(?<name>[a-z0-9-]+)\/changes\/diff$/,
+            /^\/api\/worktrees\/(?<name>[A-Za-z0-9][A-Za-z0-9.-]*)\/changes\/diff$/,
             (v, _payload, query) => changeDiff(v.name, query),
         ],
-        ['GET', /^\/api\/worktrees\/(?<name>[a-z0-9-]+)\/usage$/, (v) => usage(v.name)],
-        ['DELETE', /^\/api\/worktrees\/(?<name>[a-z0-9-]+)$/, (v) => remove(v.name)],
+        ['GET', /^\/api\/worktrees\/(?<name>[A-Za-z0-9][A-Za-z0-9.-]*)\/usage$/, (v) => usage(v.name)],
+        ['DELETE', /^\/api\/worktrees\/(?<name>[A-Za-z0-9][A-Za-z0-9.-]*)$/, (v) => remove(v.name)],
         ['GET', /^\/api\/branches$/, () => json(available())],
         // The branch travels behind the question mark and not in the path: its
         // name has slashes in it, and a segment that may hold one cannot say where
@@ -88,7 +96,7 @@ export function createApi() {
         ['GET', /^\/api\/branch\/commits$/, (_v, _payload, query) => branchCommits(query)],
         ['POST', /^\/api\/fetch$/, (_, payload) => fetch(payload)],
         ['GET', /^\/api\/php-versions$/, () => json(world.phpVersions)],
-        ['GET', /^\/api\/worktrees\/(?<name>[a-z0-9-]+)\/jobs$/, (v) => json(history(v.name))],
+        ['GET', /^\/api\/worktrees\/(?<name>[A-Za-z0-9][A-Za-z0-9.-]*)\/jobs$/, (v) => json(history(v.name))],
         ['GET', /^\/api\/jobs\/(?<id>[A-Za-z0-9-]+)$/, (v, _body, query) => json(jobState(v.id, since(query)))],
     ];
 

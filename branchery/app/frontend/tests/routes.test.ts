@@ -49,6 +49,28 @@ describe('routeOf', () => {
         assert.deepEqual(routeOf('#/b/review/95618'), { view: 'branch', name: 'review/95618' });
     });
 
+    /**
+     * The project's own checkout is opened at the same addresses, and its name is
+     * DDEV's rather than Branchery's: a project called "shop.example" had a row in
+     * the list that led back to the list.
+     */
+    it("opens a checkout whose name is the project's own", () => {
+        assert.deepEqual(routeOf('#/w/shop.example'), { view: 'worktree', name: 'shop.example' });
+        assert.deepEqual(routeOf('#/w/shop.example/c/9b31d02'), {
+            view: 'commit',
+            name: 'shop.example',
+            sha: '9b31d02',
+            branch: '',
+        });
+    });
+
+    /** A segment that becomes a path in the container is not one of those. */
+    it('takes no way out of the worktrees for a checkout', () => {
+        assert.deepEqual(routeOf('#/w/..'), { view: 'overview' });
+        assert.deepEqual(routeOf('#/w/.'), { view: 'overview' });
+        assert.deepEqual(routeOf('#/w/-x'), { view: 'overview' });
+    });
+
     it('takes nothing but a hash for a commit', () => {
         assert.deepEqual(routeOf('#/w/v12/c/main'), { view: 'overview' });
         assert.deepEqual(routeOf('#/w/v12/c/B5607CA'), { view: 'overview' });

@@ -325,6 +325,20 @@ describe('what both sides have to say the same way', () => {
     });
 
     /**
+     * The addresses of a checkout are read in three places -- the container's
+     * router, the interface's own, and the mock -- and the project's own checkout
+     * is opened at them under a name DDEV chose. Held apart from a worktree name,
+     * which is narrower: a router that took only those left the project's row
+     * leading back to the list.
+     */
+    it('names a checkout in an address the same way on both sides', () => {
+        assert.equal(
+            declared('../frontend/routes.ts', /^const CHECKOUT = '(.+)';$/m),
+            declared('../src/Http/Router.php', /\$name = '\(\?<name>(.+)\)';/),
+        );
+    });
+
+    /**
      * The interface writes it out before the worktree exists, so what it makes has
      * to be a name the container would take. Made the same way in three languages,
      * and the two written in this one are held to being the same text.

@@ -21,7 +21,12 @@ final readonly class Router
     public function dispatch(string $method, string $path, string $body, array $query = []): Response
     {
         $api = $this->container->api();
-        $name = '(?<name>[a-z0-9-]+)';
+        // Wider than a worktree name, which is Project::NAME_PATTERN: the same
+        // doors reach the project's own checkout, and that name is DDEV's -- where
+        // a dot and a capital are allowed. What is not a worktree is still held to
+        // being the project, one comparison behind this; what a leading letter or
+        // digit keeps out is "." and "..", which are directories too.
+        $name = '(?<name>[A-Za-z0-9][A-Za-z0-9.-]*)';
         // A commit is named by its hash and by nothing else. Written into the
         // pattern rather than checked behind it, so a segment that is a branch
         // name, a date or an option never reaches git.

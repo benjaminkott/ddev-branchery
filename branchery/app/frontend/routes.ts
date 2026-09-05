@@ -19,6 +19,20 @@ export type Route =
     | { view: 'commit'; name: string; sha: string; branch: string };
 
 /**
+ * What may name a checkout in an address, as the container's router spells it.
+ * Wider than a worktree name, which is lowercase, digits and hyphens: the same
+ * pages are opened for the project's own checkout, and that name is DDEV's --
+ * where a dot and a capital are allowed. A project called "shop.example" had a
+ * row in the list that led back to the list.
+ *
+ * A leading letter or digit is what keeps "." and ".." out of a segment that
+ * becomes a path in the container.
+ */
+const CHECKOUT = '[A-Za-z0-9][A-Za-z0-9.-]*';
+const CHECKOUT_PAGE = new RegExp(`^/w/(${CHECKOUT})$`);
+const ON_CHECKOUT = new RegExp(`^/w/(${CHECKOUT})/c/([0-9a-f]{4,40})$`);
+
+/**
  * What an address means.
  *
  *   #/                        the worktrees
@@ -36,11 +50,11 @@ export type Route =
  */
 export function routeOf(hash: string): Route {
     const path = hash.replace(/^#/, '');
-    const commit = /^\/w\/([a-z0-9-]+)\/c\/([0-9a-f]{4,40})$/.exec(path);
+    const commit = ON_CHECKOUT.exec(path);
     if (commit?.[1] !== undefined && commit[2] !== undefined) {
         return { view: 'commit', name: commit[1], sha: commit[2], branch: '' };
     }
-    const worktree = /^\/w\/([a-z0-9-]+)$/.exec(path);
+    const worktree = CHECKOUT_PAGE.exec(path);
     if (worktree?.[1] !== undefined) {
         return { view: 'worktree', name: worktree[1] };
     }
