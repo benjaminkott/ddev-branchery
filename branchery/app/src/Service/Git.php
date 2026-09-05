@@ -515,7 +515,10 @@ final class Git
      */
     public function resetToUpstream(string $name): CommandResult
     {
-        return $this->workInWorktree($name, 'reset', '--hard', '@{upstream}');
+        $result = $this->workInWorktree($name, 'reset', '--hard', '@{upstream}');
+        $this->forget();
+
+        return $result;
     }
 
     /**
@@ -524,7 +527,10 @@ final class Git
      */
     public function fastForward(string $name): CommandResult
     {
-        return $this->workInWorktree($name, 'merge', '--ff-only', '@{upstream}');
+        $result = $this->workInWorktree($name, 'merge', '--ff-only', '@{upstream}');
+        $this->forget();
+
+        return $result;
     }
 
     /**
