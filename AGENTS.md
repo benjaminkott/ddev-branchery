@@ -114,11 +114,14 @@ container write what they write in functions that take what they need and print
 what they make, and that half is read here. Applying it -- the pools, the
 reloads -- is the half that still needs a project.
 
-What no suite covers, because it needs a project of another shape: PostgreSQL
-and Apache. Both are walked by hand -- `ddev config --database=postgres:16`,
-`--webserver-type=apache-fpm` -- and both have been, through every operation. A
-change to `DatabaseOperations` or to what `install.yaml` writes for Apache is a
-change to walk them again.
+The same suite walks two more project shapes, because the paths that only exist
+in them are the destructive ones: `DatabaseOperations` speaks a second dialect
+and every statement in it drops or copies something, and `install.yaml` writes
+Apache a module of its own. `BRANCHERY_TEST_DATABASE` and
+`BRANCHERY_TEST_WEBSERVER` say which shape the project is configured as, and the
+`shapes` job in the workflow runs both -- nightly and on `main`, not on every
+pull request, each being a DDEV project built from nothing. Locally:
+`BRANCHERY_TEST_DATABASE=postgres:16 bats tests/test.bats`.
 
 ### The application is an image, and a project installs a tag
 

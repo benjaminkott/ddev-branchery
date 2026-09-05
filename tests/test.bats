@@ -22,11 +22,72 @@ setup() {
   git add public/index.php
   git -c user.email=test@example.com -c user.name=Test commit -q -m "initial"
 
-  ddev config --project-name="${PROJNAME}" --project-type=php --docroot=public
+  # The shape of the project is the suite's one variable. Everything here has
+  # always run against DDEV's own defaults -- MariaDB behind nginx -- and the
+  # two paths that only exist elsewhere are the ones nothing walked:
+  # DatabaseOperations speaks a second dialect, and install.yaml writes Apache
+  # a module of its own. Named rather than switched on, so the row in the
+  # workflow says which project form it walked.
+  export TEST_DATABASE="${BRANCHERY_TEST_DATABASE:-}"
+  export TEST_WEBSERVER="${BRANCHERY_TEST_WEBSERVER:-}"
+
+  ddev config --project-name="${PROJNAME}" --project-type=php --docroot=public \
+    ${TEST_DATABASE:+--database="${TEST_DATABASE}"} \
+    ${TEST_WEBSERVER:+--webserver-type="${TEST_WEBSERVER}"}
   # Nothing about a project is guessed: a worktree serves its checkout unless
   # the project says what is served, and this one serves public/.
   printf 'docroot: public\n' > .ddev/branchery.yaml
   ddev start -y >/dev/null
+}
+
+# Which of the two clients the project's server is asked through. The
+# application decides this from DDEV's own environment; the suite decides it
+# from what it configured, and the two have to agree or the tests below would
+# be checking a server nothing wrote to.
+db_family() {
+  case "${TEST_DATABASE}" in
+    postgres*) printf 'postgres' ;;
+    *) printf 'mysql' ;;
+  esac
+}
+
+# One statement against one database. The clients differ in everything but
+# that, so the tests below say what they want and this says how it is asked.
+db_sql() {
+  local database="$1" statement="$2"
+  if [ "$(db_family)" = postgres ]; then
+    ddev psql -d "${database}" -c "${statement}"
+  else
+    ddev mysql -uroot -proot "${database}" -e "${statement}"
+  fi
+}
+
+# What tables a database holds, as lines. "show tables" has no counterpart in
+# postgres, and its catalogue is where the same question is asked.
+db_tables() {
+  if [ "$(db_family)" = postgres ]; then
+    ddev psql -d "$1" -t -c "SELECT tablename FROM pg_tables WHERE schemaname = 'public'"
+  else
+    ddev mysql -uroot -proot "$1" -e "show tables"
+  fi
+}
+
+# What databases the server holds, as lines.
+db_databases() {
+  if [ "$(db_family)" = postgres ]; then
+    ddev psql -d postgres -t -c "SELECT datname FROM pg_database"
+  else
+    ddev mysql -uroot -proot -e "show databases"
+  fi
+}
+
+# A database made outside Branchery, which is what an orphan is.
+db_create() {
+  if [ "$(db_family)" = postgres ]; then
+    ddev psql -d postgres -c "CREATE DATABASE \"$1\""
+  else
+    ddev mysql -uroot -proot -e "create database \`$1\`"
+  fi
 }
 
 teardown() {
@@ -278,43 +339,43 @@ health_check() {
 
   # Fetching the data again: the database is made anew rather than added to,
   # so anything put in it in the meantime is gone afterwards.
-  ddev mysql -uroot -proot branchery_demo -e "create table marker (id int)" >/dev/null 2>&1
+  db_sql branchery_demo "create table marker (id int)" >/dev/null 2>&1
   ddev branchery database:sync demo >/dev/null
-  run ddev mysql -uroot -proot branchery_demo -e "show tables"
+  run db_tables branchery_demo
   echo "$output" | grep -vq "marker"
 
   # Provisioning again keeps the data; provisioning fresh does not. Both have to
   # end with a worktree that serves -- the failure this guards against left one
   # behind with neither database nor configuration.
-  ddev mysql -uroot -proot branchery_demo -e "create table marker (id int)" >/dev/null 2>&1
+  db_sql branchery_demo "create table marker (id int)" >/dev/null 2>&1
   ddev branchery worktree:provision demo >/dev/null
-  run ddev mysql -uroot -proot branchery_demo -e "show tables"
+  run db_tables branchery_demo
   echo "$output" | grep -q "marker"
 
   ddev branchery worktree:provision demo --fresh >/dev/null
-  run ddev mysql -uroot -proot branchery_demo -e "show tables"
+  run db_tables branchery_demo
   echo "$output" | grep -vq "marker"
   run curl -sfk "https://demo.${PROJNAME}.ddev.site/"
   [ "$status" -eq 0 ]
 
   # A database whose worktree is gone is not dropped behind the developer's
   # back; it is listed, and only removed when that is asked for.
-  ddev mysql -uroot -proot -e "create database branchery_orphan" >/dev/null 2>&1
+  db_create branchery_orphan >/dev/null 2>&1
   run ddev branchery database:prune
   [ "$status" -eq 0 ]
   echo "$output" | grep -q "branchery_orphan"
-  run ddev mysql -uroot -proot -e "show databases"
+  run db_databases
   echo "$output" | grep -q "branchery_orphan"
 
   ddev branchery database:prune --drop >/dev/null
-  run ddev mysql -uroot -proot -e "show databases"
+  run db_databases
   echo "$output" | grep -vq "branchery_orphan"
   echo "$output" | grep -q "branchery_demo"
 
   # And nothing of it is left when it goes.
   ddev branchery worktree:remove demo >/dev/null
   [ ! -d "${TESTDIR}/.worktrees/demo" ]
-  run ddev mysql -uroot -proot -e "show databases"
+  run db_databases
   echo "$output" | grep -vq "branchery_demo"
 }
 

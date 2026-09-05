@@ -101,3 +101,43 @@ jobs:
           debug_enabled: ${{ github.event.inputs.debug_enabled }}
           addon_repository: ${{ env.GITHUB_REPOSITORY }}
           addon_ref: ${{ env.GITHUB_REF }}
+
+  # The same suite over the two project shapes it has never been run against.
+  # DatabaseOperations speaks a second dialect, and every statement in it drops
+  # or copies something; install.yaml writes Apache a module of its own and
+  # maps the addresses through VirtualDocumentRoot rather than a server block.
+  # Both were walked by hand and by nothing else, which is the least a
+  # destructive path deserves.
+  #
+  # Not on every pull request: each of these is a DDEV project built from
+  # nothing, and the shapes break when the other side moves rather than when
+  # this one does -- which is what the nightly run is for. "Run workflow"
+  # reaches it for a change that touches either.
+  shapes:
+    if: github.event_name != 'pull_request'
+
+    strategy:
+      matrix:
+        include:
+          - shape: postgres
+            database: postgres:16
+            webserver: ''
+          - shape: apache
+            database: ''
+            webserver: apache-fpm
+      fail-fast: false
+
+    runs-on: ubuntu-latest
+
+    env:
+      BRANCHERY_TEST_DATABASE: ${{ matrix.database }}
+      BRANCHERY_TEST_WEBSERVER: ${{ matrix.webserver }}
+
+    steps:
+      - uses: ddev/github-action-add-on-test@v2
+        with:
+          ddev_version: stable
+          token: ${{ secrets.GITHUB_TOKEN }}
+          debug_enabled: ${{ github.event.inputs.debug_enabled }}
+          addon_repository: ${{ env.GITHUB_REPOSITORY }}
+          addon_ref: ${{ env.GITHUB_REF }}
