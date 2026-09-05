@@ -59,6 +59,13 @@ jobs:
           tools: composer
       - run: npm ci
       - run: npm run check
+      # The bundle is versioned and the image copies it, so a source change
+      # without a rebuild ships an interface that is not the one in the sources
+      # -- and passes everything above without a word. "check" has just written
+      # what the sources make; if that differs from what was committed, the
+      # commit is the stale one.
+      - name: The built interface is the one the sources make
+        run: git diff --exit-code -- public
       - run: composer install --no-interaction --prefer-dist
       - run: composer stan
       - run: composer test
