@@ -14,6 +14,7 @@ use App\Service\Locks;
 use App\Service\PhpVersions;
 use App\Service\Project;
 use App\Service\Recipes;
+use App\Service\Snapshot;
 use App\Service\WorktreeManager;
 use App\Service\WorktreeRepository;
 use App\Service\WorktreeUsage;
@@ -36,10 +37,18 @@ final class ApiController
         private readonly Locks $locks,
         private readonly Installation $installation,
         private readonly WorktreeUsage $usage,
+        private readonly Snapshot $snapshot,
     ) {
     }
 
     public function state(): Response
+    {
+        // Through the snapshot: this is the one answer the page asks for over and
+        // over, and reading it is five process starts in the web container.
+        return $this->snapshot->of(fn (): Response => $this->readState());
+    }
+
+    private function readState(): Response
     {
         // The list before the project's own row, although it is drawn under it:
         // asked in this order the second question is answered out of what the first

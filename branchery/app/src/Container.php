@@ -38,6 +38,7 @@ use App\Service\Project;
 use App\Service\ProjectDatabase;
 use App\Service\Recipes;
 use App\Service\Runtimes;
+use App\Service\Snapshot;
 use App\Service\SshAgent;
 use App\Service\Surroundings;
 use App\Service\VersionMap;
@@ -320,7 +321,13 @@ final class Container
             $this->locks(),
             $this->installation(),
             $this->usage(),
+            $this->snapshot(),
         ));
+    }
+
+    public function snapshot(): Snapshot
+    {
+        return $this->share(Snapshot::class, fn (): Snapshot => new Snapshot($this->project(), $this->files()));
     }
 
     /** @return list<Command> */

@@ -27,6 +27,12 @@ final readonly class Response
         );
     }
 
+    /** An answer that was written a moment ago, handed out again -- see Snapshot. */
+    public static function kept(string $body): self
+    {
+        return new self(200, $body, ['Content-Type' => 'application/json']);
+    }
+
     public static function html(string $markup, int $status = 200): self
     {
         return new self($status, $markup, ['Content-Type' => 'text/html; charset=utf-8']);

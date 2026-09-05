@@ -64,7 +64,7 @@ describe('the mocked API', () => {
  */
 function containerKeys(method) {
     const php = readFileSync(resolve(here, '../src/Controller/ApiController.php'), 'utf8');
-    const from = php.indexOf(`public function ${method}(`);
+    const from = php.indexOf(`function ${method}(`);
     const body = php.slice(from, php.indexOf('\n    }', from));
 
     return [...body.matchAll(/^ {12}'(\w+)' =>/gm)].map((hit) => hit[1]);
@@ -93,7 +93,9 @@ describe('the state the whole page is drawn from', () => {
      * grows.
      */
     it('is made of what the container says it is made of', () => {
-        const container = containerKeys('state');
+        // The method that builds the answer, not the one the route calls: that one
+        // hands the work to Snapshot and carries no keys of its own.
+        const container = containerKeys('readState');
         const mock = Object.keys(call(createApi(), 'GET', '/api/state').body);
 
         assert.ok(container.length > 0, 'no fields were read out of the container');
