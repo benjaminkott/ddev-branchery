@@ -49,11 +49,16 @@ export function closeChanges(): void {
 
 /**
  * Every way out of a dialog of this system arrives as one event, which is why
- * the page that opened it is told here rather than at each of them.
+ * the page that opened it is told here rather than at each of them. Answers
+ * with the way to stop listening: the page that opened it is an element now,
+ * and there is a new one of those at every address.
  */
-export function onChangesClose(listener: () => void): void {
-    dialog.addEventListener('sds-dialog-cancel', () => {
+export function onChangesClose(listener: () => void): () => void {
+    const heard = (): void => {
         showing = '';
         listener();
-    });
+    };
+    dialog.addEventListener('sds-dialog-cancel', heard);
+
+    return () => dialog.removeEventListener('sds-dialog-cancel', heard);
 }

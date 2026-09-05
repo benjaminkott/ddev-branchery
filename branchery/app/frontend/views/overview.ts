@@ -1,8 +1,8 @@
 /** Overview of all worktrees of the project. */
 
 import { api } from '../api.js';
-import { html, nothing, render, type TemplateResult } from 'lit';
-import { buildButton, buildWayOut, formatWhen, host, maybe, query, repositoryName, saying } from '../dom.js';
+import { html, nothing, type TemplateResult } from 'lit';
+import { buildButton, buildWayOut, formatWhen, host, maybe, repositoryName, saying } from '../dom.js';
 import { busyWith, doingWord, reportError, setError, state, t } from '../state.js';
 import { pendingCreations } from '../pending.js';
 import type { RunningJob } from '../types.js';
@@ -16,18 +16,12 @@ import { openCreate } from './create.js';
 import { finished } from '../finished.js';
 import { bar } from './waiting.js';
 import { openTidy } from './tidy.js';
+import { View } from './view.js';
 
 export type OverviewHandlers = JobHandlers;
 
 /** From how many rows the page is filtered rather than read. Branches count towards it. */
 const FILTER_FROM = 6;
-
-/**
- * Kept out here because the list is redrawn whenever an operation ends or a
- * language changes, and a filter that emptied itself then would put the reader
- * back in front of all forty rows.
- */
-let needle = '';
 
 /**
  * How many branches without a worktree are shown before the rest are one press
@@ -36,28 +30,48 @@ let needle = '';
  */
 const BRANCHES_SHOWN = 10;
 
-let allBranches = false;
+/**
+ * The worktrees of the project, and the branches none has been made of yet.
+ *
+ * What it keeps is what a reader is in the middle of -- what they have typed
+ * into the filter, whether they asked for every branch -- and it is kept on the
+ * element rather than in the module because the list is drawn again whenever an
+ * operation ends or a language changes. A filter that emptied itself then would
+ * put the reader back in front of all forty rows.
+ */
+export class OverviewView extends View {
+    /** Set by the shell, which is what a press here reaches an operation through. */
+    handlers!: OverviewHandlers;
 
-/** The handlers of the page on screen, for what the keyboard reaches. */
-let current: OverviewHandlers | null = null;
+    private needle = '';
 
-export function renderOverview(handlers: OverviewHandlers): void {
-    current = handlers;
-    if (!state.loading) {
-        rememberRows();
+    private allBranches = false;
+
+    override willUpdate(): void {
+        // Not while the answer is still on its way: a length read then is the
+        // length of nothing, and the next cold page would expect one row.
+        if (!state.loading) {
+            rememberRows();
+        }
     }
-    const all = entries();
-    // Under the branch they were cut from -- what a graph does with lanes, and
-    // what a table can do with order.
-    const shown = byBase(matching(state.worktrees, needle), state.project?.branch ?? state.branch);
 
-    render(
-        html`
+    protected override arrived(): void {
+        window.addEventListener('keydown', this.reachedByKey);
+        this.untilLeft(() => window.removeEventListener('keydown', this.reachedByKey));
+    }
+
+    override render(): TemplateResult {
+        const all = entries();
+        // Under the branch they were cut from -- what a graph does with lanes, and
+        // what a table can do with order.
+        const shown = byBase(matching(state.worktrees, this.needle), state.project?.branch ?? state.branch);
+
+        return html`
       <div class="sds-bands">
         <section class="sds-band">
             ${state.error === '' ? nothing : html`<sds-note tone="error" body=${state.error}></sds-note>`}
             ${unfinishedNote(all)}
-            ${tidyNote(all, handlers)}
+            ${this.tidyNote(all)}
             <div class="sds-row branchery-project">
                 <h2 class="branchery-project__name">${
                     nameless() ? bar(0, 'branchery-waiting__title') : whichProject()
@@ -77,17 +91,326 @@ export function renderOverview(handlers: OverviewHandlers): void {
         </section>
         <section class="sds-band sds-band--quiet">
             <div class="branchery-section-head">
-                ${all.length + state.branches.length >= FILTER_FROM ? field() : nothing}
-                <div class="branchery-section-actions">${actions()}</div>
+                ${all.length + state.branches.length >= FILTER_FROM ? this.field() : nothing}
+                <div class="branchery-section-actions">${this.actions()}</div>
             </div>
-            ${listHead(all, shown.length)}
-            ${list(all, shown)}
+            ${this.listHead(all, shown.length)}
+            ${this.list(all, shown)}
         </section>
-        ${freeBranches()}
-      </div>`,
-        query<HTMLElement>('#main'),
-    );
+        ${this.freeBranches()}
+      </div>`;
+    }
+
+    /**
+     * Over the list and not in it: it is about the list as a whole, and a row
+     * suggesting its own removal is an offer where the reader is scanning for
+     * something else.
+     */
+    private tidyNote(all: Worktree[]): TemplateResult | typeof nothing {
+        const done = finished(all);
+        if (done.length === 0 || state.loading) {
+            return nothing;
+        }
+
+        // It names them: "one worktree looks finished" over a list of thirteen
+        // sends the reader looking for which.
+        return html`
+        <sds-note tone="info"
+                  body=${t('tidy.note', { count: done.length, names: named(done) })}
+                  action=${t('tidy.open')}
+                  @sds-note-action=${() => openTidy(all, this.handlers)}></sds-note>`;
+    }
+
+    /** Its shortcut is written into it: one nobody is told about is one nobody uses. */
+    private field(): TemplateResult {
+        // The element states one value, its placeholder until somebody types.
+        // Drawn again on every keystroke, so the prompt comes back when it empties.
+        return html`
+        <sds-field
+            class="branchery-filter"
+            field-id="filter"
+            icon="actions-search"
+            suffix="/"
+            label=${t('overview.filter')}
+            value=${this.needle === '' ? t('overview.filterPlaceholder') : this.needle}
+            ?filled=${this.needle !== ''}
+            @sds-input=${(event: CustomEvent<string>) => this.narrow(event.detail)}
+            @keydown=${(event: KeyboardEvent) => this.leaveOrOpen(event)}></sds-field>`;
+    }
+
+    private narrow(value: string): void {
+        this.needle = value;
+        this.requestUpdate();
+    }
+
+    private leaveOrOpen(event: KeyboardEvent): void {
+        if (event.key === 'Escape') {
+            if (event.target instanceof HTMLElement) {
+                event.target.blur();
+            }
+            this.narrow('');
+
+            return;
+        }
+
+        // Type a few letters, press return, be there -- without taking a hand off
+        // the keyboard to point at the one row that is left.
+        if (event.key === 'Enter') {
+            // The project's own checkout only where the list has nothing: it stands
+            // over the field rather than in what it narrows.
+            const first =
+                matching(state.worktrees, this.needle)[0] ??
+                matching(state.project === null ? [] : [state.project], this.needle)[0];
+            if (first !== undefined) {
+                event.preventDefault();
+                go(`/w/${first.name}`);
+            }
+        }
+    }
+
+    /**
+     * Kept from one draw to the next: an element built anew on every draw is one
+     * the renderer swaps out, so the dropdown closed under the pointer and the
+     * button lost its focus every time the poll redrew the page.
+     */
+    private controls: { key: string; nodes: HTMLElement[] } | null = null;
+
+    private actions(): HTMLElement[] {
+        const key = JSON.stringify([state.remotes, state.language]);
+        if (this.controls?.key !== key) {
+            const fetching = this.buildFetch();
+            this.controls = { key, nodes: [...(fetching === null ? [] : [fetching]), this.creating()] };
+        }
+
+        return this.controls.nodes;
+    }
+
+    private creating(): HTMLElement {
+        const button = buildButton(t('nav.newWorktree'), 'primary', () => openCreate(this.handlers));
+        // The shortcut is written where the thing itself is, not in a legend.
+        button.title = `${t('nav.newWorktree')} (n)`;
+
+        return button;
+    }
+
+    /**
+     * Four columns, and only one of them is prose. A worktree's name says what its
+     * database and its address are, so columns for those were the name written
+     * three times while the one column with something to say wrapped to four lines.
+     *
+     * Soul's table and not a grid of ours: the price is that the name is the link
+     * rather than the whole row, the head does not stick, and a narrow window
+     * scrolls rather than folding rows into cards. This is read on a desk.
+     */
+    private list(all: Worktree[], shown: Worktree[]): TemplateResult | typeof nothing {
+        // The note over the page already says the project cannot be asked; "no
+        // worktree yet" under it would be a second answer, and a wrong one.
+        if (state.unreachable && all.length === 0) {
+            return nothing;
+        }
+        // A worktree on its way has no directory and so no row; its operation
+        // stands in for it, so the list never says "none" while one is being made.
+        const pending = pendingCreations(
+            state.runningJobs,
+            all.map((worktree) => worktree.name),
+        ).filter((job) => found(job.subject, this.needle));
+        const empty = this.needle.trim() === '' ? t('table.empty') : t('overview.noMatch');
+        if (!state.loading && shown.length === 0 && pending.length === 0) {
+            return html`<p class="branchery-list__empty">${empty}</p>`;
+        }
+
+        // What is being made stands first: a row at the end of a long list is one
+        // nobody sees arrive.
+        return html`
+        <sds-table
+            ?loading=${state.loading}
+            loading-rows=${rowsToExpect()}
+            .columns=${[
+                { head: t('table.worktree'), cls: 'sds-td-name' },
+                { head: t('table.outstanding'), cls: 'sds-td-meta', align: 'end', fit: true },
+                { head: t('table.php'), fit: true },
+                { head: '', cls: 'sds-td-into' },
+            ]}
+            .rows=${state.loading ? [] : [...pending.map(making), ...shown.map(row)]}></sds-table>`;
+    }
+
+    /**
+     * Said once, over the rows it counts. While the list is narrowed the question
+     * is how much of it is left to see; where there is nothing to count it is named
+     * rather than counted, "0 worktrees" over "No worktree yet" being the same
+     * sentence twice.
+     */
+    private listHead(all: Worktree[], shown: number): TemplateResult | typeof nothing {
+        // Nothing is drawn under it, so nothing is said over it.
+        if (state.unreachable && all.length === 0) {
+            return nothing;
+        }
+        const total = state.worktrees.length;
+
+        // Only this list: the branches have a heading of their own.
+        return html`<h2 class="sds-h3">${
+            state.loading || total === 0
+                ? t('nav.worktrees')
+                : this.needle.trim() === ''
+                  ? t('overview.worktrees', { count: total })
+                  : t('overview.matching', { shown, total })
+        }</h2>`;
+    }
+
+    /**
+     * The freshest first, which is the order git was asked in. Only what the filter
+     * leaves standing, and nothing where it leaves none: a section that stayed
+     * whole under a search would answer a question nobody asked.
+     */
+    private freeBranches(): TemplateResult | typeof nothing {
+        if (state.loading || state.branches.length === 0) {
+            return nothing;
+        }
+        const matched = matchingBranches(state.branches, this.needle);
+        if (matched.length === 0) {
+            return nothing;
+        }
+        const rest = matched.length - BRANCHES_SHOWN;
+        const shown = this.allBranches || rest <= 0 ? matched : matched.slice(0, BRANCHES_SHOWN);
+
+        return html`
+        <section class="sds-band branchery-branches">
+            <h2 class="sds-h3">${
+                this.needle.trim() === ''
+                    ? t('overview.branches', { count: state.branches.length })
+                    : t('overview.branchesMatching', { shown: matched.length, total: state.branches.length })
+            }</h2>
+            <sds-table
+                .columns=${[
+                    { head: t('table.branch'), cls: 'sds-td-name' },
+                    { head: t('table.when'), cls: 'sds-td-meta', fit: true },
+                    { head: '', cls: 'sds-td-into' },
+                ]}
+                .rows=${shown.map((branch) => this.branchRow(branch))}></sds-table>
+            ${
+                this.allBranches || rest <= 0
+                    ? nothing
+                    : html`
+                <p class="branchery-branches__more">
+                    ${saying(
+                        t('overview.showAllBranches', { count: rest }),
+                        html`<sds-button variant="ghost" @click=${() => {
+                            this.allBranches = true;
+                            this.requestUpdate();
+                        }}
+                        >${t('overview.showAllBranches', { count: rest })}</sds-button>`,
+                    )}
+                </p>`
+            }
+        </section>`;
+    }
+
+    /**
+     * The press at the end opens the wizard rather than creating anything, a row
+     * being no place to answer what the worktree is called and what happens to its
+     * database.
+     */
+    private branchRow(branch: Branch): Row {
+        return {
+            cells: [
+                {
+                    value: html`<a class="branchery-list__title"
+                               href="#/b/${encodeURIComponent(branch.name)}">${branch.name}</a>`,
+                    note: aboutBranch(branch),
+                },
+                formatWhen(branch.when, state.language),
+                html`${saying(
+                    t('nav.newWorktree'),
+                    html`<sds-button variant="ghost" size="sm"
+                             title=${t('table.worktreeOf', { branch: branch.name })}
+                             @click=${() => openCreate(this.handlers, branch.name)}
+                    >${t('nav.newWorktree')}</sds-button>`,
+                )}`,
+            ],
+        };
+    }
+
+    /**
+     * Only where there is something to fetch from -- a button that can only fail is
+     * worse than none. With one remote the button names it.
+     */
+    private buildFetch(): HTMLElement | null {
+        const remotes = state.remotes;
+        const first = remotes[0];
+        if (first === undefined) {
+            return null;
+        }
+
+        if (remotes.length === 1) {
+            return buildButton(t('nav.fetch', { remote: first }), 'ghost', () => void this.startFetch(first));
+        }
+
+        const dropdown = document.createElement('sds-dropdown') as SdsDropdown;
+        dropdown.label = t('nav.fetchFrom');
+        dropdown.variant = 'ghost';
+        // So the list opens back over the row instead of out of the page.
+        dropdown.align = 'end';
+        dropdown.choices = remotes.map((remote) => ({ label: remote }));
+        dropdown.addEventListener('sds-dropdown-choose', (event) => {
+            const remote = remotes[(event as CustomEvent<DropdownChosen>).detail.index];
+            if (remote !== undefined) {
+                void this.startFetch(remote);
+            }
+        });
+
+        return dropdown;
+    }
+
+    private async startFetch(remote: string): Promise<void> {
+        try {
+            const result = await api.fetch(remote);
+            setError('');
+            this.handlers.onJob(result.job, null, 'fetch');
+        } catch (error) {
+            reportError(error);
+        }
+    }
+
+    /**
+     * "/" to look for a worktree, "n" to make one. Ignored wherever a key already
+     * means something else -- in a field, in the dialog, and under any modifier.
+     *
+     * Bound to the instance, so the same function is the one taken off the window
+     * when this page is left -- and heard only while it is on screen, which is
+     * what the page being an element is worth here.
+     */
+    private readonly reachedByKey = (event: KeyboardEvent): void => {
+        if (event.altKey || event.ctrlKey || event.metaKey || event.defaultPrevented) {
+            return;
+        }
+        // Asked of an Element and not of whatever the event came from: with
+        // nothing focused it is the document, which answers no such question and
+        // threw, leaving both keys doing nothing.
+        const target = event.target;
+        if (target instanceof Element && target.closest('input, textarea, select, [contenteditable], dialog[open]')) {
+            return;
+        }
+
+        if (event.key === '/') {
+            const input = maybe<HTMLInputElement>('#filter');
+            if (input) {
+                event.preventDefault();
+                input.focus();
+                input.select();
+            }
+
+            return;
+        }
+
+        // Only where the page actually offers it.
+        if (event.key === 'n' && maybe('.branchery-section-actions') !== null) {
+            event.preventDefault();
+            openCreate(this.handlers);
+        }
+    };
 }
+
+customElements.define('branchery-overview', OverviewView);
 
 /**
  * The repository names it where there is one -- "TYPO3GmbH/blog" -- and DDEV's
@@ -107,26 +430,6 @@ function whichProject(): string {
  */
 function nameless(): boolean {
     return state.loading && state.repository === null && state.projectName === '';
-}
-
-/**
- * Over the list and not in it: it is about the list as a whole, and a row
- * suggesting its own removal is an offer where the reader is scanning for
- * something else.
- */
-function tidyNote(all: Worktree[], handlers: OverviewHandlers): TemplateResult | typeof nothing {
-    const done = finished(all);
-    if (done.length === 0 || state.loading) {
-        return nothing;
-    }
-
-    // It names them: "one worktree looks finished" over a list of thirteen
-    // sends the reader looking for which.
-    return html`
-        <sds-note tone="info"
-                  body=${t('tidy.note', { count: done.length, names: named(done) })}
-                  action=${t('tidy.open')}
-                  @sds-note-action=${() => openTidy(all, handlers)}></sds-note>`;
 }
 
 /** Before the offer to tidy up: what needs a hand comes before what could be let go. */
@@ -151,130 +454,6 @@ function named(worktrees: Worktree[]): string {
  */
 function entries(): Worktree[] {
     return state.project ? [state.project, ...state.worktrees] : state.worktrees;
-}
-
-/** Its shortcut is written into it: one nobody is told about is one nobody uses. */
-function field(): TemplateResult {
-    // The element states one value, its placeholder until somebody types.
-    // Drawn again on every keystroke, so the prompt comes back when it empties.
-    return html`
-        <sds-field
-            class="branchery-filter"
-            field-id="filter"
-            icon="actions-search"
-            suffix="/"
-            label=${t('overview.filter')}
-            value=${needle === '' ? t('overview.filterPlaceholder') : needle}
-            ?filled=${needle !== ''}
-            @sds-input=${(event: CustomEvent<string>) => narrow(event.detail)}
-            @keydown=${leaveOrOpen}></sds-field>`;
-}
-
-function narrow(value: string): void {
-    needle = value;
-    again();
-}
-
-function again(): void {
-    if (current !== null) {
-        renderOverview(current);
-    }
-}
-
-function leaveOrOpen(event: KeyboardEvent): void {
-    if (event.key === 'Escape') {
-        if (event.target instanceof HTMLElement) {
-            event.target.blur();
-        }
-        narrow('');
-
-        return;
-    }
-
-    // Type a few letters, press return, be there -- without taking a hand off
-    // the keyboard to point at the one row that is left.
-    if (event.key === 'Enter') {
-        // The project's own checkout only where the list has nothing: it stands
-        // over the field rather than in what it narrows.
-        const first =
-            matching(state.worktrees, needle)[0] ?? matching(state.project === null ? [] : [state.project], needle)[0];
-        if (first !== undefined) {
-            event.preventDefault();
-            go(`/w/${first.name}`);
-        }
-    }
-}
-
-/**
- * Kept from one draw to the next: an element built anew on every draw is one
- * the renderer swaps out, so the dropdown closed under the pointer and the
- * button lost its focus every time the poll redrew the page.
- */
-let controls: { key: string; nodes: HTMLElement[] } | null = null;
-
-function actions(): HTMLElement[] {
-    const key = JSON.stringify([state.remotes, state.language]);
-    if (controls?.key !== key) {
-        const fetching = buildFetch();
-        controls = { key, nodes: [...(fetching === null ? [] : [fetching]), creating()] };
-    }
-
-    return controls.nodes;
-}
-
-function pressed(act: (handlers: OverviewHandlers) => void): void {
-    if (current !== null) {
-        act(current);
-    }
-}
-
-function creating(): HTMLElement {
-    const button = buildButton(t('nav.newWorktree'), 'primary', () => pressed(openCreate));
-    // The shortcut is written where the thing itself is, not in a legend.
-    button.title = `${t('nav.newWorktree')} (n)`;
-
-    return button;
-}
-
-/**
- * Four columns, and only one of them is prose. A worktree's name says what its
- * database and its address are, so columns for those were the name written
- * three times while the one column with something to say wrapped to four lines.
- *
- * Soul's table and not a grid of ours: the price is that the name is the link
- * rather than the whole row, the head does not stick, and a narrow window
- * scrolls rather than folding rows into cards. This is read on a desk.
- */
-function list(all: Worktree[], shown: Worktree[]): TemplateResult | typeof nothing {
-    // The note over the page already says the project cannot be asked; "no
-    // worktree yet" under it would be a second answer, and a wrong one.
-    if (state.unreachable && all.length === 0) {
-        return nothing;
-    }
-    // A worktree on its way has no directory and so no row; its operation
-    // stands in for it, so the list never says "none" while one is being made.
-    const pending = pendingCreations(
-        state.runningJobs,
-        all.map((worktree) => worktree.name),
-    ).filter((job) => found(job.subject, needle));
-    const empty = needle.trim() === '' ? t('table.empty') : t('overview.noMatch');
-    if (!state.loading && shown.length === 0 && pending.length === 0) {
-        return html`<p class="branchery-list__empty">${empty}</p>`;
-    }
-
-    // What is being made stands first: a row at the end of a long list is one
-    // nobody sees arrive.
-    return html`
-        <sds-table
-            ?loading=${state.loading}
-            loading-rows=${rowsToExpect()}
-            .columns=${[
-                { head: t('table.worktree'), cls: 'sds-td-name' },
-                { head: t('table.outstanding'), cls: 'sds-td-meta', align: 'end', fit: true },
-                { head: t('table.php'), fit: true },
-                { head: '', cls: 'sds-td-into' },
-            ]}
-            .rows=${state.loading ? [] : [...pending.map(making), ...shown.map(row)]}></sds-table>`;
 }
 
 /**
@@ -308,7 +487,7 @@ function making(job: RunningJob): Row {
         cells: [
             {
                 value: html`<span class="branchery-list__title">${job.subject}</span>`,
-                note: doing(`${t('table.making')} \u00b7 ${job.step?.label ?? doingWord(job.command)}`),
+                note: doing(`${t('table.making')} · ${job.step?.label ?? doingWord(job.command)}`),
             },
             '',
             '',
@@ -415,29 +594,6 @@ function became(worktree: Worktree): TemplateResult | typeof nothing {
 }
 
 /**
- * Said once, over the rows it counts. While the list is narrowed the question
- * is how much of it is left to see; where there is nothing to count it is named
- * rather than counted, "0 worktrees" over "No worktree yet" being the same
- * sentence twice.
- */
-function listHead(all: Worktree[], shown: number): TemplateResult | typeof nothing {
-    // Nothing is drawn under it, so nothing is said over it.
-    if (state.unreachable && all.length === 0) {
-        return nothing;
-    }
-    const total = state.worktrees.length;
-
-    // Only this list: the branches have a heading of their own.
-    return html`<h2 class="sds-h3">${
-        state.loading || total === 0
-            ? t('nav.worktrees')
-            : needle.trim() === ''
-              ? t('overview.worktrees', { count: total })
-              : t('overview.matching', { shown, total })
-    }</h2>`;
-}
-
-/**
  * Over the worktrees rather than among them: it is of another kind -- they are
  * cut from it, and it is the one checkout Branchery neither made nor can
  * remove. Its PHP, database and address are stated as facts, which is worth
@@ -509,79 +665,6 @@ function checkoutBlock(shown: Checkout): TemplateResult {
 }
 
 /**
- * The freshest first, which is the order git was asked in. Only what the filter
- * leaves standing, and nothing where it leaves none: a section that stayed
- * whole under a search would answer a question nobody asked.
- */
-function freeBranches(): TemplateResult | typeof nothing {
-    if (state.loading || state.branches.length === 0) {
-        return nothing;
-    }
-    const matched = matchingBranches(state.branches, needle);
-    if (matched.length === 0) {
-        return nothing;
-    }
-    const rest = matched.length - BRANCHES_SHOWN;
-    const shown = allBranches || rest <= 0 ? matched : matched.slice(0, BRANCHES_SHOWN);
-
-    return html`
-        <section class="sds-band branchery-branches">
-            <h2 class="sds-h3">${
-                needle.trim() === ''
-                    ? t('overview.branches', { count: state.branches.length })
-                    : t('overview.branchesMatching', { shown: matched.length, total: state.branches.length })
-            }</h2>
-            <sds-table
-                .columns=${[
-                    { head: t('table.branch'), cls: 'sds-td-name' },
-                    { head: t('table.when'), cls: 'sds-td-meta', fit: true },
-                    { head: '', cls: 'sds-td-into' },
-                ]}
-                .rows=${shown.map(branchRow)}></sds-table>
-            ${
-                allBranches || rest <= 0
-                    ? nothing
-                    : html`
-                <p class="branchery-branches__more">
-                    ${saying(
-                        t('overview.showAllBranches', { count: rest }),
-                        html`<sds-button variant="ghost" @click=${() => {
-                            allBranches = true;
-                            again();
-                        }}
-                        >${t('overview.showAllBranches', { count: rest })}</sds-button>`,
-                    )}
-                </p>`
-            }
-        </section>`;
-}
-
-/**
- * The press at the end opens the wizard rather than creating anything, a row
- * being no place to answer what the worktree is called and what happens to its
- * database.
- */
-function branchRow(branch: Branch): Row {
-    return {
-        cells: [
-            {
-                value: html`<a class="branchery-list__title"
-                               href="#/b/${encodeURIComponent(branch.name)}">${branch.name}</a>`,
-                note: aboutBranch(branch),
-            },
-            formatWhen(branch.when, state.language),
-            html`${saying(
-                t('nav.newWorktree'),
-                html`<sds-button variant="ghost" size="sm"
-                             title=${t('table.worktreeOf', { branch: branch.name })}
-                             @click=${() => pressed((handlers) => openCreate(handlers, branch.name))}
-                    >${t('nav.newWorktree')}</sds-button>`,
-            )}`,
-        ],
-    };
-}
-
-/**
  * Said only where there is a remote for the branch to be missing from: without
  * one it is true of every branch.
  */
@@ -592,51 +675,8 @@ function aboutBranch(branch: Branch): TemplateResult {
         branch.tip === null
             ? nothing
             : html`<span
-            class="branchery-list__tip">${branch.tip.subject} \u00b7 ${branch.tip.sha}</span>`
+            class="branchery-list__tip">${branch.tip.subject} · ${branch.tip.sha}</span>`
     }`;
-}
-
-/**
- * Only where there is something to fetch from -- a button that can only fail is
- * worse than none. With one remote the button names it.
- */
-function buildFetch(): HTMLElement | null {
-    const remotes = state.remotes;
-    const first = remotes[0];
-    if (first === undefined) {
-        return null;
-    }
-
-    if (remotes.length === 1) {
-        return buildButton(t('nav.fetch', { remote: first }), 'ghost', () =>
-            pressed((handlers) => void startFetch(first, handlers)),
-        );
-    }
-
-    const dropdown = document.createElement('sds-dropdown') as SdsDropdown;
-    dropdown.label = t('nav.fetchFrom');
-    dropdown.variant = 'ghost';
-    // So the list opens back over the row instead of out of the page.
-    dropdown.align = 'end';
-    dropdown.choices = remotes.map((remote) => ({ label: remote }));
-    dropdown.addEventListener('sds-dropdown-choose', (event) => {
-        const remote = remotes[(event as CustomEvent<DropdownChosen>).detail.index];
-        if (remote !== undefined) {
-            pressed((handlers) => void startFetch(remote, handlers));
-        }
-    });
-
-    return dropdown;
-}
-
-async function startFetch(remote: string, handlers: OverviewHandlers): Promise<void> {
-    try {
-        const result = await api.fetch(remote);
-        setError('');
-        handlers.onJob(result.job, null, 'fetch');
-    } catch (error) {
-        reportError(error);
-    }
 }
 
 /**
@@ -648,7 +688,7 @@ async function startFetch(remote: string, handlers: OverviewHandlers): Promise<v
  */
 function described(worktree: Worktree): TemplateResult {
     return html`<span class="branchery-list__what">${worktree.branch}${
-        worktree.tip === null ? nothing : html` \u00b7 ${worktree.tip.subject}`
+        worktree.tip === null ? nothing : html` · ${worktree.tip.subject}`
     }</span>`;
 }
 
@@ -686,37 +726,3 @@ function unsettled(worktree: Worktree): string[] {
 
     return said;
 }
-
-/**
- * "/" to look for a worktree, "n" to make one. Ignored wherever a key already
- * means something else -- in a field, in the dialog, and under any modifier.
- */
-window.addEventListener('keydown', (event) => {
-    if (event.altKey || event.ctrlKey || event.metaKey || event.defaultPrevented) {
-        return;
-    }
-    // Asked of an Element and not of whatever the event came from: with
-    // nothing focused it is the document, which answers no such question and
-    // threw, leaving both keys doing nothing.
-    const target = event.target;
-    if (target instanceof Element && target.closest('input, textarea, select, [contenteditable], dialog[open]')) {
-        return;
-    }
-
-    if (event.key === '/') {
-        const input = maybe<HTMLInputElement>('#filter');
-        if (input) {
-            event.preventDefault();
-            input.focus();
-            input.select();
-        }
-
-        return;
-    }
-
-    // Only where the page actually offers it.
-    if (event.key === 'n' && current !== null && maybe('.branchery-section-actions') !== null) {
-        event.preventDefault();
-        openCreate(current);
-    }
-});

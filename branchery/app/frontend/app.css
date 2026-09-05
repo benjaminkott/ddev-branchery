@@ -58,11 +58,25 @@ sds-nav-main:not(:defined) {
     box-shadow: none;
 }
 
+/* A page of this application is an element -- see frontend/views/view.ts -- and
+   it draws no box of its own, so what this grid lays out is what stands inside
+   it. Named rather than derived: there is no selector for "a tag beginning
+   with", and a page whose element is missing here would lay out as a line of
+   text. */
+branchery-overview,
+branchery-worktree,
+branchery-branch,
+branchery-commit {
+    display: contents;
+}
+
 /* Nothing in the page may push it wider than the page: the rows of this grid
    are `auto`, which lets a child that is wide inside grow past its track and
    gives the whole page a bar along the bottom. The children are told they may
-   be narrower than their contents. */
-.branchery-main > * {
+   be narrower than their contents -- and the children are what stands inside
+   the page's own element, which is why it is reached through. */
+.branchery-main > *,
+.branchery-main > :is(branchery-overview, branchery-worktree, branchery-branch, branchery-commit) > * {
     min-width: 0;
 }
 

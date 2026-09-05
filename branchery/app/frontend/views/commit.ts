@@ -10,38 +10,17 @@
  * The changes themselves are a door each.
  */
 
-import { html, nothing, render, type TemplateResult } from 'lit';
+import { html, nothing, type TemplateResult } from 'lit';
 import { api } from '../api.js';
-import { buildWayOut, formatWhen, query } from '../dom.js';
+import { buildWayOut, formatWhen } from '../dom.js';
 import { reader } from '../reading.js';
-import { currentRoute } from '../router.js';
-import { stillOn } from '../routes.js';
 import { errorSentence, state, t } from '../state.js';
 import { aside } from '../aside.js';
 import type { ChangeDiff, CommitDetail } from '../types.js';
 import { backTo } from './back.js';
 import { waiting } from './waiting.js';
 import { fileList, keepDiff, type Shown, toggleFile } from './files.js';
-
-/**
- * `where` is where the reader came from: a worktree by name, or a branch that
- * has none. `name` is the checkout the commit is read out of, which for a
- * branch is the project's own.
- */
-interface Opened {
-    name: string;
-    sha: string;
-    branch: string;
-}
-
-let showing: Opened | null = null;
-
-/**
- * Kept until another is opened. A commit does not change, so nothing here is
- * ever read a second time for the same sha; what makes it stale is the reader
- * going somewhere else.
- */
-const read = aside<CommitDetail>();
+import { View } from './view.js';
 
 /**
  * The checkout and the hash together: the same commit read on another branch is
@@ -51,99 +30,156 @@ function keyOf(name: string, sha: string): string {
     return `${name}\u001f${sha}`;
 }
 
-/** The change in each file the reader opened, and whether the rest are shown. */
-let diffs = new Map<string, Shown<ChangeDiff>>();
-let all = false;
+export class CommitView extends View {
+    /** Where the reader came in: the worktree, or the empty name for a branch. */
+    name = '';
 
-const reading = reader(errorSentence, again);
+    sha = '';
 
-/**
- * The reader has gone somewhere else: an answer still on its way is dropped,
- * since drawing it would put this page back over the one they went to.
- */
-export function leaveCommit(): void {
-    showing = null;
-}
+    /** The branch it was read on, where it was read on one rather than in a worktree. */
+    branch = '';
 
-/**
- * Read where it lies: in a worktree, or -- with a branch given -- out of the
- * project's own checkout, which holds every branch's commits.
- */
-export function renderCommit(name: string, sha: string, branch = ''): void {
-    const of = branch === '' ? name : state.projectName;
-    showing = { name: of, sha, branch };
-    if (read.about(keyOf(of, sha))) {
-        diffs = new Map();
-        all = false;
-        void readCommit(of, sha);
+    /**
+     * Kept until another is opened. A commit does not change, so nothing here is
+     * ever read a second time for the same sha; what makes it stale is the reader
+     * going somewhere else.
+     */
+    private readonly read = aside<CommitDetail>();
+
+    /** The change in each file the reader opened, and whether the rest are shown. */
+    private diffs = new Map<string, Shown<ChangeDiff>>();
+
+    private all = false;
+
+    private readonly reading = reader(errorSentence, () => this.requestUpdate());
+
+    /** The checkout it is read out of, which for a branch is the project's own. */
+    private get of(): string {
+        return this.branch === '' ? this.name : state.projectName;
     }
 
-    render(page(of, sha, branch), query<HTMLElement>('#main'));
-}
-
-/** Whether an answer about a commit is still wanted: this one, on this view. */
-function onPage(opened: Opened): boolean {
-    return (
-        showing?.name === opened.name &&
-        showing.sha === opened.sha &&
-        showing.branch === opened.branch &&
-        stillOn(currentRoute(), {
-            view: 'commit',
-            name: opened.branch === '' ? opened.name : '',
-            sha: opened.sha,
-            branch: opened.branch,
-        })
-    );
-}
-
-function again(): void {
-    if (showing !== null && onPage(showing)) {
-        renderCommit(showing.branch === '' ? showing.name : '', showing.sha, showing.branch);
+    override willUpdate(): void {
+        const of = this.of;
+        if (this.read.about(keyOf(of, this.sha))) {
+            this.diffs = new Map();
+            this.all = false;
+            void this.readCommit(of, this.sha);
+        }
     }
-}
 
-/**
- * Where the reader came in: the worktree the commit was read in, or the branch.
- * Not the checkout it was read out of -- for a branch that is the project,
- * which is a page the reader never saw.
- */
-function page(name: string, sha: string, branch: string): TemplateResult {
-    // The checkout it was read out of, which for a branch is the project's own.
-    const of = branch === '' ? name : state.projectName;
-    const commit = read.of(keyOf(of, sha));
+    /**
+     * Where the reader came in: the worktree the commit was read in, or the branch.
+     * Not the checkout it was read out of -- for a branch that is the project,
+     * which is a page the reader never saw.
+     */
+    override render(): TemplateResult {
+        const of = this.of;
+        const commit = this.read.of(keyOf(of, this.sha));
 
-    return html`
+        return html`
       <div class="sds-bands">
         <section class="sds-band">
             ${
-                branch === ''
-                    ? backTo(name, `#/w/${encodeURIComponent(name)}`)
-                    : backTo(branch, `#/b/${encodeURIComponent(branch)}`)
+                this.branch === ''
+                    ? backTo(this.name, `#/w/${encodeURIComponent(this.name)}`)
+                    : backTo(this.branch, `#/b/${encodeURIComponent(this.branch)}`)
             }
-            ${commit === null ? beforeTheAnswer(of, sha) : head(of, commit, branch)}
+            ${commit === null ? this.beforeTheAnswer(of, this.sha) : head(of, commit, this.branch)}
         </section>
-        ${commit === null ? nothing : touched(name, commit)}
+        ${commit === null ? nothing : this.touched(this.name, commit)}
       </div>`;
-}
+    }
 
-/**
- * A sha that this checkout does not carry is the ordinary way this page is
- * wrong, so what is said is what the container said, under the hash asked about.
- */
-function beforeTheAnswer(of: string, sha: string): TemplateResult {
-    const trouble = read.trouble(keyOf(of, sha));
+    /**
+     * A sha that this checkout does not carry is the ordinary way this page is
+     * wrong, so what is said is what the container said, under the hash asked about.
+     */
+    private beforeTheAnswer(of: string, sha: string): TemplateResult {
+        const trouble = this.read.trouble(keyOf(of, sha));
 
-    // The hash under the way back either way: it is in the address, so it is
-    // true before anything is read, and it is the title the page keeps once the
-    // subject arrives beside it.
-    return html`
+        // The hash under the way back either way: it is in the address, so it is
+        // true before anything is read, and it is the title the page keeps once the
+        // subject arrives beside it.
+        return html`
         <h1 class="sds-h2"><span class="sds-mono">${sha}</span></h1>
         ${
             trouble === ''
                 ? waiting()
                 : html`<sds-note tone="warn" body=${`${t('detail.commitFailed')} ${trouble}`}></sds-note>`
         }`;
+    }
+
+    /**
+     * A merge has nothing here, which is git's own answer to what a merge changed.
+     * Said in a sentence rather than left as an empty list, which under a heading
+     * reads as an answer that failed to arrive.
+     */
+    private touched(name: string, commit: CommitDetail): TemplateResult {
+        return html`
+        <section class="sds-band sds-band--quiet">
+            ${
+                /* A heading counting to nothing says nothing: where a merge changed no
+                  file, the noun stands alone and the sentence under it says why. */ ''
+            }
+            <h2 class="sds-h3">${
+                commit.files.length === 0
+                    ? t('detail.touchedNothingHeading')
+                    : t('detail.touched', { count: commit.files.length })
+            }</h2>
+            ${
+                commit.files.length === 0
+                    ? html`<p class="branchery-list__quiet">${t('detail.touchedNothing')}</p>`
+                    : fileList({
+                          files: commit.files,
+                          diffs: this.diffs,
+                          press: (path) => this.toggleDiff(name, commit.sha, path),
+                          all: this.all,
+                          showAll: () => {
+                              this.all = true;
+                              this.requestUpdate();
+                          },
+                      })
+            }
+        </section>`;
+    }
+
+    private toggleDiff(name: string, sha: string, path: string): void {
+        toggleFile(this.diffs, path, () => void this.readDiff(name, sha, path));
+        this.requestUpdate();
+    }
+
+    /** Whether an answer about a commit is still wanted: this one, still on the page. */
+    private stillReading(name: string, sha: string): boolean {
+        return this.read.stillOn(keyOf(name, sha));
+    }
+
+    private async readCommit(name: string, sha: string): Promise<void> {
+        await this.reading(
+            () => api.commit(name, sha),
+            () => this.stillReading(name, sha),
+            (commit, trouble) => {
+                if (commit === null) {
+                    this.read.failed(keyOf(name, sha), trouble);
+
+                    return;
+                }
+                this.read.put(keyOf(name, sha), commit);
+            },
+        );
+    }
+
+    private async readDiff(name: string, sha: string, path: string): Promise<void> {
+        await this.reading(
+            () => api.commitDiff(name, sha, path),
+            // The file has to be open still, and not only the commit: what was asked
+            // for is the change in one row of a list the reader closed.
+            () => this.stillReading(name, sha) && this.diffs.has(path),
+            (diff, trouble) => keepDiff(this.diffs, path, diff, trouble),
+        );
+    }
 }
+
+customElements.define('branchery-commit', CommitView);
 
 /**
  * The message is set as it stands, line breaks and all: a commit message is
@@ -184,7 +220,7 @@ function head(of: string, commit: CommitDetail, branch: string): TemplateResult 
                       out nobody asked for. */ ''
                 }
                 <dd>${commit.parents.map(
-                    (parent, at) => html`${at === 0 ? nothing : ' · '}<sds-link
+                    (parent, at) => html`${at === 0 ? nothing : ' \u00b7 '}<sds-link
                     href=${
                         branch === ''
                             ? `#/w/${encodeURIComponent(of)}/c/${parent}`
@@ -194,73 +230,4 @@ function head(of: string, commit: CommitDetail, branch: string): TemplateResult 
             }
         </dl>
         ${commit.body === '' ? nothing : html`<pre class="branchery-message">${commit.body}</pre>`}`;
-}
-
-/**
- * A merge has nothing here, which is git's own answer to what a merge changed.
- * Said in a sentence rather than left as an empty list, which under a heading
- * reads as an answer that failed to arrive.
- */
-function touched(name: string, commit: CommitDetail): TemplateResult {
-    return html`
-        <section class="sds-band sds-band--quiet">
-            ${
-                /* A heading counting to nothing says nothing: where a merge changed no
-                  file, the noun stands alone and the sentence under it says why. */ ''
-            }
-            <h2 class="sds-h3">${
-                commit.files.length === 0
-                    ? t('detail.touchedNothingHeading')
-                    : t('detail.touched', { count: commit.files.length })
-            }</h2>
-            ${
-                commit.files.length === 0
-                    ? html`<p class="branchery-list__quiet">${t('detail.touchedNothing')}</p>`
-                    : fileList({
-                          files: commit.files,
-                          diffs,
-                          press: (path) => toggleDiff(name, commit.sha, path),
-                          all,
-                          showAll: () => {
-                              all = true;
-                              again();
-                          },
-                      })
-            }
-        </section>`;
-}
-
-function toggleDiff(name: string, sha: string, path: string): void {
-    toggleFile(diffs, path, () => void readDiff(name, sha, path));
-    again();
-}
-
-/** Whether an answer about a commit is still wanted: this one, still on the page. */
-function stillReading(name: string, sha: string): boolean {
-    return read.stillOn(keyOf(name, sha));
-}
-
-async function readCommit(name: string, sha: string): Promise<void> {
-    await reading(
-        () => api.commit(name, sha),
-        () => stillReading(name, sha),
-        (commit, trouble) => {
-            if (commit === null) {
-                read.failed(keyOf(name, sha), trouble);
-
-                return;
-            }
-            read.put(keyOf(name, sha), commit);
-        },
-    );
-}
-
-async function readDiff(name: string, sha: string, path: string): Promise<void> {
-    await reading(
-        () => api.commitDiff(name, sha, path),
-        // The file has to be open still, and not only the commit: what was asked
-        // for is the change in one row of a list the reader closed.
-        () => stillReading(name, sha) && diffs.has(path),
-        (diff, trouble) => keepDiff(diffs, path, diff, trouble),
-    );
 }

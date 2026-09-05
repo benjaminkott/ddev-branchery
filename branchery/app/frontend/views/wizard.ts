@@ -132,9 +132,16 @@ export function flowOpen(): boolean {
     return dialog.open && flow !== null;
 }
 
-/** What is staged is not always what is running -- the dialog can be closed. */
-export function onWizardClose(listener: () => void): void {
+/**
+ * What is staged is not always what is running -- the dialog can be closed.
+ *
+ * Answers with the way to stop listening, because a page takes this for as long
+ * as it is on screen and there is a new one of those at every address.
+ */
+export function onWizardClose(listener: () => void): () => void {
     dialog.addEventListener('close', listener);
+
+    return () => dialog.removeEventListener('close', listener);
 }
 
 /**

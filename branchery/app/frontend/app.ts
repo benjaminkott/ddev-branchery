@@ -1,5 +1,6 @@
 /** Entry point: wires the shell up with state and views. */
 
+import { html, render as paint, type TemplateResult } from 'lit';
 import type { JobHandlers, RunningJob, TrackedJob } from './types.js';
 import { maybe, query } from './dom.js';
 import { loadLanguages } from './i18n.js';
@@ -7,10 +8,14 @@ import { refresh, setError, setLanguage, state, subscribe, t } from './state.js'
 import type { DropdownChosen, SdsNavMain } from '@typo3/soul-frontend';
 import { currentRoute, onRoute, type Route } from './router.js';
 import { afterWizard, stillOn, wizardAsked } from './routes.js';
-import { renderOverview } from './views/overview.js';
-import { leaveCommit, renderCommit } from './views/commit.js';
-import { forget, leaveWorktree, renderWorktree } from './views/worktree.js';
-import { leaveBranch, renderBranch } from './views/branch.js';
+import { operationEnded } from './ended.js';
+import { View } from './views/view.js';
+// The pages, for the elements they define. Which of them is open is decided in
+// one template below, and nothing here knows what any of them keeps.
+import './views/overview.js';
+import './views/commit.js';
+import './views/worktree.js';
+import './views/branch.js';
 import { watchJob } from './views/progress.js';
 import { closeWizard, flowOpen, onWizardClose, wizardOpen } from './views/wizard.js';
 import { openCreate } from './views/create.js';
@@ -24,13 +29,15 @@ const handlers: JobHandlers = {
 };
 
 /**
- * An operation is over. The page follows from the store; what the page about
- * the worktree keeps of its own is told to read again.
+ * An operation is over. The page follows from the store; what a page keeps of
+ * its own about that worktree is no longer true, and whoever is on screen and
+ * cares hears it -- said as an event, so that this does not have to know which
+ * pages there are.
  */
 function ended(job: TrackedJob): void {
     const about = job.expected ?? job.subject;
     if (about !== '') {
-        forget(about);
+        operationEnded(about);
     }
 }
 
@@ -145,7 +152,6 @@ function render(route: Route = currentRoute()): void {
     if (wizardOpen()) {
         return;
     }
-    const arriving = route.view !== shown.view;
     // Another page, rather than the one on screen drawn again.
     const arrived = !stillOn(route, shown);
     // A page is read from its top. Only what is written into the document
@@ -153,19 +159,6 @@ function render(route: Route = currentRoute()): void {
     // worktree opened from the foot of a long list was drawn under the fold.
     if (arrived) {
         window.scrollTo(0, 0);
-    }
-    if (arriving) {
-        // The page being left is told: an answer it is still waiting for would
-        // otherwise be drawn over the page the reader went to.
-        if (shown.view === 'worktree') {
-            leaveWorktree();
-        }
-        if (shown.view === 'commit') {
-            leaveCommit();
-        }
-        if (shown.view === 'branch') {
-            leaveBranch();
-        }
     }
     shown = route;
     paintBar();
@@ -183,22 +176,40 @@ function render(route: Route = currentRoute()): void {
 }
 
 function draw(route: Route): void {
-    if (route.view === 'worktree') {
-        renderWorktree(route.name, handlers);
+    const main = query<HTMLElement>('#main');
+    paint(opened(route), main);
+    // What the shell decides to draw, it draws -- see View.drawNow().
+    for (const page of main.children) {
+        if (page instanceof View) {
+            page.drawNow();
+        }
+    }
+}
 
-        return;
+/**
+ * Which page is open, and the whole of what the shell knows about any of them.
+ *
+ * A page is an element: put here it begins and taken away it ends, so an answer
+ * it was waiting for is dropped by the page itself rather than by a
+ * `leaveWorktree()` here -- which was a list of three that a fourth page had to
+ * be added to, in three places, or it went on answering for a reader who had
+ * gone.
+ */
+function opened(route: Route): TemplateResult {
+    if (route.view === 'worktree') {
+        return html`<branchery-worktree .name=${route.name} .handlers=${handlers}></branchery-worktree>`;
     }
     if (route.view === 'branch') {
-        renderBranch(route.name, handlers);
-
-        return;
+        return html`<branchery-branch .name=${route.name} .handlers=${handlers}></branchery-branch>`;
     }
     if (route.view === 'commit') {
-        renderCommit(route.name, route.sha, route.branch);
-
-        return;
+        return html`<branchery-commit
+            .name=${route.name}
+            .sha=${route.sha}
+            .branch=${route.branch}></branchery-commit>`;
     }
-    renderOverview(handlers);
+
+    return html`<branchery-overview .handlers=${handlers}></branchery-overview>`;
 }
 
 /**

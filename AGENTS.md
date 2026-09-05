@@ -359,8 +359,7 @@ name that had stopped meaning anything.
 | `branchery/app/src/Jobs/`, `Locking/`, `Addon/` | a long operation, what may run beside it, and what this add-on itself is |
 | `branchery/app/api-answers.json` | what the API answers with, field by field -- both halves are checked against it |
 | `branchery/app/frontend/` | the interface, TypeScript -- and beside `app.ts` the rules it applies, each one testable without a browser |
-| `branchery/app/frontend/views/` | the pages, the dialogs and the pieces they are drawn from |
-| `branchery/app/frontend/components/` | what is reused, as lit elements |
+| `branchery/app/frontend/views/` | the pages, the dialogs and the pieces they are drawn from -- a page is a lit element, and `view.ts` is what one is |
 | `branchery/app/dev/` | the mocked API the interface is developed against |
 | `branchery/app/defaults/` | the shipped configurations -- what `profile: typo3-app` means, as files |
 | `branchery/app/tests/` | what is worth testing without a project: the parsing, the naming, the generated configuration |
