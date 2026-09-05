@@ -17,6 +17,7 @@ import { reader } from '../reading.js';
 import { currentRoute } from '../router.js';
 import { stillOn } from '../routes.js';
 import { errorSentence, state, t } from '../state.js';
+import { aside } from '../aside.js';
 import type { ChangeDiff, CommitDetail } from '../types.js';
 import { backTo } from './back.js';
 import { waiting } from './waiting.js';
@@ -40,12 +41,15 @@ let showing: Opened | null = null;
  * ever read a second time for the same sha; what makes it stale is the reader
  * going somewhere else.
  */
-let read: { name: string; sha: string; commit: CommitDetail | null; trouble: string } = {
-    name: '',
-    sha: '',
-    commit: null,
-    trouble: '',
-};
+const read = aside<CommitDetail>();
+
+/**
+ * The checkout and the hash together: the same commit read on another branch is
+ * another page, with another way back.
+ */
+function keyOf(name: string, sha: string): string {
+    return `${name}\u001f${sha}`;
+}
 
 /** The change in each file the reader opened, and whether the rest are shown. */
 let diffs = new Map<string, Shown<ChangeDiff>>();
@@ -68,8 +72,7 @@ export function leaveCommit(): void {
 export function renderCommit(name: string, sha: string, branch = ''): void {
     const of = branch === '' ? name : state.projectName;
     showing = { name: of, sha, branch };
-    if (read.name !== of || read.sha !== sha) {
-        read = { name: of, sha, commit: null, trouble: '' };
+    if (read.about(keyOf(of, sha))) {
         diffs = new Map();
         all = false;
         void readCommit(of, sha);
@@ -105,7 +108,9 @@ function again(): void {
  * which is a page the reader never saw.
  */
 function page(name: string, sha: string, branch: string): TemplateResult {
-    const commit = read.commit;
+    // The checkout it was read out of, which for a branch is the project's own.
+    const of = branch === '' ? name : state.projectName;
+    const commit = read.of(keyOf(of, sha));
 
     return html`
       <div class="sds-bands">
@@ -115,7 +120,7 @@ function page(name: string, sha: string, branch: string): TemplateResult {
                     ? backTo(name, `#/w/${encodeURIComponent(name)}`)
                     : backTo(branch, `#/b/${encodeURIComponent(branch)}`)
             }
-            ${commit === null ? beforeTheAnswer(sha) : head(commit, branch)}
+            ${commit === null ? beforeTheAnswer(of, sha) : head(of, commit, branch)}
         </section>
         ${commit === null ? nothing : touched(name, commit)}
       </div>`;
@@ -125,16 +130,18 @@ function page(name: string, sha: string, branch: string): TemplateResult {
  * A sha that this checkout does not carry is the ordinary way this page is
  * wrong, so what is said is what the container said, under the hash asked about.
  */
-function beforeTheAnswer(sha: string): TemplateResult {
+function beforeTheAnswer(of: string, sha: string): TemplateResult {
+    const trouble = read.trouble(keyOf(of, sha));
+
     // The hash under the way back either way: it is in the address, so it is
     // true before anything is read, and it is the title the page keeps once the
     // subject arrives beside it.
     return html`
         <h1 class="sds-h2"><span class="sds-mono">${sha}</span></h1>
         ${
-            read.trouble === ''
+            trouble === ''
                 ? waiting()
-                : html`<sds-note tone="warn" body=${`${t('detail.commitFailed')} ${read.trouble}`}></sds-note>`
+                : html`<sds-note tone="warn" body=${`${t('detail.commitFailed')} ${trouble}`}></sds-note>`
         }`;
 }
 
@@ -143,7 +150,7 @@ function beforeTheAnswer(sha: string): TemplateResult {
  * written to be read at a fixed width, and a body reflowed into a paragraph
  * turns a list of three points into one sentence with dashes in it.
  */
-function head(commit: CommitDetail, branch: string): TemplateResult {
+function head(of: string, commit: CommitDetail, branch: string): TemplateResult {
     return html`
         <div class="sds-row">
             <h1 class="sds-h2">
@@ -180,7 +187,7 @@ function head(commit: CommitDetail, branch: string): TemplateResult {
                     (parent, at) => html`${at === 0 ? nothing : ' · '}<sds-link
                     href=${
                         branch === ''
-                            ? `#/w/${encodeURIComponent(read.name)}/c/${parent}`
+                            ? `#/w/${encodeURIComponent(of)}/c/${parent}`
                             : `#/b/${encodeURIComponent(branch)}/c/${parent}`
                     } label=${parent}></sds-link>`,
                 )}</dd>`
@@ -230,7 +237,7 @@ function toggleDiff(name: string, sha: string, path: string): void {
 
 /** Whether an answer about a commit is still wanted: this one, still on the page. */
 function stillReading(name: string, sha: string): boolean {
-    return read.name === name && read.sha === sha;
+    return read.stillOn(keyOf(name, sha));
 }
 
 async function readCommit(name: string, sha: string): Promise<void> {
@@ -238,7 +245,12 @@ async function readCommit(name: string, sha: string): Promise<void> {
         () => api.commit(name, sha),
         () => stillReading(name, sha),
         (commit, trouble) => {
-            read = { name, sha, commit, trouble };
+            if (commit === null) {
+                read.failed(keyOf(name, sha), trouble);
+
+                return;
+            }
+            read.put(keyOf(name, sha), commit);
         },
     );
 }

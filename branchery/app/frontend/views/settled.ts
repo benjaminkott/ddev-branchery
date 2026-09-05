@@ -15,7 +15,6 @@ import { type FactGroup, sinceBase } from './facts.js';
  * the group states its own shape while it waits.
  */
 export interface Usage {
-    name: string;
     value: DiskUsage | null;
     trouble: string;
 }
@@ -127,7 +126,7 @@ export function settledFacts(worktree: Worktree, usage: Usage): FactGroup[] {
                       ]),
             ],
         },
-        ...(worktree.isProject ? [] : [storageGroup(worktree.name, usage)]),
+        ...(worktree.isProject ? [] : [storageGroup(usage)]),
     ];
 }
 
@@ -136,8 +135,8 @@ export function settledFacts(worktree: Worktree, usage: Usage): FactGroup[] {
  * have: one row that said "Reading ..." and became four was the widest label on
  * the page arriving late, and every label is set against the widest of them.
  */
-function storageGroup(name: string, usage: Usage): FactGroup {
-    if (usage.name === name && usage.trouble !== '') {
+function storageGroup(usage: Usage): FactGroup {
+    if (usage.trouble !== '') {
         return {
             title: t('detail.storage'),
             facts: [
@@ -149,7 +148,7 @@ function storageGroup(name: string, usage: Usage): FactGroup {
             ],
         };
     }
-    if (usage.name !== name || usage.value === null) {
+    if (usage.value === null) {
         return {
             title: t('detail.storage'),
             facts: [

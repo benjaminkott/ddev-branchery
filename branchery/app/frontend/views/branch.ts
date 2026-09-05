@@ -17,6 +17,7 @@ import { reader } from '../reading.js';
 import { currentRoute } from '../router.js';
 import { stillOn } from '../routes.js';
 import { errorSentence, state, t } from '../state.js';
+import { aside } from '../aside.js';
 import type { BranchDetail, JobHandlers } from '../types.js';
 import { backTo } from './back.js';
 import { commitLog } from './commits.js';
@@ -29,8 +30,8 @@ export type BranchHandlers = JobHandlers;
 /** The branch on screen, so that what arrives late can draw it again. */
 let showing: string | null = null;
 
-/** What was read about it, and about which branch. */
-let read: { name: string; branch: BranchDetail | null; trouble: string } = { name: '', branch: null, trouble: '' };
+/** What was read about it, and about which branch -- see aside.ts. */
+const read = aside<BranchDetail>();
 
 const reading = reader(errorSentence, again);
 
@@ -47,8 +48,7 @@ export function leaveBranch(): void {
 
 export function renderBranch(name: string, handlers: BranchHandlers): void {
     showing = name;
-    if (read.name !== name) {
-        read = { name, branch: null, trouble: '' };
+    if (read.about(name)) {
         void readBranch(name);
     }
     log.about(name);
@@ -67,7 +67,7 @@ function again(): void {
 
 function page(name: string, handlers: BranchHandlers): TemplateResult {
     current = handlers;
-    const branch = read.branch;
+    const branch = read.of(name);
 
     return html`
       <div class="sds-bands">
@@ -80,7 +80,7 @@ function page(name: string, handlers: BranchHandlers): TemplateResult {
                     ${branch === null ? nothing : marks(branch)}
                 </h1>
             </div>
-            ${branch === null ? beforeTheAnswer() : offer(branch, handlers)}
+            ${branch === null ? beforeTheAnswer(name) : offer(branch, handlers)}
         </section>
         ${
             branch === null
@@ -94,7 +94,7 @@ function page(name: string, handlers: BranchHandlers): TemplateResult {
         ${
             /* Where the branch itself could not be read there is nothing to say
               about its commits either, and the head above has said why. */
-            branch === null && read.trouble !== '' ? nothing : commits(name)
+            branch === null && read.trouble(name) !== '' ? nothing : commits(name)
         }
       </div>`;
 }
@@ -103,8 +103,10 @@ function page(name: string, handlers: BranchHandlers): TemplateResult {
  * A branch name in an address outlives the branch, so what is said is what the
  * container said, under the name that was asked about.
  */
-function beforeTheAnswer(): TemplateResult {
-    return read.trouble === '' ? waiting() : html`<sds-note tone="warn" body=${read.trouble}></sds-note>`;
+function beforeTheAnswer(name: string): TemplateResult {
+    const trouble = read.trouble(name);
+
+    return trouble === '' ? waiting() : html`<sds-note tone="warn" body=${trouble}></sds-note>`;
 }
 
 /**
@@ -212,9 +214,14 @@ function commits(name: string): TemplateResult {
 async function readBranch(name: string): Promise<void> {
     await reading(
         () => api.branch(name),
-        () => read.name === name,
+        () => read.stillOn(name),
         (branch, trouble) => {
-            read = { name, branch, trouble };
+            if (branch === null) {
+                read.failed(name, trouble);
+
+                return;
+            }
+            read.put(name, branch);
         },
     );
 }

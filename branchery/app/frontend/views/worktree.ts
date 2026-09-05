@@ -18,12 +18,13 @@ import { currentRoute } from '../router.js';
 import { stillOn } from '../routes.js';
 import { busyWith, errorSentence, operationName, state, stateWords, t } from '../state.js';
 import { whyItStopped } from '../verdict.js';
-import type { Change, ChangeDiff, Job, JobHandlers, JobSummary, Worktree } from '../types.js';
+import { aside } from '../aside.js';
+import type { Change, ChangeDiff, DiskUsage, Job, JobHandlers, JobSummary, Worktree } from '../types.js';
 import { openEdit } from './edit.js';
 import { backTo } from './back.js';
 import { commitLog } from './commits.js';
 import { shownGroup } from './facts.js';
-import { settledFacts, type Usage, wandered } from './settled.js';
+import { settledFacts, wandered } from './settled.js';
 import { closeChanges, onChangesClose, showChanges, shownChanges } from './changes.js';
 import { discard, provision, pull, remove, restore, sync } from './operations.js';
 import { fileList, keepDiff, type Shown, toggleFile } from './files.js';
@@ -36,7 +37,7 @@ export type WorktreeHandlers = JobHandlers;
  * Read once per worktree and kept until another is opened, or until an
  * operation on this one ends -- see forget().
  */
-let past: { name: string; entries: JobSummary[] | null; trouble: string } = { name: '', entries: null, trouble: '' };
+const past = aside<JobSummary[]>();
 
 /**
  * The steps of opened entries, by operation, or why there are none. An answer
@@ -74,7 +75,7 @@ const log = commitLog((name, skip) => api.commits(name, skip), reading, again);
 let files: { name: string; list: Shown<Change[]>; all: boolean; diffs: Map<string, Shown<ChangeDiff>> } = fresh('');
 
 /** The checkout and database are measured only for the detail page that asks. */
-let usage: Usage = { name: '', value: null, trouble: '' };
+const usage = aside<DiskUsage>();
 
 function fresh(name: string): typeof files {
     return { name, list: { read: null, trouble: '', open: false }, all: false, diffs: new Map() };
@@ -103,8 +104,8 @@ function onPage(name: string): boolean {
  * a discard or a pull its branch carries other commits than the list shows.
  */
 export function forget(name: string): void {
-    if (past.name === name) {
-        past = { name: '', entries: null, trouble: '' };
+    if (past.stillOn(name)) {
+        past.forget(name);
         opened.clear();
     }
     log.forget(name);
@@ -119,9 +120,7 @@ export function forget(name: string): void {
             void readChanges(name);
         }
     }
-    if (usage.name === name) {
-        usage = { name: '', value: null, trouble: '' };
-    }
+    usage.forget(name);
     if (showing?.name === name) {
         again();
     }
@@ -131,8 +130,7 @@ export function renderWorktree(name: string, handlers: WorktreeHandlers): void {
     showing = { name, handlers };
     const worktree = [state.project, ...state.worktrees].find((entry) => entry?.name === name) ?? null;
 
-    if (past.name !== name) {
-        past = { name, entries: null, trouble: '' };
+    if (past.about(name)) {
         opened.clear();
         void readHistory(name);
     }
@@ -149,8 +147,7 @@ export function renderWorktree(name: string, handlers: WorktreeHandlers): void {
     if (worktree !== null) {
         log.about(name);
     }
-    if (worktree !== null && !worktree.isProject && usage.name !== name) {
-        usage = { name, value: null, trouble: '' };
+    if (worktree !== null && !worktree.isProject && usage.about(name)) {
         void readUsage(name);
     }
 
@@ -264,14 +261,17 @@ function page(worktree: Worktree, handlers: WorktreeHandlers): TemplateResult {
 
         <section class="sds-band sds-band--quiet">
             <h2 class="sds-h3">${t('detail.settled')}</h2>
-            <div class="sds-facts-set">${settledFacts(worktree, usage).map(shownGroup)}</div>
+            <div class="sds-facts-set">${settledFacts(worktree, {
+                value: usage.of(worktree.name),
+                trouble: usage.trouble(worktree.name),
+            }).map(shownGroup)}</div>
         </section>
 
         ${commitList(worktree)}
 
         <section class="sds-band sds-band--quiet">
             <h2 class="sds-h3">${t('detail.history')}</h2>
-            ${history()}
+            ${history(worktree.name)}
         </section>
       </div>`;
 }
@@ -459,7 +459,7 @@ function unfinishedNote(worktree: Worktree, handlers: WorktreeHandlers): Templat
 }
 
 function lastFailed(): JobSummary | null {
-    return past.entries?.find((entry) => entry.status === 'failed') ?? null;
+    return past.of(showing?.name ?? '')?.find((entry) => entry.status === 'failed') ?? null;
 }
 
 /** What is being done to it, in the place of what could be done. */
@@ -566,20 +566,22 @@ function buildBar(
  * and what it says is what it said while it ran -- which is the point of the
  * page: an operation is not gone when its dialog is.
  */
-function history(): TemplateResult {
-    if (past.trouble !== '') {
+function history(name: string): TemplateResult {
+    const trouble = past.trouble(name);
+    if (trouble !== '') {
         // Not "nothing has been done yet": that is a fact about the worktree, and
         // this is a fact about the container.
-        return html`<sds-note tone="warn" body=${`${t('detail.historyFailed')} ${past.trouble}`}></sds-note>`;
+        return html`<sds-note tone="warn" body=${`${t('detail.historyFailed')} ${trouble}`}></sds-note>`;
     }
-    if (past.entries === null) {
+    const entries = past.of(name);
+    if (entries === null) {
         return waiting();
     }
-    if (past.entries.length === 0) {
+    if (entries.length === 0) {
         return html`<p class="branchery-list__quiet">${t('detail.noHistory')}</p>`;
     }
 
-    return html`<div class="branchery-history">${past.entries.map(entry)}</div>`;
+    return html`<div class="branchery-history">${entries.map(entry)}</div>`;
 }
 
 function entry(job: JobSummary): TemplateResult {
@@ -622,9 +624,14 @@ function open(event: Event, id: string): void {
 async function readHistory(name: string): Promise<void> {
     await reading(
         () => api.worktreeJobs(name),
-        () => past.name === name,
+        () => past.stillOn(name),
         (entries, trouble) => {
-            past = { name, entries, trouble };
+            if (entries === null) {
+                past.failed(name, trouble);
+
+                return;
+            }
+            past.put(name, entries);
         },
     );
 }
@@ -632,9 +639,14 @@ async function readHistory(name: string): Promise<void> {
 async function readUsage(name: string): Promise<void> {
     await reading(
         () => api.worktreeUsage(name),
-        () => usage.name === name,
+        () => usage.stillOn(name),
         (value, trouble) => {
-            usage = { name, value, trouble };
+            if (value === null) {
+                usage.failed(name, trouble);
+
+                return;
+            }
+            usage.put(name, value);
         },
     );
 }
