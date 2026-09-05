@@ -1,9 +1,11 @@
 #!/usr/bin/env bats
 
-# The one check a release has to pass before an image is built: the compose
-# file names the tag being cut, and so does the manual's footer. Needs neither
-# Docker nor DDEV, only the script -- which is handed files of this test's own,
-# so that what it says about a version is not tied to the one in the tree.
+# What a release has to be right about before an image is built: the compose
+# file names the tag being cut and so does the manual's footer, and what the
+# add-on ships is what an update clears away first. Needs neither Docker nor
+# DDEV -- the tag is checked through the script, which is handed files of this
+# test's own so that what it says about a version is not tied to the one in the
+# tree, and the shipped files are read out of install.yaml as it stands.
 
 setup() {
   export DIR="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." >/dev/null 2>&1 && pwd)"
@@ -52,4 +54,43 @@ teardown() {
   [ "$status" -eq 0 ]
   run "${CHECK}" v0.0.0-not-this-one
   [ "$status" -ne 0 ]
+}
+
+# The two lists in install.yaml that have to agree, asked of the file rather
+# than remembered. DDEV replaces a file it still ships, by its own
+# "#ddev-generated" line; what it cannot do is take away one that a later
+# release stopped shipping -- and inside a shipped directory that is the whole
+# risk, because the entry point calls those scripts by name. So the install
+# clears every such directory before the copy, and a new one written into
+# project_files alone is one that would install once and never update.
+#
+# Only in that direction: what the removal names and project_files does not is
+# what an older, file-based Branchery left behind, and it is meant to be there.
+@test "every shipped directory is one the install clears away first" {
+  local install="${DIR}/install.yaml"
+
+  # Everything the install does before it copies, which is where the clearing
+  # stands. Read as the text it is: this is one shell script in a YAML file.
+  local before
+  before="$(awk '/^project_files:/ { exit } { print }' "${install}")"
+
+  local shipped
+  shipped="$(awk '/^project_files:/ { on = 1; next } on && /^[^ ]/ { exit } on && /^ *- / { print $2 }' "${install}")"
+  [ -n "${shipped}" ]
+
+  local entry
+  for entry in ${shipped}; do
+    # Only the directories. A single file is replaced where it stands, and one
+    # that stops being shipped is one file left in a project -- not an entry
+    # point calling into something that is no longer there.
+    case "${entry}" in
+      */) ;;
+      *) continue ;;
+    esac
+
+    if ! printf '%s' "${before}" | grep -qF "/.ddev/${entry%/}\""; then
+      echo "install.yaml ships ${entry} but does not clear .ddev/${entry%/} before the copy" >&2
+      return 1
+    fi
+  done
 }
