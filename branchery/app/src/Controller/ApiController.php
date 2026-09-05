@@ -107,7 +107,6 @@ final class ApiController
         }
 
         $subject = $name ?? Project::slug($branch);
-        $this->assertFree($subject);
 
         $arguments = ['worktree:add', $branch];
         if (($payload['mode'] ?? 'branch') === 'fork') {
@@ -126,7 +125,7 @@ final class ApiController
             $arguments[] = '--name=' . $name;
         }
 
-        return $this->accepted($this->jobs->start($arguments, $subject));
+        return $this->start($subject, $arguments);
     }
 
     /**
@@ -529,6 +528,21 @@ final class ApiController
     private function operate(string $name, array $arguments): Response
     {
         $this->assertWorktree($name);
+
+        return $this->start($name, $arguments);
+    }
+
+    /**
+     * The refusal and the start under one lock: between the two the worktree is
+     * free and nothing yet says an operation is coming, so two presses inside the
+     * same moment both got past -- see Locks::STARTING. Held only for the writes
+     * that make the job findable, which is what the next question reads.
+     *
+     * @param list<string> $arguments
+     */
+    private function start(string $name, array $arguments): Response
+    {
+        $starting = $this->locks->hold(Locks::STARTING);
         $this->assertFree($name);
 
         return $this->accepted($this->jobs->start($arguments, $name));

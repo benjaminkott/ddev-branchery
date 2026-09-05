@@ -35,6 +35,19 @@ final class Locks
     public const VERSIONS = 'versions';
 
     /**
+     * The moment between asking whether a worktree is free and starting the
+     * operation that will claim it. In between it is free and nothing yet says one
+     * is coming, so two presses inside the same moment both got past -- and the
+     * second then waited behind the first for the length of a build instead of
+     * being told to come back.
+     *
+     * One key for every start rather than one per worktree: it is held for the few
+     * file writes that make a job findable, and two of those are not worth telling
+     * apart.
+     */
+    public const STARTING = 'starting';
+
+    /**
      * Keys this process is already holding. flock is per open file, so a second
      * fopen of the same file blocks against the first -- from inside the very
      * process that holds it -- and holding is counted rather than repeated.
