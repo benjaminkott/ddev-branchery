@@ -10,17 +10,15 @@
  */
 
 import { html, nothing, type TemplateResult } from 'lit';
-import type { RunStep, SdsButton } from '@typo3/soul-frontend';
+import type { SdsButton } from '@typo3/soul-frontend';
 import { api } from '../api.js';
-import { buildButton, buildWayOut, formatDuration, formatWhen, runSteps, saying } from '../dom.js';
-import { gather, unread } from '../rules/journal.js';
+import { buildButton, buildWayOut, saying } from '../dom.js';
 import { reader } from '../rules/reading.js';
-import { busyWith, errorSentence, operationName, state, stateWords, t } from '../state.js';
-import { whyItStopped } from '../rules/verdict.js';
+import { busyWith, errorSentence, state, t } from '../state.js';
 import { aside, readInto } from '../rules/aside.js';
 import { onOperationEnded } from '../ended.js';
 import { type Action, actions, type Offer } from '../rules/actions.js';
-import type { Change, ChangeDiff, DiskUsage, Job, JobHandlers, JobSummary, Worktree } from '../types.js';
+import type { Change, ChangeDiff, DiskUsage, JobHandlers, Worktree } from '../types.js';
 import { openEdit } from './edit.js';
 import { backTo } from './back.js';
 import { commitLog } from './commits.js';
@@ -31,16 +29,10 @@ import { discard, provision, pull, remove, restore, sync } from './operations.js
 import { fileList, keepDiff, type Shown, toggleFile } from './files.js';
 import { openProvision } from './provision.js';
 import { waiting } from './waiting.js';
+import { pastOf } from './history.js';
 import { View } from './view.js';
 
 export type WorktreeHandlers = JobHandlers;
-
-/** Where a failed operation stopped: the step, and the line the console marked. */
-interface Stopped {
-    no: number;
-    step: string;
-    reason: string;
-}
 
 /** What is read when asked for, and kept until the reader leaves the page. */
 interface Files {
@@ -61,28 +53,6 @@ export class WorktreeView extends View {
     /** Set by the shell, which is what a press here reaches an operation through. */
     handlers!: WorktreeHandlers;
 
-    /**
-     * Read once per worktree and kept until another is opened, or until an
-     * operation on this one ends.
-     */
-    private readonly past = aside<JobSummary[]>();
-
-    /**
-     * The steps of opened entries, by operation, or why there are none. An answer
-     * saying the log is gone is final; a read that failed is asked again at the
-     * next press, the container possibly being back by then.
-     */
-    private readonly opened = new Map<
-        string,
-        { steps: RunStep[]; trouble: string; settled: boolean; stopped: Stopped | null }
-    >();
-
-    /**
-     * The operations whose log is on its way. Every draw asked for the last failed
-     * operation's log again until the first answer was here.
-     */
-    private readonly askingFor = new Set<string>();
-
     /** The checkout and database are measured only for the detail page that asks. */
     private readonly usage = aside<DiskUsage>();
 
@@ -101,6 +71,14 @@ export class WorktreeView extends View {
      */
     private readonly log = commitLog(
         (name, skip) => api.commits(name, skip),
+        this.reading,
+        () => this.requestUpdate(),
+    );
+
+    /** What has been done to this worktree, and what each of those said. */
+    private readonly past = pastOf(
+        (name) => api.worktreeJobs(name),
+        (id) => api.job(id),
         this.reading,
         () => this.requestUpdate(),
     );
@@ -134,10 +112,7 @@ export class WorktreeView extends View {
      * shows.
      */
     private operationEnded(name: string): void {
-        if (this.past.stillOn(name)) {
-            this.past.forget(name);
-            this.opened.clear();
-        }
+        this.past.forget(name);
         this.log.forget(name);
         if (this.files.name === name) {
             // What the operation did is what is uncommitted now. Where the list is on
@@ -169,16 +144,13 @@ export class WorktreeView extends View {
         const name = this.name;
         const worktree = this.worktree;
 
-        if (this.past.about(name)) {
-            this.opened.clear();
-            void this.readHistory(name);
-        }
+        this.past.about(name);
         // A build that stopped is explained by the operation that stopped it, so
         // that one is read as soon as the history says which it is -- the note over
         // the page said something was missing and nothing about what.
-        const failed = worktree?.incomplete === true ? this.lastFailed() : null;
-        if (failed !== null && !this.opened.has(failed.id)) {
-            void this.readJob(failed.id);
+        const failed = worktree?.incomplete === true ? this.past.lastFailed(name) : null;
+        if (failed !== null && !this.past.holds(failed.id)) {
+            this.past.read(failed.id);
         }
         // Only once there is a worktree to read it about: a page opened straight at
         // an address is drawn before the answer arrives, and marking it read then
@@ -290,7 +262,7 @@ export class WorktreeView extends View {
 
         <section class="sds-band sds-band--quiet">
             <h2 class="sds-h3">${t('detail.history')}</h2>
-            ${this.history(worktree.name)}
+            ${this.past.draw(worktree.name)}
         </section>
       </div>`;
     }
@@ -444,8 +416,8 @@ export class WorktreeView extends View {
      * carries the press that finishes it.
      */
     private unfinishedNote(worktree: Worktree): TemplateResult {
-        const failed = this.lastFailed();
-        const stopped = failed === null ? null : (this.opened.get(failed.id)?.stopped ?? null);
+        const failed = this.past.lastFailed(worktree.name);
+        const stopped = failed === null ? null : this.past.stoppedIn(failed.id);
 
         return html`
         <sds-note
@@ -459,10 +431,6 @@ export class WorktreeView extends View {
             action=${t('table.provision')}
             @sds-note-action=${() =>
                 openProvision(worktree, (fresh) => provision(worktree.name, fresh, this.handlers))}></sds-note>`;
-    }
-
-    private lastFailed(): JobSummary | null {
-        return this.past.of(this.name)?.find((entry) => entry.status === 'failed') ?? null;
     }
 
     /**
@@ -557,104 +525,8 @@ export class WorktreeView extends View {
         }
     }
 
-    /**
-     * What has been done to this worktree, newest first. Every entry can be opened,
-     * and what it says is what it said while it ran -- which is the point of the
-     * page: an operation is not gone when its dialog is.
-     */
-    private history(name: string): TemplateResult {
-        const trouble = this.past.trouble(name);
-        if (trouble !== '') {
-            // Not "nothing has been done yet": that is a fact about the worktree, and
-            // this is a fact about the container.
-            return html`<sds-note tone="warn" body=${`${t('detail.historyFailed')} ${trouble}`}></sds-note>`;
-        }
-        const entries = this.past.of(name);
-        if (entries === null) {
-            return waiting();
-        }
-        if (entries.length === 0) {
-            return html`<p class="branchery-list__quiet">${t('detail.noHistory')}</p>`;
-        }
-
-        return html`<div class="branchery-history">${entries.map((job) => this.entry(job))}</div>`;
-    }
-
-    private entry(job: JobSummary): TemplateResult {
-        const known = this.opened.get(job.id);
-
-        // The same element the dialog draws a running operation with, closed. Its
-        // log is fetched on the press, which is why the press is heard here: the
-        // element keeps whether it stands open to itself.
-        //
-        // An operation whose log is gone says so in the same line, the head being
-        // the whole of a closed entry -- the alternative is a box onto nothing.
-        const when = `${formatWhen(job.started, state.language)} · ${formatDuration(job.elapsed)}`;
-
-        return html`
-        <sds-run
-            heading=${operationName(job.command)}
-            verdict=${job.status}
-            note=${known !== undefined && known.trouble !== '' ? `${when} · ${known.trouble}` : when}
-            .stateWords=${stateWords()}
-            .steps=${known?.steps ?? []}
-            @click=${(event: Event) => this.open(event, job.id)}></sds-run>`;
-    }
-
-    /** Opening an entry is what asks for its log. */
-    private open(event: Event, id: string): void {
-        const pressed = event.target;
-        if (
-            !(pressed instanceof Element) ||
-            !pressed.closest('.sds-run__head') ||
-            this.opened.get(id)?.settled === true
-        ) {
-            return;
-        }
-        void this.readJob(id);
-    }
-
-    /**
-     * What has been done, newest first. What could not be read is said as that and
-     * not as an empty answer.
-     */
-    private async readHistory(name: string): Promise<void> {
-        await readInto(this.past, name, () => api.worktreeJobs(name), this.reading);
-    }
-
     private async readUsage(name: string): Promise<void> {
         await readInto(this.usage, name, () => api.worktreeUsage(name), this.reading);
-    }
-
-    private async readJob(id: string): Promise<void> {
-        if (this.askingFor.has(id)) {
-            return;
-        }
-        this.askingFor.add(id);
-        try {
-            const job = await api.job(id);
-            // The container answers for an operation it has no record of: the log is
-            // gone, and asking again would say the same thing.
-            const gone = job.status === 'unknown' && job.steps.length === 0;
-            this.opened.set(id, {
-                // An operation that is over is read once and in full, so nothing is
-                // gathered here -- the rule is the same one either way.
-                steps: runSteps(gather(unread, job).steps),
-                trouble: gone ? t('detail.noLog') : '',
-                settled: true,
-                stopped: stoppedAt(job),
-            });
-        } catch (error) {
-            this.opened.set(id, {
-                steps: [],
-                trouble: `${t('detail.logFailed')} ${errorSentence(error)}`,
-                settled: false,
-                stopped: null,
-            });
-        } finally {
-            this.askingFor.delete(id);
-        }
-        this.requestUpdate();
     }
 }
 
@@ -705,13 +577,4 @@ function busyNote(doing: string): TemplateResult {
             tone="info"
             heading=${t('detail.busyHeading')}
             body=${t('detail.busy', { doing })}></sds-note>`;
-}
-
-function stoppedAt(job: Job): Stopped | null {
-    const step = job.steps.find((entry) => entry.state === 'failed');
-    if (job.status !== 'failed' || step === undefined) {
-        return null;
-    }
-
-    return { no: step.no, step: step.label, reason: whyItStopped(job.log) };
 }
