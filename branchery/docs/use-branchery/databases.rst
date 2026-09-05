@@ -27,7 +27,7 @@ After a copy, the configuration's ``migrate`` moment fits the schema and
 application state to the checked-out code. If the source database is empty, the
 ``setup`` moment installs the application instead.
 
-..  figure:: images/branchery-data-paths.svg
+..  figure:: /images/branchery-data-paths.svg
     :zoomable:
 
     A copy, an installation or a replacement — all three end in the database

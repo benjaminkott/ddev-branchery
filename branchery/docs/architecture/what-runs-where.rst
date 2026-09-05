@@ -64,7 +64,7 @@ What is written where
     ============================================= ==================== =========================================================================
 
 The editor files are VS Code's. Other editors, and every PHP language server,
-are set up by hand; :doc:`editors` says what Branchery writes and what a project
+are set up by hand; :doc:`/use-branchery/editors` says what Branchery writes and what a project
 window and a worktree window each still need.
 
 Branchery does not modify the project's own ``.gitignore``. The installation
@@ -82,7 +82,7 @@ the files, everything the build writes below that directory, and a database of
 its own. Dependencies and generated assets often make the checkout much larger
 than the source alone.
 
-..  figure:: images/branchery-owned-shared.svg
+..  figure:: /images/branchery-owned-shared.svg
     :zoomable:
 
     What one worktree owns is what makes it separate. Everything underneath

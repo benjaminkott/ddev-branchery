@@ -13,12 +13,12 @@ operations and leave the same history.
 
 ..  grid::
 
-    ..  card:: :doc:`quickstart`
+    ..  card:: :doc:`/getting-started/quickstart`
         :action: Read it
 
         From installing the add-on to the first usable worktree.
 
-    ..  card:: :doc:`update`
+    ..  card:: :doc:`/getting-started/update`
         :action: Read it
 
         Fetch a new version, pick a different image, or take the add-on out
@@ -27,5 +27,5 @@ operations and leave the same history.
 ..  toctree::
     :hidden:
 
-    quickstart
-    update
+    getting-started/quickstart
+    getting-started/update

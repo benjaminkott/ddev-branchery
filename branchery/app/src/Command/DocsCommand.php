@@ -34,10 +34,13 @@ final class DocsCommand extends Command
         $page = $input->getArgument('page');
         if (!is_string($page) || $page === '') {
             foreach ($this->docs->pages() as $entry) {
-                $output->writeln(sprintf('  <options=bold>%-16s</> %s', $entry['slug'], $entry['title']));
+                // Wide enough for the longest slug there is: a page carries the
+                // section it stands in, and a column that does not fit turns the
+                // list into two ragged ones.
+                $output->writeln(sprintf('  <options=bold>%-30s</> %s', $entry['slug'], $entry['title']));
             }
             $output->writeln('');
-            $output->writeln('  "ddev branchery docs <page>" prints one of them.');
+            $output->writeln('  "ddev branchery docs <page>" prints one of them -- the name alone will do.');
 
             return Command::SUCCESS;
         }

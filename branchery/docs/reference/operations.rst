@@ -52,14 +52,14 @@ says, directly or through the shipped profile it names. Without that file a
 worktree is a checkout at an address of its own, with an empty database.
 :doc:`configuration` is the file, key by key.
 
-..  figure:: images/branchery-build-steps.svg
+..  figure:: /images/branchery-build-steps.svg
     :zoomable:
 
     The build of a worktree, and which half of it a project owns. ``add``,
     ``fork`` and ``provision`` differ in where the checkout and the data come
     from; the phases below are the same.
 
-Start with :doc:`troubleshooting` when an operation stopped.
+Start with :doc:`/use-branchery/troubleshooting` when an operation stopped.
 
 ..  toctree::
     :hidden:

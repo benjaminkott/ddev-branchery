@@ -64,7 +64,7 @@ Checks out a branch that exists locally or on a remote, and builds it.
     tables, the database stays empty and **setup** (**config**) installs the
     application. Where the copied data cannot be fitted to the code, the copy
     is dropped and the application installed instead, and the log says so. The
-    source database is never written to. :doc:`databases` follows all three
+    source database is never written to. :doc:`/use-branchery/databases` follows all three
     paths.
 
 #.  **Finishing up.** Caches are flushed (**config**) and the ``ddev describe``

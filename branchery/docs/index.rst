@@ -12,7 +12,7 @@ Every branch, ready beside the project
 
     ..  button-bar::
 
-        ..  button:: :doc:`quickstart`
+        ..  button:: :doc:`/getting-started/quickstart`
             :icon: actions-arrow-right
             :size: lg
 
@@ -147,7 +147,7 @@ Every branch, ready beside the project
             the same public configuration grammar.
 
             Which steps are Branchery's own and which stand in that file is
-            drawn step by step in :doc:`operations`.
+            drawn step by step in :doc:`/reference/operations`.
 
         ..  half::
 

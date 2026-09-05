@@ -79,7 +79,7 @@ customizing it with:
 
     ddev branchery config:example --profile=typo3-app --full
 
-The :doc:`configuration reference <configuration>` explains how a project
+The :doc:`configuration reference </reference/configuration>` explains how a project
 changes its docroot, setup commands, data source and carried files. Without
 this file a worktree is only a checkout at an address of its own, with an empty
 database.
@@ -135,7 +135,7 @@ built. ``ddev describe`` carries the same addresses in its Branchery section.
 
 Open the worktree URL and the Branchery interface. A finished operation has a
 step-by-step record on the worktree page; a stopped one includes the command
-that continues from a safe point. See :doc:`troubleshooting` when the first
+that continues from a safe point. See :doc:`/use-branchery/troubleshooting` when the first
 build does not finish.
 
 ..  _getting-started-continue:
@@ -143,12 +143,12 @@ build does not finish.
 Continue from here
 ==================
 
-The overview now has a row for the worktree. :doc:`worktrees` says what that
+The overview now has a row for the worktree. :doc:`/use-branchery/worktrees` says what that
 row tells you, how to keep the worktree current and how to remove it when its
-work has landed. Open the checkout in an editor next: :doc:`editors` says what
+work has landed. Open the checkout in an editor next: :doc:`/use-branchery/editors` says what
 Branchery has written into it for the debugger and what each window has to
-leave out. When a build stops, :doc:`troubleshooting` has the way on.
+leave out. When a build stops, :doc:`/use-branchery/troubleshooting` has the way on.
 
-:doc:`configuration` is the project's file, key by key, and :doc:`operations`
+:doc:`/reference/configuration` is the project's file, key by key, and :doc:`/reference/operations`
 every operation, step by step. Updating and uninstalling the add-on are on
 :doc:`update`.

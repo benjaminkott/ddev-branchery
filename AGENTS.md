@@ -341,6 +341,15 @@ why the sources still travel in the image.
 
 - **The reading order lives in the toctree**, and `Docs::pages()` reads it
   there. A second list beside it is a second place to keep in step.
+- **A section of the manual is a directory**, and the four at the root --
+  `getting-started/`, `use-branchery/`, `reference/`, `architecture/` -- are the
+  four the index names. A page stands in the one it is read under, so the slug
+  carries it: `reference/configuration`, which is what `ddev branchery docs`
+  prints and what the site serves. The name alone still reaches a page, since
+  that is what somebody types. A toctree entry and a `:doc:` are read the way
+  the renderer reads them -- from the directory of the page that names them, or
+  from the root with a leading slash -- and so is a `figure::`, which is why the
+  drawings are named `/images/...`.
 - **Nothing about the site is committed, and neither is the renderer.** `make
   docs` installs the theme at whatever version is current, into a directory git
   does not carry, and the workflow renders through the same target -- so a
@@ -388,14 +397,14 @@ with the worktree.
 | `branchery/app/dev/` | the mocked API the interface is developed against |
 | `branchery/app/defaults/` | the shipped configurations -- what `profile: typo3-app` means, as files |
 | `branchery/app/tests/` | what is worth testing without a project: the parsing, the naming, the generated configuration |
-| `branchery/docs/` | the documentation and the product page, reStructuredText |
+| `branchery/docs/` | the documentation and the product page, reStructuredText -- a directory per section of the manual, as the toctrees have it |
 | `install.yaml`, `commands/`, `docker-compose.*` | what DDEV installs |
 | `tools/` | what is run by hand or by a workflow and ships with neither |
 
-[branchery/docs/operations.rst](branchery/docs/operations.rst) says what every
-operation does, step by step;
-[branchery/docs/configuration.rst](branchery/docs/configuration.rst) says what a
-project writes in `.ddev/branchery.yaml`, key by key.
+[branchery/docs/reference/operations.rst](branchery/docs/reference/operations.rst)
+says what every operation does, step by step;
+[branchery/docs/reference/configuration.rst](branchery/docs/reference/configuration.rst)
+says what a project writes in `.ddev/branchery.yaml`, key by key.
 
 **Nothing about a project is guessed.** An operation makes a worktree -- a
 checkout, an address, a PHP version, an empty database -- and everything beyond

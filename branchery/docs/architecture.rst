@@ -12,13 +12,13 @@ state belong to the project.
 
 ..  grid::
 
-    ..  card:: :doc:`what-runs-where`
+    ..  card:: :doc:`/architecture/what-runs-where`
         :action: Read it
 
         The containers, the addresses, the files that are written, and what a
         worktree costs on disk.
 
-    ..  card:: :doc:`safety`
+    ..  card:: :doc:`/architecture/safety`
         :action: Read it
 
         Locks, branch safety, operation records and the trust boundary.
@@ -26,5 +26,5 @@ state belong to the project.
 ..  toctree::
     :hidden:
 
-    what-runs-where
-    safety
+    architecture/what-runs-where
+    architecture/safety
