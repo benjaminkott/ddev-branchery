@@ -68,8 +68,24 @@ The API does not ask who the caller is, and the container can invoke the
 project's tools and console. This is safe only within the trust boundary DDEV
 normally provides: one developer's machine, one local project and its router.
 
+Requests a browser marks as coming from another site are refused, so a page open
+in another tab cannot drive this interface. That is a bolt on the door and not a
+lock: it stops one specific way in and it does nothing about who can reach the
+port. What keeps this safe is still the network boundary.
+
 ..  warning::
 
     Do not publish the Branchery port or place the interface on a shared
     network. It is a local development tool with the effective power of a shell
     in the project's web container.
+
+DDEV binds its router to the loopback address by default, which is what puts the
+interface on the developer's own machine and nowhere else. A project or a global
+configuration that sets ``bind_all_interfaces: true`` -- usually to try a site on
+a phone -- takes that boundary away, and Branchery is then reachable from every
+machine on the same network, as a shell. Branchery cannot see that setting and
+does not warn about it.
+
+If you need a site on another device, expose the project and leave Branchery out
+of it: run ``ddev branchery`` from a terminal instead of opening the interface,
+or remove the add-on for as long as the port is open.

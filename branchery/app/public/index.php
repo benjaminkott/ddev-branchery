@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Container;
 use App\Http\BusyException;
 use App\Http\MissingException;
+use App\Http\Origin;
 use App\Http\Response;
 use App\Http\Router;
 
@@ -16,6 +17,14 @@ ini_set('display_errors', 'stderr');
 
 $router = new Router(Container::fromEnvironment());
 $path = parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?: '/';
+
+// Before anything is read or run: this API asks nobody who they are, so a
+// request from another site is the one thing it can refuse on its own.
+if (Origin::isForeign($_SERVER)) {
+    Response::json(['error' => 'This API answers its own page only.'], 403)->send();
+
+    exit;
+}
 
 try {
     $response = $router->dispatch(
