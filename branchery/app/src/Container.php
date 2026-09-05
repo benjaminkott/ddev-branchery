@@ -23,6 +23,11 @@ use App\Command\RestoreCommand;
 use App\Command\ShowJobCommand;
 use App\Command\SyncCommand;
 use App\Controller\ApiController;
+use App\Git\Facts;
+use App\Git\History;
+use App\Git\Repository;
+use App\Git\Runner;
+use App\Git\WorkingCopy;
 use App\Operation\BranchMoves;
 use App\Operation\CarriedFiles;
 use App\Operation\Contexts;
@@ -135,9 +140,30 @@ final class Container
         ));
     }
 
+    /**
+     * The one place a git command is built, and what tells whoever kept an answer
+     * that one of them wrote. Shared, or a second Runner would leave the first
+     * one's listeners out of a write.
+     */
+    public function gitRunner(): Runner
+    {
+        return $this->share(Runner::class, fn (): Runner => new Runner($this->project(), $this->web()));
+    }
+
+    public function gitFacts(): Facts
+    {
+        return $this->share(Facts::class, fn (): Facts => new Facts($this->project(), $this->gitRunner()));
+    }
+
     public function git(): Git
     {
-        return $this->share(Git::class, fn (): Git => new Git($this->project(), $this->web(), $this->locks()));
+        return $this->share(Git::class, fn (): Git => new Git(
+            $this->gitRunner(),
+            $this->gitFacts(),
+            new History($this->gitRunner()),
+            new WorkingCopy($this->gitRunner()),
+            new Repository($this->project(), $this->gitRunner(), $this->locks()),
+        ));
     }
 
     public function ssh(): SshAgent

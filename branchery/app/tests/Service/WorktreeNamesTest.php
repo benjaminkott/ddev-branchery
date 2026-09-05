@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Tests\Service;
 
-use App\Service\Git;
 use App\Service\Locks;
 use App\Service\ManagedFiles;
 use App\Service\NodeVersions;
@@ -15,6 +14,7 @@ use App\Service\Recipes;
 use App\Service\Runtimes;
 use App\Service\VersionMap;
 use App\Service\WorktreeRepository;
+use App\Tests\Fake\Assembled;
 use App\Tests\Fake\RecordingContainer;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
@@ -55,7 +55,7 @@ final class WorktreeNamesTest extends TestCase
             $files,
             new PhpVersions($project, $web, new VersionMap($project->stateDirectory() . '/php.map', $files, $locks), new Runtimes($web), $locks),
             new NodeVersions($web, new VersionMap($project->stateDirectory() . '/node.map', $files, $locks), new Runtimes($web)),
-            new Git($project, $web, $locks),
+            Assembled::git($project, $web, $locks),
             new ProjectDatabase($web),
             new Recipes($this->root, \dirname(__DIR__, 2) . '/defaults'),
         );

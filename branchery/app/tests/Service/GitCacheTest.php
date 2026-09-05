@@ -4,91 +4,144 @@ declare(strict_types=1);
 
 namespace App\Tests\Service;
 
+use App\Git\Facts;
+use App\Git\Runner;
 use App\Service\Git;
 use App\Service\Locks;
 use App\Service\ManagedFiles;
 use App\Service\Project;
+use App\Tests\Fake\Assembled;
 use App\Tests\Fake\RecordingContainer;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
- * That what Git remembers is dropped wherever it writes.
+ * That what git said stops being believed the moment this application moves it.
  *
- * Every answer this class keeps is true only until git moves, and it is this
- * class that moves it. A field added to the top and forgotten in forget(), or a
- * new call that writes without dropping what was read before it, produces no
- * type error, no analyser finding and no failing test elsewhere -- it produces
- * a page showing a branch that has since moved. Both halves of that rule are
- * held here, because neither is visible in anything the compiler reads.
+ * Every answer kept for a request is true only until git moves, and it is this
+ * application that moves it. That used to be nine fields cleared by hand in a
+ * method every writing call had to remember to make, and two of them had
+ * stopped remembering -- which is no type error, no analyser finding and no
+ * failing test elsewhere. It is a page showing a branch that has since moved.
+ *
+ * The Runner tells whoever kept an answer, so the remembering is gone. What is
+ * left to hold is that it tells, that a question does not, and that being told
+ * drops everything.
  */
+#[CoversClass(Runner::class)]
+#[CoversClass(Facts::class)]
 #[CoversClass(Git::class)]
 final class GitCacheTest extends TestCase
 {
     /**
-     * Read as a property of the class rather than as a list to keep in step: what
-     * this class remembers is exactly what it does not hold readonly, so a new
-     * cache is found by the same rule that finds the ones already here.
+     * The whole of the reaction, read as a property of the class rather than as a
+     * list to keep in step: a field added to Facts is found by the same rule that
+     * finds the ones already there.
      */
-    public function testForgetDropsEverythingThisClassRemembers(): void
+    public function testInvalidateDropsEverythingFactsRemembers(): void
     {
-        $git = self::git();
-        $defaults = (new \ReflectionClass(Git::class))->getDefaultProperties();
+        $facts = new Facts(self::project(), new Runner(self::project(), new RecordingContainer()));
 
-        $remembered = self::caches();
-        self::assertNotSame([], $remembered, 'no cached fields were found; this test has stopped testing anything');
+        $kept = self::caches();
+        self::assertNotSame([], $kept, 'no cached fields were found; this test has stopped testing anything');
 
-        foreach ($remembered as $property) {
-            $property->setValue($git, self::stale($property));
+        $defaults = (new \ReflectionClass(Facts::class))->getDefaultProperties();
+        foreach ($kept as $property) {
+            $property->setValue($facts, self::stale($property));
         }
 
-        (new \ReflectionMethod(Git::class, 'forget'))->invoke($git);
+        $facts->invalidate();
 
-        foreach ($remembered as $property) {
+        foreach ($kept as $property) {
             self::assertSame(
                 $defaults[$property->getName()] ?? null,
-                $property->getValue($git),
-                sprintf('forget() left "%s" as it was; add it there or a moved branch goes on being reported as it stood.', $property->getName()),
+                $property->getValue($facts),
+                sprintf('invalidate() left "%s" as it was; a moved branch goes on being reported as it stood.', $property->getName()),
             );
         }
     }
 
     /**
-     * The other half: a method that makes git write and does not drop what was
-     * read before it leaves this class answering out of the state it just changed.
-     * Read out of the source, because whether a call is made is not a thing an
-     * instance can be asked.
+     * The half no reflection can see: that a write says so at all. Asked of the
+     * Runner rather than of the methods that call it, because that is the point of
+     * having one -- a method added anywhere cannot leave this out.
+     *
+     * @param list<string> $arguments
      */
-    public function testEveryMethodThatMakesGitWriteDropsWhatItRemembered(): void
+    #[DataProvider('writes')]
+    public function testAWriteTellsWhoeverKeptAnAnswer(string $method, array $arguments): void
     {
-        $reflection = new \ReflectionClass(Git::class);
-        $file = (string) $reflection->getFileName();
-        $lines = explode("\n", (string) file_get_contents($file));
+        $runner = new Runner(self::project(), new RecordingContainer());
+        $told = 0;
+        $runner->onWrite(static function () use (&$told): void { ++$told; });
 
-        $writing = [];
-        foreach ($reflection->getMethods() as $method) {
-            if ($method->getDeclaringClass()->getName() !== Git::class) {
-                continue;
-            }
-            $body = implode("\n", \array_slice(
-                $lines,
-                (int) $method->getStartLine() - 1,
-                (int) $method->getEndLine() - (int) $method->getStartLine() + 1,
-            ));
-            // The two helpers everything writing goes through. A method that calls
-            // one of them is a method that moved something.
-            if (!str_contains($body, '$this->work(') && !str_contains($body, '$this->workInWorktree(')) {
-                continue;
-            }
-            $writing[] = $method->getName();
-            self::assertStringContainsString(
-                '$this->forget()',
-                $body,
-                sprintf('%s() makes git write and keeps what was read before it.', $method->getName()),
-            );
-        }
+        $runner->{$method}(...$arguments);
 
-        self::assertNotSame([], $writing, 'nothing was found that writes; this test has stopped testing anything');
+        self::assertSame(1, $told, sprintf('%s() wrote and said nothing about it.', $method));
+    }
+
+    /** @return iterable<string, array{string, list<string>}> */
+    public static function writes(): iterable
+    {
+        yield 'at the project' => ['work', ['fetch', 'origin']];
+        yield 'in a worktree' => ['workInWorktree', ['demo', 'merge', '--ff-only']];
+    }
+
+    /**
+     * And the other way: asking costs nothing. A question that dropped what was
+     * read would make the keeping pointless -- the page asks a dozen of them for
+     * every look.
+     *
+     * @param list<string> $arguments
+     */
+    #[DataProvider('questions')]
+    public function testAQuestionTellsNobody(string $method, array $arguments): void
+    {
+        $runner = new Runner(self::project(), new RecordingContainer());
+        $told = 0;
+        $runner->onWrite(static function () use (&$told): void { ++$told; });
+
+        $runner->{$method}(...$arguments);
+
+        self::assertSame(0, $told, sprintf('%s() only asked, and said something had been written.', $method));
+    }
+
+    /** @return iterable<string, array{string, list<string>}> */
+    public static function questions(): iterable
+    {
+        yield 'at the project' => ['run', ['rev-parse', 'HEAD']];
+        yield 'in a worktree' => ['inWorktree', ['demo', 'rev-parse', 'HEAD']];
+        yield 'in a checkout' => ['inCheckout', ['demo', 'status']];
+    }
+
+    /**
+     * The two ends together, through the door every caller uses: what git said is
+     * answered again from what was kept, and a write puts an end to that.
+     */
+    public function testWhatWasReadIsAskedAgainOnceSomethingWroteOverIt(): void
+    {
+        $web = new RecordingContainer();
+        $web->answer('worktree list --porcelain', "\x1ehead\nmain\n");
+        $git = Assembled::git(self::project(), $web, self::locks());
+
+        self::assertSame('main', $git->currentBranch());
+        // Asked twice and read once: that is what the keeping is for.
+        self::assertSame('main', $git->currentBranch());
+        self::assertSame(1, self::asked($web), 'the kept answer was not used');
+
+        $git->deleteBranch('gone');
+
+        self::assertSame('main', $git->currentBranch());
+        self::assertSame(2, self::asked($web), 'the answer from before the write was handed out again');
+    }
+
+    private static function asked(RecordingContainer $web): int
+    {
+        return \count(array_filter(
+            $web->lines(),
+            static fn (string $line): bool => str_contains($line, 'worktree list --porcelain'),
+        ));
     }
 
     /**
@@ -97,7 +150,7 @@ final class GitCacheTest extends TestCase
     private static function caches(): array
     {
         $caches = [];
-        foreach ((new \ReflectionClass(Git::class))->getProperties() as $property) {
+        foreach ((new \ReflectionClass(Facts::class))->getProperties() as $property) {
             if (!$property->isReadOnly() && !$property->isStatic()) {
                 $caches[] = $property;
             }
@@ -132,21 +185,19 @@ final class GitCacheTest extends TestCase
         return (new \ReflectionClass($named))->newInstanceWithoutConstructor();
     }
 
-    private static function git(): Git
+    private static function project(): Project
     {
-        $root = sys_get_temp_dir() . '/branchery-git-cache';
-        $project = new Project(
-            projectRoot: $root,
-            hostProjectRoot: $root,
+        return new Project(
+            projectRoot: sys_get_temp_dir() . '/branchery-git-cache',
+            hostProjectRoot: sys_get_temp_dir() . '/branchery-git-cache',
             projectName: 'blog',
             worktrees: '.worktrees',
             domain: 'ddev.site',
         );
+    }
 
-        return new Git(
-            $project,
-            new RecordingContainer(),
-            new Locks($project, new ManagedFiles((int) getmyuid(), (int) getmygid())),
-        );
+    private static function locks(): Locks
+    {
+        return new Locks(self::project(), new ManagedFiles((int) getmyuid(), (int) getmygid()));
     }
 }

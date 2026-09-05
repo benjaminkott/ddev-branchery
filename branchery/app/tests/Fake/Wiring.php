@@ -5,6 +5,11 @@ declare(strict_types=1);
 namespace App\Tests\Fake;
 
 use App\Controller\ApiController;
+use App\Git\Facts;
+use App\Git\History;
+use App\Git\Repository;
+use App\Git\Runner;
+use App\Git\WorkingCopy;
 use App\Operation\BranchMoves;
 use App\Operation\CarriedFiles;
 use App\Operation\Contexts;
@@ -73,7 +78,16 @@ final class Wiring
         // open file, so a second Locks holding the same key blocks against the
         // first from inside the very process that holds it.
         $locks = $this->locks = new Locks($this->project, $this->files);
-        $this->git = new Git($this->project, $this->web, $locks);
+        // One Runner for the whole graph, as App\Container has it: it is what
+        // tells Facts that a command wrote, and a second one tells nobody.
+        $runner = new Runner($this->project, $this->web);
+        $this->git = new Git(
+            $runner,
+            new Facts($this->project, $runner),
+            new History($runner),
+            new WorkingCopy($runner),
+            new Repository($this->project, $runner, $locks),
+        );
         $runtimes = new Runtimes($this->web);
         $php = new PhpVersions($this->project, $this->web, $this->map('php'), $runtimes, $locks);
         $node = new NodeVersions($this->web, $this->map('node'), $runtimes);
