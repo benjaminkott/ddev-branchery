@@ -160,9 +160,12 @@ compose file leaves open.
   reading the code has to walk past it.
 - **Do not name counts of things.** "Fourteen services", "eleven routes" --
   every one of those is wrong at the next commit, and nobody updates them.
-- **The mock mirrors the container.** `dev/api.mjs` answers the same routes with
-  the same shapes as `src/Controller/ApiController.php`; when one changes, the
-  other changes with it, or the interface is developed against a lie.
+- **The mock mirrors the container**, and no longer only as a promise.
+  `api-answers.json` says what every door answers with, field by field, and
+  three readers are held to it: the container's own answers
+  (`tests/Contract/ApiAnswersTest.php`), the mock's (`dev/answers.test.mjs`) and
+  the interfaces in `frontend/types.ts`. A field added on one side and not the
+  others fails there rather than reading exactly as it did.
 - **The layout of the sources is not an opinion.** Prettier writes it, and
   `npm run check` refuses what was not run through it. It is told to leave the
   inside of a `html` template alone, because whitespace in one of those is
@@ -335,6 +338,7 @@ the state the change is about.
 | | |
 |---|---|
 | `branchery/app/src/` | the REST API and the console, PHP |
+| `branchery/app/api-answers.json` | what the API answers with, field by field -- both halves are checked against it |
 | `branchery/app/frontend/` | the interface, TypeScript -- and beside `app.ts` the rules it applies, each one testable without a browser |
 | `branchery/app/frontend/views/` | the pages, the dialogs and the pieces they are drawn from |
 | `branchery/app/frontend/components/` | what is reused, as lit elements |

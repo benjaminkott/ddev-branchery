@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Tests\Fake;
 
+use App\Controller\ApiController;
 use App\Service\DatabaseOperations;
 use App\Service\DescribeInfo;
 use App\Service\Git;
+use App\Service\Installation;
 use App\Service\JobRunner;
 use App\Service\Locks;
 use App\Service\ManagedFiles;
@@ -16,12 +18,14 @@ use App\Service\Project;
 use App\Service\ProjectDatabase;
 use App\Service\Recipes;
 use App\Service\Runtimes;
+use App\Service\Snapshot;
 use App\Service\SshAgent;
 use App\Service\Surroundings;
 use App\Service\VersionMap;
 use App\Service\VersionMap as Map;
 use App\Service\WorktreeManager;
 use App\Service\WorktreeRepository;
+use App\Service\WorktreeUsage;
 use Symfony\Component\Filesystem\Filesystem;
 
 /**
@@ -42,6 +46,7 @@ final class Wiring
     public readonly WorktreeManager $manager;
     public readonly JobRunner $jobs;
     public readonly ManagedFiles $files;
+    public readonly ApiController $api;
     private readonly Locks $locks;
 
     public function __construct(public readonly string $root)
@@ -93,6 +98,22 @@ final class Wiring
             new SshAgent($this->web, $this->git),
             $locks,
             $this->jobs,
+        );
+        // The API over the same graph. What it answers with is the one thing the
+        // interface is written against, and the shape of that is worth holding to
+        // -- see ApiAnswersTest.
+        $this->api = new ApiController(
+            $this->project,
+            $this->worktrees,
+            $this->manager,
+            $php,
+            $this->jobs,
+            $this->git,
+            $recipes,
+            $locks,
+            new Installation($this->project, 'dev'),
+            new WorktreeUsage($this->project, $this->web, $database, new DatabaseOperations($this->web, $database)),
+            new Snapshot($this->project, $this->files),
         );
     }
 

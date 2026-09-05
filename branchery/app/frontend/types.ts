@@ -166,7 +166,7 @@ export interface Commits {
  * each is a door of its own, a commit that touched two hundred files not being
  * an answer anybody asked for in full.
  */
-export interface CommitDetail extends Commit {
+export interface CommitDetail extends Omit<Commit, 'own'> {
     /** The message under its subject, or "" where there is none. */
     body: string;
     /** The whole hash, which is what a commit is named by where it matters. */
@@ -193,10 +193,16 @@ export interface DiskUsage {
     total: number;
 }
 
+/** One line of a diff, as the element that draws it reads them. */
+export interface DiffLine {
+    kind: 'add' | 'del' | 'context';
+    text: string;
+}
+
 /** The change in one file, as the lines the diff element draws. */
 export interface ChangeDiff {
     path: string;
-    lines: { kind: 'add' | 'del' | 'context'; text: string }[];
+    lines: DiffLine[];
     truncated: boolean;
 }
 

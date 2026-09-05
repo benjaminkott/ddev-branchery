@@ -5,20 +5,22 @@
  * so a route added to one and not the other is a difference two regular
  * expressions can find.
  *
- * What it cannot check is the shape of an answer: that needs both running, and
- * the container needs a project. What it can check is the few answers the mock
- * used to give differently, and the few things the container decides that the
- * interface has to decide the same way. The way those go wrong is that one side
- * is changed and the other reads exactly as it did.
+ * What the doors answer with is written down in api-answers.json and checked
+ * against both sides -- see dev/answers.test.mjs. What is left here is the way
+ * the mock behaves: what it refuses, what it accepts and lets the job refuse,
+ * and the handful of decisions the container makes that the interface has to
+ * make the same way. Those go wrong by one side being changed while the other
+ * reads exactly as it did.
  */
 
 import { strict as assert } from 'node:assert';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { describe, it } from 'node:test';
-import { fileURLToPath, URLSearchParams } from 'node:url';
+import { fileURLToPath } from 'node:url';
 
 import { createApi } from './api.mjs';
+import { call } from './ask.mjs';
 import { createWorld, slug } from './fixtures.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -58,128 +60,7 @@ describe('the mocked API', () => {
     });
 });
 
-/**
- * The keys of the array the container hands to Response::json, at the one
- * indentation the literal itself stands at.
- */
-function containerKeys(method) {
-    const php = readFileSync(resolve(here, '../src/Controller/ApiController.php'), 'utf8');
-    const from = php.indexOf(`function ${method}(`);
-    const body = php.slice(from, php.indexOf('\n    }', from));
-
-    return [...body.matchAll(/^ {12}'(\w+)' =>/gm)].map((hit) => hit[1]);
-}
-
-/**
- * The keys a model writes when it is handed to Response::json -- including the
- * ones it spreads out of another model, which is how a detail says everything
- * the list said and more.
- */
-function modelKeys(model) {
-    const php = readFileSync(resolve(here, `../src/Model/${model}.php`), 'utf8');
-    const body = php.slice(php.indexOf('public function jsonSerialize()'));
-    const own = [...body.matchAll(/^ {12}'(\w+)' =>/gm)].map((hit) => hit[1]);
-
-    const spread = [...body.matchAll(/\.\.\.\$this->(\w+)->jsonSerialize\(\)/g)].flatMap((hit) => {
-        // Which model that property is, read off the constructor beside it.
-        const type = new RegExp(`public (?:readonly )?(\\w+) \\$${hit[1]}\\b`).exec(php);
-
-        return type === null ? [] : modelKeys(type[1]);
-    });
-
-    return [...spread, ...own];
-}
-
-/**
- * A request as the interface makes it, and the answer as it reads it. What
- * stands behind the question mark is taken off the path, as the server does it:
- * a route matches a path and never the query.
- */
-function call(api, method, path, payload = undefined, query = {}) {
-    const [route, asked] = path.split('?');
-    const answer = api.dispatch(method, route, payload === undefined ? '' : JSON.stringify(payload), {
-        ...Object.fromEntries(new URLSearchParams(asked ?? '')),
-        ...query,
-    });
-
-    return { status: answer.status, body: JSON.parse(answer.body) };
-}
-
-describe('the state the whole page is drawn from', () => {
-    /**
-     * The routes are only half of the rule: a mock that answers the same doors with
-     * another set of facts is a lie the interface is developed against. This one
-     * answer, because it is the one the whole page is drawn from and the one that
-     * grows.
-     */
-    it('is made of what the container says it is made of', () => {
-        // The method that builds the answer, not the one the route calls: that one
-        // hands the work to Snapshot and carries no keys of its own.
-        const container = containerKeys('readState');
-        const mock = Object.keys(call(createApi(), 'GET', '/api/state').body);
-
-        assert.ok(container.length > 0, 'no fields were read out of the container');
-        assert.deepEqual([...mock].sort(), [...container].sort());
-    });
-});
-
-/**
- * Every answer that has a shape written down in the container, checked against
- * what the mock hands out. The routes were only the doors; this is what is
- * behind them, and it is the half that used to drift in silence -- a field
- * added on one side reads exactly as it did on the other.
- *
- * What is checked is the set of keys, which is what the interface reads by
- * name. The values are what a mock is for, and they are its own.
- */
-describe('the shapes both sides answer with', () => {
-    const shapes = [
-        ['Worktree', 'GET', '/api/worktrees', (body) => body[0]],
-        ['Worktree', 'GET', '/api/state', (body) => body.project],
-        ['Branch', 'GET', '/api/branches', (body) => body[0]],
-        ['BranchDetail', 'GET', '/api/branch?branch=13.4', (body) => body],
-    ];
-
-    for (const [model, method, path, pick] of shapes) {
-        it(`answers ${path} the way ${model} is written`, () => {
-            const answer = call(createApi(), method, path);
-            assert.equal(answer.status, 200, `${path} answered ${answer.status}`);
-            const mock = pick(answer.body);
-
-            assert.ok(mock, `${path} carried nothing to compare`);
-            assert.deepEqual(Object.keys(mock).sort(), modelKeys(model).sort());
-        });
-    }
-
-    /**
-     * The one answer whose shape is a method and not a model: a page of the log,
-     * which the interface reads for the commits and for whether there are more.
-     */
-    it('answers a page of commits the way the container writes one', () => {
-        const php = readFileSync(resolve(here, '../src/Controller/ApiController.php'), 'utf8');
-        const from = php.indexOf('function logPage(');
-        const container = [...php.slice(from, php.indexOf('\n    }', from)).matchAll(/^ {12}'(\w+)' =>/gm)].map(
-            (hit) => hit[1],
-        );
-        const mock = call(createApi(), 'GET', '/api/worktrees/feature-checkout/commits').body;
-
-        assert.ok(container.length > 0, 'no fields were read out of the container');
-        assert.deepEqual(Object.keys(mock).sort(), container.sort());
-    });
-});
-
 describe('how an operation reports itself', () => {
-    /** As the state does: the fields are the container's, or one of them is a lie. */
-    it('says what JobState says', () => {
-        const api = createApi();
-        const started = call(api, 'POST', '/api/worktrees/feature-checkout/pull');
-        const mock = Object.keys(call(api, 'GET', `/api/jobs/${started.body.job}`).body);
-        const container = modelKeys('JobState');
-
-        assert.ok(container.length > 0, 'no fields were read out of the container');
-        assert.deepEqual([...mock].sort(), [...container].sort());
-    });
-
     /**
      * The page asks once a second and glues the answers together, so a mock that
      * sends the whole log every time would hide the one thing that can go wrong
