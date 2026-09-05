@@ -77,6 +77,12 @@ final readonly class Snapshot
         foreach (glob($this->project->worktreesDirectory() . '/*', GLOB_ONLYDIR) ?: [] as $directory) {
             $marks[] = basename($directory);
         }
+        // And what is written about them, for the one change that is neither: the
+        // PHP version set from the page is a file under metadata/ and no operation
+        // at all, so without this the row said the old version back.
+        foreach (glob($this->project->metadataDirectory() . '/*.json') ?: [] as $file) {
+            $marks[] = basename($file) . ':' . (int) @filemtime($file);
+        }
 
         return md5(implode("\n", $marks));
     }
