@@ -11,7 +11,8 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { aside } from '../rules/aside.js';
+import { aside, readInto } from '../rules/aside.js';
+import { reader } from '../rules/reading.js';
 
 describe('what was read beside a view', () => {
     it('says the page is new, and then that it is not', () => {
@@ -114,5 +115,51 @@ describe('what was read beside a view', () => {
 
         assert.equal(held.of('one'), null);
         assert.equal(held.about('one'), true);
+    });
+
+    /**
+     * The two rules of a read, together: what came back is held, and what came
+     * back as nothing is what went wrong. Four reads in three views spelled the
+     * second one out for themselves.
+     */
+    describe('read into one', () => {
+        const reading = reader(
+            (error) => (error instanceof Error ? error.message : 'unknown'),
+            () => {},
+        );
+
+        it('holds what came back', async () => {
+            const held = aside<string>();
+            held.about('one');
+
+            await readInto(held, 'one', () => Promise.resolve('a history'), reading);
+
+            assert.equal(held.of('one'), 'a history');
+            assert.equal(held.trouble('one'), '');
+        });
+
+        it('holds why nothing did instead', async () => {
+            const held = aside<string>();
+            held.about('one');
+
+            await readInto(held, 'one', () => Promise.reject(new Error('the container is away')), reading);
+
+            assert.equal(held.of('one'), null);
+            assert.equal(held.trouble('one'), 'the container is away');
+        });
+
+        /** The whole reason the holder is asked rather than told. */
+        it('drops an answer about a page the reader has left', async () => {
+            const held = aside<string>();
+            held.about('one');
+
+            const arriving = readInto(held, 'one', () => Promise.resolve('a history'), reading);
+            held.about('two');
+            await arriving;
+
+            assert.equal(held.of('one'), null);
+            assert.equal(held.of('two'), null);
+            assert.equal(held.trouble('two'), '');
+        });
     });
 });

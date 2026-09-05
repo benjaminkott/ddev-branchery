@@ -15,7 +15,7 @@ import { api } from '../api.js';
 import { buildWayOut, formatWhen } from '../dom.js';
 import { reader } from '../rules/reading.js';
 import { errorSentence, state, t } from '../state.js';
-import { aside } from '../rules/aside.js';
+import { aside, readInto } from '../rules/aside.js';
 import type { ChangeDiff, CommitDetail } from '../types.js';
 import { backTo } from './back.js';
 import { waiting } from './waiting.js';
@@ -154,18 +154,7 @@ export class CommitView extends View {
     }
 
     private async readCommit(name: string, sha: string): Promise<void> {
-        await this.reading(
-            () => api.commit(name, sha),
-            () => this.stillReading(name, sha),
-            (commit, trouble) => {
-                if (commit === null) {
-                    this.read.failed(keyOf(name, sha), trouble);
-
-                    return;
-                }
-                this.read.put(keyOf(name, sha), commit);
-            },
-        );
+        await readInto(this.read, keyOf(name, sha), () => api.commit(name, sha), this.reading);
     }
 
     private async readDiff(name: string, sha: string, path: string): Promise<void> {

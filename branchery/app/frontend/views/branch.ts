@@ -15,7 +15,7 @@ import { api } from '../api.js';
 import { formatWhen, saying } from '../dom.js';
 import { reader } from '../rules/reading.js';
 import { errorSentence, state, t } from '../state.js';
-import { aside } from '../rules/aside.js';
+import { aside, readInto } from '../rules/aside.js';
 import type { BranchDetail, JobHandlers } from '../types.js';
 import { backTo } from './back.js';
 import { commitLog } from './commits.js';
@@ -141,18 +141,7 @@ export class BranchView extends View {
     }
 
     private async readBranch(name: string): Promise<void> {
-        await this.reading(
-            () => api.branch(name),
-            () => this.read.stillOn(name),
-            (branch, trouble) => {
-                if (branch === null) {
-                    this.read.failed(name, trouble);
-
-                    return;
-                }
-                this.read.put(name, branch);
-            },
-        );
+        await readInto(this.read, name, () => api.branch(name), this.reading);
     }
 }
 

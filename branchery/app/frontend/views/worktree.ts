@@ -17,7 +17,7 @@ import { gather, unread } from '../rules/journal.js';
 import { reader } from '../rules/reading.js';
 import { busyWith, errorSentence, operationName, state, stateWords, t } from '../state.js';
 import { whyItStopped } from '../rules/verdict.js';
-import { aside } from '../rules/aside.js';
+import { aside, readInto } from '../rules/aside.js';
 import { onOperationEnded } from '../ended.js';
 import { type Action, actions, type Offer } from '../rules/actions.js';
 import type { Change, ChangeDiff, DiskUsage, Job, JobHandlers, JobSummary, Worktree } from '../types.js';
@@ -619,33 +619,11 @@ export class WorktreeView extends View {
      * not as an empty answer.
      */
     private async readHistory(name: string): Promise<void> {
-        await this.reading(
-            () => api.worktreeJobs(name),
-            () => this.past.stillOn(name),
-            (entries, trouble) => {
-                if (entries === null) {
-                    this.past.failed(name, trouble);
-
-                    return;
-                }
-                this.past.put(name, entries);
-            },
-        );
+        await readInto(this.past, name, () => api.worktreeJobs(name), this.reading);
     }
 
     private async readUsage(name: string): Promise<void> {
-        await this.reading(
-            () => api.worktreeUsage(name),
-            () => this.usage.stillOn(name),
-            (value, trouble) => {
-                if (value === null) {
-                    this.usage.failed(name, trouble);
-
-                    return;
-                }
-                this.usage.put(name, value);
-            },
-        );
+        await readInto(this.usage, name, () => api.worktreeUsage(name), this.reading);
     }
 
     private async readJob(id: string): Promise<void> {

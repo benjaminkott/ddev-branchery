@@ -16,6 +16,9 @@
  * commit by the checkout and the hash together, because the same hash on
  * another branch is another page.
  */
+
+import type { Reading } from './reading.js';
+
 export interface Aside<T> {
     /**
      * Now on this page. True where nothing is held for it, which is the caller's
@@ -98,4 +101,29 @@ export function aside<T>(): Aside<T> {
             why = '';
         },
     };
+}
+
+/**
+ * Reading one thing into what is held beside a page.
+ *
+ * The read and the holder are two rules and every such read is both of them:
+ * an answer about a page the reader has left is dropped, and what came back
+ * as nothing is what went wrong. Written out at each read they were the same
+ * six lines four times over, in three views, with the "nothing came back"
+ * branch spelled again every time -- and one of them is one place for it to be
+ * spelled differently.
+ */
+export async function readInto<T>(held: Aside<T>, key: string, ask: () => Promise<T>, reading: Reading): Promise<void> {
+    await reading(
+        ask,
+        () => held.stillOn(key),
+        (read, trouble) => {
+            if (read === null) {
+                held.failed(key, trouble);
+
+                return;
+            }
+            held.put(key, read);
+        },
+    );
 }
