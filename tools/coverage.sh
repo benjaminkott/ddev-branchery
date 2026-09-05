@@ -21,7 +21,7 @@ set -euo pipefail
 APP="$(cd "$(dirname "${BASH_SOURCE[0]}")/../branchery/app" && pwd)"
 
 # Where it has been. Raised by hand when the number has risen and stayed.
-FLOOR=50
+FLOOR=52
 
 cd "${APP}"
 
