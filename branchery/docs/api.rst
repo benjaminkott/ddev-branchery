@@ -44,3 +44,20 @@ base's. ``?skip=<n>`` is the page behind that one,
 ``/commits/<sha>`` one commit in full with the files it touched, and
 ``/commits/<sha>/diff?path=<path>`` one of those files. It is what the
 interface shows before a discard.
+
+An operation is read a piece at a time. ``GET /api/jobs/<id>`` answers with its
+steps and its log, and with ``size``: how much of the log that answer accounts
+for. Handing that back as ``?since=<size>`` asks for what has been written in
+the meantime -- the answer then carries ``partial: true``, its ``log`` is the
+piece to add to what you already have, and a step that was over before that
+point carries ``output: null`` rather than saying the same thing again.
+
+Reading the whole of it every time is still correct and still supported; a
+``composer install`` writes hundreds of kilobytes, and asking once a second is
+what the interface does.
+
+..  note::
+
+    Requests a browser marks as coming from another site are refused with
+    ``403``. Anything that carries no such mark -- curl, a script, the console
+    -- is unaffected. See :ref:`safety`.

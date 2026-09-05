@@ -64,11 +64,21 @@ composer stan                # static analysis, level 8
 composer cs                  # coding style
 ```
 
+and, from the root, `bats tests/scripts.bats` -- what the two scripts in the web
+container write.
+
 `composer stan` is not optional politeness. Every operation ends in a container,
 so the paths that only run against a real project -- a database that already
 exists, a remote that is gone -- are the ones the tests are least likely to
 walk. That is how `sync` was found broken: it typechecked, its tests passed, it
 was deployed, and it died on `Call to undefined method` at its first step.
+
+What the analyser cannot say anything about is the order those calls come in,
+and that is what an operation is. `WebContainer` is an interface for that
+reason: `tests/Fake` stands in for the container and remembers every command, so
+what a worktree is built out of -- the checkout before anything installed into
+it, the question asked before a database is dropped, the branch deleted after
+the checkout it was in -- is a thing a test can hold to.
 
 The PHP side needs 8.4. Where the host has an older one the container does the
 work -- `docker run --rm -v "$PWD":/app -w /app php:8.4-cli php
@@ -79,8 +89,9 @@ finding about the code and is nothing of the sort.
 
 `npm test` runs what can be tested without a browser: the rules the interface
 applies -- a name made into a hostname, a length of time, what a search leaves
-standing -- and that the mocked API answers the same doors as the container.
-Everything else about the interface is looked at, which is the section above.
+standing -- and that the mocked API answers the same doors as the container,
+with the same fields behind them. Everything else about the interface is looked
+at, which is the section above.
 
 `bats tests/test.bats` is the only thing that walks the way a developer actually
 arrives: `ddev add-on get`, in a project this repository has never seen, with
@@ -90,6 +101,11 @@ add-on get` had been failing outright on the symlinks in `app/node_modules`. Run
 the
 suite before anything that touches `install.yaml`, the `Dockerfile` or what is
 shipped.
+
+`bats tests/scripts.bats` needs no container at all: the two scripts in the web
+container write what they write in functions that take what they need and print
+what they make, and that half is read here. Applying it -- the pools, the
+reloads -- is the half that still needs a project.
 
 What no suite covers, because it needs a project of another shape: PostgreSQL
 and Apache. Both are walked by hand -- `ddev config --database=postgres:16`,
