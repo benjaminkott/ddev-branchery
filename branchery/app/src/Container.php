@@ -23,6 +23,13 @@ use App\Command\RestoreCommand;
 use App\Command\ShowJobCommand;
 use App\Command\SyncCommand;
 use App\Controller\ApiController;
+use App\Operation\BranchMoves;
+use App\Operation\CarriedFiles;
+use App\Operation\Contexts;
+use App\Operation\DataTransfer;
+use App\Operation\Preflight;
+use App\Operation\Provisioning;
+use App\Operation\Removal;
 use App\Service\DatabaseOperations;
 use App\Service\DescribeInfo;
 use App\Service\DockerContainer;
@@ -287,9 +294,51 @@ final class Container
         ));
     }
 
-    public function manager(): WorktreeManager
+    /**
+     * What an operation is made of, one named thing at a time. The order they are
+     * put in is WorktreeManager's, which is the whole of what it does.
+     */
+    public function contexts(): Contexts
     {
-        return $this->share(WorktreeManager::class, fn (): WorktreeManager => new WorktreeManager(
+        return $this->share(Contexts::class, fn (): Contexts => new Contexts(
+            $this->project(),
+            $this->recipes(),
+            $this->php(),
+            $this->node(),
+            $this->database(),
+            $this->web(),
+            $this->files(),
+        ));
+    }
+
+    public function carried(): CarriedFiles
+    {
+        return $this->share(CarriedFiles::class, fn (): CarriedFiles => new CarriedFiles(
+            $this->project(),
+            $this->git(),
+            $this->recipes(),
+            $this->web(),
+        ));
+    }
+
+    public function preflight(): Preflight
+    {
+        return $this->share(Preflight::class, fn (): Preflight => new Preflight(
+            $this->project(),
+            $this->git(),
+            $this->recipes(),
+            $this->php(),
+            $this->database(),
+            $this->databaseOperations(),
+            $this->worktrees(),
+            $this->carried(),
+            $this->jobs(),
+        ));
+    }
+
+    public function provisioning(): Provisioning
+    {
+        return $this->share(Provisioning::class, fn (): Provisioning => new Provisioning(
             $this->project(),
             $this->git(),
             $this->worktrees(),
@@ -298,13 +347,66 @@ final class Container
             $this->databaseOperations(),
             $this->php(),
             $this->node(),
-            $this->files(),
-            $this->web(),
-            $this->describe(),
             $this->surroundings(),
+            $this->describe(),
+            $this->contexts(),
+        ));
+    }
+
+    public function removal(): Removal
+    {
+        return $this->share(Removal::class, fn (): Removal => new Removal(
+            $this->project(),
+            $this->git(),
+            $this->worktrees(),
+            $this->files(),
+            $this->database(),
+            $this->databaseOperations(),
+            $this->php(),
+            $this->node(),
+            $this->surroundings(),
+            $this->describe(),
+            $this->preflight(),
+        ));
+    }
+
+    public function branchMoves(): BranchMoves
+    {
+        return $this->share(BranchMoves::class, fn (): BranchMoves => new BranchMoves(
+            $this->git(),
+            $this->worktrees(),
             $this->ssh(),
+        ));
+    }
+
+    public function dataTransfer(): DataTransfer
+    {
+        return $this->share(DataTransfer::class, fn (): DataTransfer => new DataTransfer(
+            $this->project(),
+            $this->git(),
+            $this->recipes(),
+            $this->database(),
+            $this->databaseOperations(),
+            $this->surroundings(),
+            $this->worktrees(),
+            $this->contexts(),
+        ));
+    }
+
+    public function manager(): WorktreeManager
+    {
+        return $this->share(WorktreeManager::class, fn (): WorktreeManager => new WorktreeManager(
+            $this->project(),
+            $this->git(),
+            $this->worktrees(),
+            $this->files(),
             $this->locks(),
-            $this->jobs(),
+            $this->preflight(),
+            $this->carried(),
+            $this->provisioning(),
+            $this->removal(),
+            $this->branchMoves(),
+            $this->dataTransfer(),
         ));
     }
 

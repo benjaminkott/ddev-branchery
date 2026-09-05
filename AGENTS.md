@@ -338,6 +338,7 @@ the state the change is about.
 | | |
 |---|---|
 | `branchery/app/src/` | the REST API and the console, PHP |
+| `branchery/app/src/Operation/` | what an operation is made of -- the order it is put in is `WorktreeManager` |
 | `branchery/app/api-answers.json` | what the API answers with, field by field -- both halves are checked against it |
 | `branchery/app/frontend/` | the interface, TypeScript -- and beside `app.ts` the rules it applies, each one testable without a browser |
 | `branchery/app/frontend/views/` | the pages, the dialogs and the pieces they are drawn from |

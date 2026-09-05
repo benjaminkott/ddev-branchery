@@ -122,7 +122,27 @@ final readonly class Surroundings
      *
      * @return list<string> what was left as the branch has it
      */
-    public function retargetSites(string $name, string $url, array $paths): array
+    public function retargetSites(string $name, string $url, array $paths, ?StepReporter $reporter = null): array
+    {
+        $kept = $this->putAddressesBack($name, $url, $paths);
+        foreach ($kept as $left) {
+            $reporter?->note(sprintf(
+                '%s is under version control and is left as the branch has it. This worktree answers at %s'
+                . ' -- configuration.md, "Where the addresses come from", says how a project points its sites there.',
+                $left,
+                WorktreeContext::hostOf($url),
+            ));
+        }
+
+        return $kept;
+    }
+
+    /**
+     * @param list<string> $paths
+     *
+     * @return list<string>
+     */
+    private function putAddressesBack(string $name, string $url, array $paths): array
     {
         $directory = $this->project->worktreeDirectory($name);
         $kept = [];

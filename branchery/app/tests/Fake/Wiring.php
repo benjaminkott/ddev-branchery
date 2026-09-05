@@ -5,6 +5,13 @@ declare(strict_types=1);
 namespace App\Tests\Fake;
 
 use App\Controller\ApiController;
+use App\Operation\BranchMoves;
+use App\Operation\CarriedFiles;
+use App\Operation\Contexts;
+use App\Operation\DataTransfer;
+use App\Operation\Preflight;
+use App\Operation\Provisioning;
+use App\Operation\Removal;
 use App\Service\DatabaseOperations;
 use App\Service\DescribeInfo;
 use App\Service\Git;
@@ -82,22 +89,70 @@ final class Wiring
             $recipes,
         );
         $this->jobs = new JobRunner($this->project, $this->files, '/opt/branchery/bin/console');
+
+        // The pieces an operation is made of, wired as App\Container wires them.
+        $databases = new DatabaseOperations($this->web, $database);
+        $describe = new DescribeInfo($this->project, $this->worktrees, $database, $this->files);
+        $surroundings = new Surroundings($this->project, $this->git, $this->files, $this->web);
+        $contexts = new Contexts($this->project, $recipes, $php, $node, $database, $this->web, $this->files);
+        $carried = new CarriedFiles($this->project, $this->git, $recipes, $this->web);
+        $preflight = new Preflight(
+            $this->project,
+            $this->git,
+            $recipes,
+            $php,
+            $database,
+            $databases,
+            $this->worktrees,
+            $carried,
+            $this->jobs,
+        );
+
         $this->manager = new WorktreeManager(
             $this->project,
             $this->git,
             $this->worktrees,
-            $recipes,
-            $database,
-            new DatabaseOperations($this->web, $database),
-            $php,
-            $node,
             $this->files,
-            $this->web,
-            new DescribeInfo($this->project, $this->worktrees, $database, $this->files),
-            new Surroundings($this->project, $this->git, $this->files, $this->web),
-            new SshAgent($this->web, $this->git),
             $locks,
-            $this->jobs,
+            $preflight,
+            $carried,
+            new Provisioning(
+                $this->project,
+                $this->git,
+                $this->worktrees,
+                $recipes,
+                $database,
+                $databases,
+                $php,
+                $node,
+                $surroundings,
+                $describe,
+                $contexts,
+            ),
+            new Removal(
+                $this->project,
+                $this->git,
+                $this->worktrees,
+                $this->files,
+                $database,
+                $databases,
+                $php,
+                $node,
+                $surroundings,
+                $describe,
+                $preflight,
+            ),
+            new BranchMoves($this->git, $this->worktrees, new SshAgent($this->web, $this->git)),
+            new DataTransfer(
+                $this->project,
+                $this->git,
+                $recipes,
+                $database,
+                $databases,
+                $surroundings,
+                $this->worktrees,
+                $contexts,
+            ),
         );
         // The API over the same graph. What it answers with is the one thing the
         // interface is written against, and the shape of that is worth holding to
@@ -112,7 +167,7 @@ final class Wiring
             $recipes,
             $locks,
             new Installation($this->project, 'dev'),
-            new WorktreeUsage($this->project, $this->web, $database, new DatabaseOperations($this->web, $database)),
+            new WorktreeUsage($this->project, $this->web, $database, $databases),
             new Snapshot($this->project, $this->files),
         );
     }

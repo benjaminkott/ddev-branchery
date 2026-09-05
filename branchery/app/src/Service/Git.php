@@ -734,7 +734,7 @@ final class Git
 
     /**
      * What a fork is offered to carry over; without a name, the project's own. What
-     * travels is decided in WorktreeManager::carried().
+     * travels is decided in App\Operation\CarriedFiles.
      *
      * @return list<string>
      */

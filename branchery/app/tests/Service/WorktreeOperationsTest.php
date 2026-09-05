@@ -4,6 +4,12 @@ declare(strict_types=1);
 
 namespace App\Tests\Service;
 
+use App\Operation\BranchMoves;
+use App\Operation\CarriedFiles;
+use App\Operation\DataTransfer;
+use App\Operation\Preflight;
+use App\Operation\Provisioning;
+use App\Operation\Removal;
 use App\Service\StepReporter;
 use App\Service\WorktreeManager;
 use App\Tests\Fake\Wiring;
@@ -20,8 +26,17 @@ use PHPUnit\Framework\TestCase;
  * step that stops the rest. A wrong order is a worktree half built in front of
  * a developer, and neither the types nor the analyser have anything to say
  * about it.
+ *
+ * The order is WorktreeManager's and the steps are App\Operation's, so both are
+ * walked from here: neither half is worth anything without the other.
  */
 #[CoversClass(WorktreeManager::class)]
+#[CoversClass(Preflight::class)]
+#[CoversClass(CarriedFiles::class)]
+#[CoversClass(Provisioning::class)]
+#[CoversClass(Removal::class)]
+#[CoversClass(BranchMoves::class)]
+#[CoversClass(DataTransfer::class)]
 final class WorktreeOperationsTest extends TestCase
 {
     private Wiring $wiring;
