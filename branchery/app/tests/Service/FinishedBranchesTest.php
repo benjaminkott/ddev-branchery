@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Service;
 
 use App\Service\Git;
+use App\Service\GitOutput;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
@@ -18,7 +19,7 @@ final class FinishedBranchesTest extends TestCase
 {
     public function testNothingIsFinishedInAnEmptyAnswer(): void
     {
-        self::assertSame(['merged' => [], 'gone' => []], Git::finishedOf(''));
+        self::assertSame(['merged' => [], 'gone' => []], GitOutput::finishedOf(''));
     }
 
     public function testMergedAndGoneAreKeptApart(): void
@@ -31,7 +32,7 @@ final class FinishedBranchesTest extends TestCase
 
         self::assertSame(
             ['merged' => ['main', 'spike/alpha'], 'gone' => ['task/old-endpoint']],
-            Git::finishedOf($output),
+            GitOutput::finishedOf($output),
         );
     }
 
@@ -41,12 +42,12 @@ final class FinishedBranchesTest extends TestCase
      */
     public function testTheCheckedOutBranchIsNotCalledSomethingElse(): void
     {
-        self::assertSame(['main'], Git::finishedOf('merged * main')['merged']);
+        self::assertSame(['main'], GitOutput::finishedOf('merged * main')['merged']);
     }
 
     public function testABranchWithASlashSurvivesIntact(): void
     {
-        self::assertSame(['bugfix/v14-typoscript-conditions'], Git::finishedOf('gone bugfix/v14-typoscript-conditions')['gone']);
+        self::assertSame(['bugfix/v14-typoscript-conditions'], GitOutput::finishedOf('gone bugfix/v14-typoscript-conditions')['gone']);
     }
 
     /** Lines that are neither are the noise git puts around the answer. */
@@ -54,6 +55,6 @@ final class FinishedBranchesTest extends TestCase
     {
         $output = "warning: something\nmerged main\n\n  \n";
 
-        self::assertSame(['merged' => ['main'], 'gone' => []], Git::finishedOf($output));
+        self::assertSame(['merged' => ['main'], 'gone' => []], GitOutput::finishedOf($output));
     }
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Service;
 
 use App\Service\Git;
+use App\Service\GitOutput;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
@@ -19,7 +20,7 @@ final class WorktreeStatesTest extends TestCase
 {
     public function testAWorktreeThatSaidNothingIsStillThere(): void
     {
-        $states = Git::statesOf("# /var/www/html/.worktrees/demo\n");
+        $states = GitOutput::statesOf("# /var/www/html/.worktrees/demo\n");
 
         self::assertArrayHasKey('demo', $states);
         self::assertSame(0, $states['demo']->changes);
@@ -37,7 +38,7 @@ final class WorktreeStatesTest extends TestCase
             tracking 2	5
             OUT;
 
-        $state = Git::statesOf($output)['demo'];
+        $state = GitOutput::statesOf($output)['demo'];
 
         self::assertSame(3, $state->changes);
         self::assertSame('0b5a1f2c9d', $state->head);
@@ -52,7 +53,7 @@ final class WorktreeStatesTest extends TestCase
     public function testACommitThatSaysNothingLeavesNothingBehind(): void
     {
         $output = "# /var/www/html/.worktrees/demo\nchanges 0\nchange \nissue \n";
-        $state = Git::statesOf($output)['demo'];
+        $state = GitOutput::statesOf($output)['demo'];
 
         self::assertSame('', $state->change);
         self::assertSame('', $state->issue);
@@ -65,7 +66,7 @@ final class WorktreeStatesTest extends TestCase
      */
     public function testWhatTheBuildReadsHavingChangedIsSaidOnce(): void
     {
-        $states = Git::statesOf("# /home/dev/blog/.worktrees/moved\nchanges 0\nrebuild 2\n# /home/dev/blog/.worktrees/same\nchanges 0\nrebuild 0\n# /home/dev/blog/.worktrees/old\nchanges 0\n");
+        $states = GitOutput::statesOf("# /home/dev/blog/.worktrees/moved\nchanges 0\nrebuild 2\n# /home/dev/blog/.worktrees/same\nchanges 0\nrebuild 0\n# /home/dev/blog/.worktrees/old\nchanges 0\n");
 
         self::assertTrue($states['moved']->rebuild);
         self::assertFalse($states['same']->rebuild);
@@ -75,15 +76,15 @@ final class WorktreeStatesTest extends TestCase
     /** As "log -1" names it -- and nothing where the checkout could not be read. */
     public function testTheTipIsTheHashAndTheSubject(): void
     {
-        $state = Git::statesOf("# /var/www/html/.worktrees/demo\nchanges 0\ntip 1a8ebfc\t[BUGFIX] Check for correct settings uid (#306)\n")['demo'];
+        $state = GitOutput::statesOf("# /var/www/html/.worktrees/demo\nchanges 0\ntip 1a8ebfc\t[BUGFIX] Check for correct settings uid (#306)\n")['demo'];
 
         self::assertSame(['sha' => '1a8ebfc', 'subject' => '[BUGFIX] Check for correct settings uid (#306)'], $state->tip);
-        self::assertNull(Git::statesOf("# /var/www/html/.worktrees/demo\ntip \n")['demo']->tip);
+        self::assertNull(GitOutput::statesOf("# /var/www/html/.worktrees/demo\ntip \n")['demo']->tip);
     }
 
     public function testWithoutAnUpstreamThereIsNoDistance(): void
     {
-        $state = Git::statesOf("# /var/www/html/.worktrees/demo\nchanges 0\n")['demo'];
+        $state = GitOutput::statesOf("# /var/www/html/.worktrees/demo\nchanges 0\n")['demo'];
 
         self::assertNull($state->ahead);
         self::assertNull($state->behind);
@@ -100,7 +101,7 @@ final class WorktreeStatesTest extends TestCase
             issue 22222
             OUT;
 
-        $states = Git::statesOf($output);
+        $states = GitOutput::statesOf($output);
 
         self::assertSame(['one', 'two'], array_keys($states));
         self::assertSame('11111', $states['one']->issue);
@@ -123,7 +124,7 @@ final class WorktreeStatesTest extends TestCase
             issue 11111
             OUT;
 
-        $states = Git::statesOf($output);
+        $states = GitOutput::statesOf($output);
 
         self::assertSame('11111', $states['one']->issue);
         self::assertSame(1, $states['one']->changes);

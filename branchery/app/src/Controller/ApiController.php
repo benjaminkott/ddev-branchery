@@ -8,6 +8,7 @@ use App\Http\BusyException;
 use App\Http\MissingException;
 use App\Http\Response;
 use App\Service\Git;
+use App\Service\GitOutput;
 use App\Service\Installation;
 use App\Service\JobRunner;
 use App\Service\Locks;
@@ -306,7 +307,7 @@ final class ApiController
     public function commit(string $name, string $sha): Response
     {
         $of = $this->checkoutOf($name);
-        $revision = Git::asSha($sha);
+        $revision = GitOutput::asSha($sha);
         if ($revision === null) {
             return $this->error('That is not a commit hash.');
         }
@@ -328,11 +329,11 @@ final class ApiController
     public function commitDiff(string $name, string $sha, array $query): Response
     {
         $of = $this->checkoutOf($name);
-        $revision = Git::asSha($sha);
+        $revision = GitOutput::asSha($sha);
         if ($revision === null) {
             return $this->error('That is not a commit hash.');
         }
-        $path = Git::insideCheckout($this->text($query, 'path'));
+        $path = GitOutput::insideCheckout($this->text($query, 'path'));
         if ($path === null) {
             return $this->error('The path has to name a file inside the checkout.');
         }
@@ -379,7 +380,7 @@ final class ApiController
     public function changeDiff(string $name, array $query): Response
     {
         $of = $this->checkoutOf($name);
-        $path = Git::insideCheckout($this->text($query, 'path'));
+        $path = GitOutput::insideCheckout($this->text($query, 'path'));
         if ($path === null) {
             return $this->error('The path has to name a file inside the checkout.');
         }

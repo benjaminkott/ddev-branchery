@@ -6,6 +6,7 @@ namespace App\Tests\Service;
 
 use App\Model\Branch;
 use App\Service\Git;
+use App\Service\GitOutput;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -35,7 +36,7 @@ final class GitTest extends TestCase
 
         self::assertSame(
             ['v13' => '13.4', 'feature-checkout' => 'feature/checkout'],
-            Git::branchesOf($listed, self::PREFIX),
+            GitOutput::branchesOf($listed, self::PREFIX),
         );
     }
 
@@ -48,23 +49,23 @@ final class GitTest extends TestCase
     {
         self::assertSame(
             'https://github.com/benjaminkott/ddev-branchery',
-            Git::browsableRemote('git@github.com:benjaminkott/ddev-branchery.git'),
+            GitOutput::browsableRemote('git@github.com:benjaminkott/ddev-branchery.git'),
         );
         self::assertSame(
             'https://github.com/benjaminkott/ddev-branchery',
-            Git::browsableRemote('https://github.com/benjaminkott/ddev-branchery.git'),
+            GitOutput::browsableRemote('https://github.com/benjaminkott/ddev-branchery.git'),
         );
         self::assertSame(
             'https://git.example.org/team/site',
-            Git::browsableRemote('ssh://git@git.example.org:2222/team/site.git'),
+            GitOutput::browsableRemote('ssh://git@git.example.org:2222/team/site.git'),
         );
         self::assertSame(
             'https://gitlab.com/group/subgroup/site',
-            Git::browsableRemote('git@gitlab.com:group/subgroup/site.git'),
+            GitOutput::browsableRemote('git@gitlab.com:group/subgroup/site.git'),
         );
         self::assertSame(
             'http://git.internal/team/site',
-            Git::browsableRemote('http://git.internal/team/site.git'),
+            GitOutput::browsableRemote('http://git.internal/team/site.git'),
         );
     }
 
@@ -77,8 +78,8 @@ final class GitTest extends TestCase
     {
         $status = " M composer.json\n?? notes.txt\nA  src/New.php\n?? build/\n";
 
-        self::assertSame([' M composer.json', 'A  src/New.php'], Git::modifiedOf($status));
-        self::assertSame([], Git::modifiedOf("?? one\n?? two\n"));
+        self::assertSame([' M composer.json', 'A  src/New.php'], GitOutput::modifiedOf($status));
+        self::assertSame([], GitOutput::modifiedOf("?? one\n?? two\n"));
     }
 
     /**
@@ -97,8 +98,8 @@ final class GitTest extends TestCase
             ['status' => 'deleted', 'path' => 'gone.txt'],
             ['status' => 'modified', 'path' => 'both.php'],
             ['status' => 'untracked', 'path' => 'with space.txt'],
-        ], Git::changesOf($status));
-        self::assertSame([], Git::changesOf(''));
+        ], GitOutput::changesOf($status));
+        self::assertSame([], GitOutput::changesOf(''));
     }
 
     /**
@@ -125,17 +126,17 @@ final class GitTest extends TestCase
             ['kind' => 'del', 'text' => '    "name": "old",'],
             ['kind' => 'add', 'text' => '    "name": "new",'],
             ['kind' => 'context', 'text' => '    "type": "project"'],
-        ], Git::diffLines($diff));
+        ], GitOutput::diffLines($diff));
     }
 
     /** A path the page asks about stays inside the checkout, whatever the request says. */
     public function testOnlyAPathInsideTheCheckoutIsAskedAbout(): void
     {
-        self::assertSame('src/New.php', Git::insideCheckout('src/New.php'));
-        self::assertSame('with space.txt', Git::insideCheckout(' with space.txt '));
+        self::assertSame('src/New.php', GitOutput::insideCheckout('src/New.php'));
+        self::assertSame('with space.txt', GitOutput::insideCheckout(' with space.txt '));
 
         foreach (['', '/etc/passwd', '../project/.env', 'src/../../x', './x', 'a//b', "a\0b"] as $path) {
-            self::assertNull(Git::insideCheckout($path), $path);
+            self::assertNull(GitOutput::insideCheckout($path), $path);
         }
     }
 
@@ -145,11 +146,11 @@ final class GitTest extends TestCase
      */
     public function testOnlyAHashNamesACommit(): void
     {
-        self::assertSame('b5607cae9ca', Git::asSha('b5607cae9ca'));
-        self::assertSame('4f2a1c9c0e2b2e6e4f5a6b7c8d9e0f1a2b3c4d5e', Git::asSha(' 4f2a1c9c0e2b2e6e4f5a6b7c8d9e0f1a2b3c4d5e '));
+        self::assertSame('b5607cae9ca', GitOutput::asSha('b5607cae9ca'));
+        self::assertSame('4f2a1c9c0e2b2e6e4f5a6b7c8d9e0f1a2b3c4d5e', GitOutput::asSha(' 4f2a1c9c0e2b2e6e4f5a6b7c8d9e0f1a2b3c4d5e '));
 
         foreach (['', 'main', 'HEAD@{1}', '--all', 'B5607CA', 'abc', 'b5607cae9ca..HEAD', str_repeat('a', 41)] as $revision) {
-            self::assertNull(Git::asSha($revision), $revision);
+            self::assertNull(GitOutput::asSha($revision), $revision);
         }
     }
 
@@ -160,18 +161,18 @@ final class GitTest extends TestCase
      */
     public function testAPathIsALiteralOnBothSidesOfTheSedExpression(): void
     {
-        self::assertSame('/home/me/R\\&D/a\\|b\\\\c', Git::sedReplacement('/home/me/R&D/a|b\\c'));
-        self::assertSame('/var/www/html\\.x/\\[a\\]\\*', Git::sedPattern('/var/www/html.x/[a]*'));
+        self::assertSame('/home/me/R\\&D/a\\|b\\\\c', GitOutput::sedReplacement('/home/me/R&D/a|b\\c'));
+        self::assertSame('/var/www/html\\.x/\\[a\\]\\*', GitOutput::sedPattern('/var/www/html.x/[a]*'));
         // What ordinary paths look like: untouched.
-        self::assertSame('/home/benji/projects/site', Git::sedReplacement('/home/benji/projects/site'));
-        self::assertSame('/var/www/html', Git::sedPattern('/var/www/html'));
+        self::assertSame('/home/benji/projects/site', GitOutput::sedReplacement('/home/benji/projects/site'));
+        self::assertSame('/var/www/html', GitOutput::sedPattern('/var/www/html'));
     }
 
     public function testARemoteWithNoPageBehindItIsNoAddress(): void
     {
-        self::assertNull(Git::browsableRemote('/srv/git/site.git'));
-        self::assertNull(Git::browsableRemote('file:///srv/git/site.git'));
-        self::assertNull(Git::browsableRemote(''));
+        self::assertNull(GitOutput::browsableRemote('/srv/git/site.git'));
+        self::assertNull(GitOutput::browsableRemote('file:///srv/git/site.git'));
+        self::assertNull(GitOutput::browsableRemote(''));
     }
 
     /** A clone made with a token in it carries one; the link may not. */
@@ -179,7 +180,7 @@ final class GitTest extends TestCase
     {
         self::assertSame(
             'https://github.com/team/site',
-            Git::browsableRemote('https://benji:ghp_secretsecret@github.com/team/site.git'),
+            GitOutput::browsableRemote('https://benji:ghp_secretsecret@github.com/team/site.git'),
         );
     }
 
@@ -204,15 +205,15 @@ final class GitTest extends TestCase
                 'mirror' => 'git@example.com:team/blog.git',
                 'broken' => '',
             ],
-            Git::remotesOf($listed),
+            GitOutput::remotesOf($listed),
         );
     }
 
     /** A repository with no remote at all answers with none, and not with one blank. */
     public function testARepositoryWithoutRemotesHasNone(): void
     {
-        self::assertSame([], Git::remotesOf(''));
-        self::assertSame([], Git::remotesOf("\n\n"));
+        self::assertSame([], GitOutput::remotesOf(''));
+        self::assertSame([], GitOutput::remotesOf("\n\n"));
     }
 
     /** The checkout DDEV is configured in is in that list too, and is not one of them. */
@@ -224,7 +225,7 @@ final class GitTest extends TestCase
             branch refs/heads/main
             OUT;
 
-        self::assertSame([], Git::branchesOf($listed, self::PREFIX));
+        self::assertSame([], GitOutput::branchesOf($listed, self::PREFIX));
     }
 
     /** A checkout on no branch has none to name; its metadata says what it was made for. */
@@ -236,7 +237,7 @@ final class GitTest extends TestCase
             detached
             OUT;
 
-        self::assertSame([], Git::branchesOf($listed, self::PREFIX));
+        self::assertSame([], GitOutput::branchesOf($listed, self::PREFIX));
     }
 
     public function testWhatAWorktreeHoldsIsReadOffItsBlock(): void
@@ -250,7 +251,7 @@ final class GitTest extends TestCase
             tracking 0	0
             OUT;
 
-        $states = Git::statesOf($written);
+        $states = GitOutput::statesOf($written);
 
         self::assertSame(2, $states['v13']->changes);
         self::assertSame(3, $states['v13']->ahead);
@@ -269,7 +270,7 @@ final class GitTest extends TestCase
             changes 7
             OUT;
 
-        $state = Git::statesOf($written)['spike-idea'];
+        $state = GitOutput::statesOf($written)['spike-idea'];
 
         self::assertSame(7, $state->changes);
         self::assertNull($state->ahead);
@@ -279,7 +280,7 @@ final class GitTest extends TestCase
     /** Nothing asked, nothing said -- and no worktree invented out of it. */
     public function testNothingSaidIsNoWorktreeAtAll(): void
     {
-        self::assertSame([], Git::statesOf(''));
+        self::assertSame([], GitOutput::statesOf(''));
     }
 
     /**
@@ -289,13 +290,13 @@ final class GitTest extends TestCase
      */
     public function testARemoteIsSshWhereGitSpeaksSsh(): void
     {
-        self::assertTrue(Git::isSsh('git@github.com:TYPO3/typo3.git'));
-        self::assertTrue(Git::isSsh('ssh://benjaminkott@review.typo3.org:29418/Packages/TYPO3.CMS.git'));
-        self::assertTrue(Git::isSsh('github.com:TYPO3/typo3.git'));
-        self::assertFalse(Git::isSsh('https://github.com/TYPO3/typo3.git'));
-        self::assertFalse(Git::isSsh('git://github.com/TYPO3/typo3.git'));
-        self::assertFalse(Git::isSsh('/srv/git/typo3.git'));
-        self::assertFalse(Git::isSsh(''));
+        self::assertTrue(GitOutput::isSsh('git@github.com:TYPO3/typo3.git'));
+        self::assertTrue(GitOutput::isSsh('ssh://benjaminkott@review.typo3.org:29418/Packages/TYPO3.CMS.git'));
+        self::assertTrue(GitOutput::isSsh('github.com:TYPO3/typo3.git'));
+        self::assertFalse(GitOutput::isSsh('https://github.com/TYPO3/typo3.git'));
+        self::assertFalse(GitOutput::isSsh('git://github.com/TYPO3/typo3.git'));
+        self::assertFalse(GitOutput::isSsh('/srv/git/typo3.git'));
+        self::assertFalse(GitOutput::isSsh(''));
     }
 
     /**
@@ -316,7 +317,7 @@ final class GitTest extends TestCase
             "refs/remotes/origin/HEAD\t1730000000\tb02c8d4\t[TASK] Raise doctrine/dbal",
         ];
 
-        $branches = Git::branchesFromRefs($listed, ['refs/heads/', 'refs/remotes/origin/']);
+        $branches = GitOutput::branchesFromRefs($listed, ['refs/heads/', 'refs/remotes/origin/']);
 
         self::assertSame(
             ['bugfix/flexform-migration', 'review/98211', 'main'],
@@ -336,7 +337,7 @@ final class GitTest extends TestCase
      */
     public function testOneAnswerIsSplitAtItsHeadings(): void
     {
-        $said = Git::sectionsOf("\x1ehead\nmaster\n\x1eworktrees\nworktree /blog\nbranch refs/heads/master\n\x1eremotes\norigin\tgit@example.org:blog.git");
+        $said = GitOutput::sectionsOf("\x1ehead\nmaster\n\x1eworktrees\nworktree /blog\nbranch refs/heads/master\n\x1eremotes\norigin\tgit@example.org:blog.git");
 
         self::assertSame('master', $said['head']);
         self::assertSame("worktree /blog\nbranch refs/heads/master", $said['worktrees']);
@@ -346,11 +347,11 @@ final class GitTest extends TestCase
     /** A repository with no remote answers the question with nothing, not with silence. */
     public function testASectionWithNothingUnderItIsEmptyAndNotAbsent(): void
     {
-        $said = Git::sectionsOf("\x1ehead\nmain\n\x1eremotes\n");
+        $said = GitOutput::sectionsOf("\x1ehead\nmain\n\x1eremotes\n");
 
         self::assertArrayHasKey('remotes', $said);
         self::assertSame('', $said['remotes']);
-        self::assertSame([], Git::remotesOf($said['remotes']));
+        self::assertSame([], GitOutput::remotesOf($said['remotes']));
     }
 
     /**
@@ -359,8 +360,8 @@ final class GitTest extends TestCase
      */
     public function testALineThatMerelyLooksLikeAHeadingStaysInItsSection(): void
     {
-        $said = Git::sectionsOf("\x1eremotes\n## remotes\tgit@example.org:odd.git");
+        $said = GitOutput::sectionsOf("\x1eremotes\n## remotes\tgit@example.org:odd.git");
 
-        self::assertSame(['## remotes' => 'git@example.org:odd.git'], Git::remotesOf($said['remotes']));
+        self::assertSame(['## remotes' => 'git@example.org:odd.git'], GitOutput::remotesOf($said['remotes']));
     }
 }

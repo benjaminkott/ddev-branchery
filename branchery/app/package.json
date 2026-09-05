@@ -30,7 +30,7 @@
         "typescript-eslint": "8.69.0"
     },
     "dependencies": {
-        "@typo3/soul-frontend": "^0.3.1",
+        "@typo3/soul-frontend": "0.3.1",
         "lit": "^3.2.0"
     }
 }

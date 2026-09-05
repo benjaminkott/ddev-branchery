@@ -1,8 +1,12 @@
 /**
  * Where in the interface the reader is: the address bar, and nothing else. A
  * worktree has a page, so it has an address -- one that can be sent to
- * somebody and come back to with the browser's own back button. The fragment
- * carries it, because what serves this interface is a static file server.
+ * somebody and come back to with the browser's own back button.
+ *
+ * The fragment carries it. Paths would work too -- public/router.php hands out
+ * index.html for anything it does not have a file for -- but every address
+ * anybody has sent to anybody is a fragment, and there is nothing to be had for
+ * breaking them.
  *
  * What an address means is a rule about a string and lives in routes.ts, where
  * it can be checked without a window. A page carries its own headings in the

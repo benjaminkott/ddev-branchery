@@ -175,76 +175,19 @@ final class Git
             done
             SH;
 
-        $said = self::sectionsOf($this->web->run([
+        $said = GitOutput::sectionsOf($this->web->run([
             'bash', '-c', $script, 'branchery', $this->project->hostRoot(),
         ])->output);
 
         $this->currentBranch = trim($said['head'] ?? '');
-        $this->worktreeBranches = self::branchesOf(
+        $this->worktreeBranches = GitOutput::branchesOf(
             $said['worktrees'] ?? '',
             $this->project->hostWorktreesDirectory() . '/',
         );
-        $this->remoteUrls = self::remotesOf($said['remotes'] ?? '');
+        $this->remoteUrls = GitOutput::remotesOf($said['remotes'] ?? '');
         // A remote called "13" becomes an integer key, which no strict
         // comparison against a name from a request would match.
         $this->remotes = array_map(strval(...), array_keys($this->remoteUrls));
-    }
-
-    /**
-     * One answer carrying several. The heading is a control character and not a
-     * word, because git can write any word -- a remote may be called almost
-     * anything. A section with nothing under it is "", which is what "none" is.
-     *
-     * @return array<string, string>
-     */
-    public static function sectionsOf(string $output): array
-    {
-        $sections = [];
-        $name = null;
-        foreach (explode("\n", $output) as $line) {
-            if (str_starts_with($line, self::SECTION)) {
-                $name = substr($line, \strlen(self::SECTION));
-                $sections[$name] = [];
-
-                continue;
-            }
-            if ($name !== null) {
-                $sections[$name][] = $line;
-            }
-        }
-
-        return array_map(static fn (array $lines): string => implode("\n", $lines), $sections);
-    }
-
-    /** ASCII's record separator. */
-    private const string SECTION = "\x1e";
-
-    /**
-     * Origin first where there is one. A remote git names no address for is still
-     * a remote, and stands here with none.
-     *
-     * @return array<string, string>
-     */
-    public static function remotesOf(string $output): array
-    {
-        $found = [];
-        foreach (explode("\n", $output) as $line) {
-            [$name, $url] = array_pad(explode("\t", rtrim($line), 2), 2, '');
-            $name = trim($name);
-            if ($name !== '') {
-                $found[$name] = trim($url);
-            }
-        }
-
-        $remotes = [];
-        if (isset($found['origin'])) {
-            $remotes['origin'] = $found['origin'];
-        }
-        foreach ($found as $name => $url) {
-            $remotes[(string) $name] = $url;
-        }
-
-        return $remotes;
     }
 
     public function defaultRemote(): ?string
@@ -260,7 +203,7 @@ final class Git
     {
         $url = $this->urlOf($remote);
 
-        return $url === null ? null : self::browsableRemote($url);
+        return $url === null ? null : GitOutput::browsableRemote($url);
     }
 
     private function urlOf(?string $remote): ?string
@@ -269,50 +212,6 @@ final class Git
         $url = $remote === null ? '' : $this->remoteUrls()[$remote] ?? '';
 
         return $url === '' ? null : $url;
-    }
-
-    /**
-     * Only host and path are kept; the rest is how git gets there. That is also
-     * what keeps a token out of the page -- `https://user:tok@host/o/r` carries one.
-     */
-    public static function browsableRemote(string $url): ?string
-    {
-        $url = trim($url);
-        if ($url === '') {
-            return null;
-        }
-
-        // The scp-like form git writes by default, which no address parser
-        // recognises: host and path held apart by a colon, not by a scheme.
-        if (preg_match('#^(?:[^@/]+@)?([^/:]+):(?!//)(.+)$#', $url, $matches) === 1) {
-            return self::webAddress('https', $matches[1], $matches[2]);
-        }
-
-        $parts = parse_url($url);
-        if (!is_array($parts) || !isset($parts['host'], $parts['path'])) {
-            return null;
-        }
-        $scheme = $parts['scheme'] ?? '';
-        if (!in_array($scheme, ['http', 'https', 'ssh', 'git'], true)) {
-            return null;
-        }
-
-        // A browser speaks https, except where the remote says plain http --
-        // somebody's own server, not ours to correct.
-        return self::webAddress($scheme === 'http' ? 'http' : 'https', $parts['host'], $parts['path']);
-    }
-
-    private static function webAddress(string $scheme, string $host, string $path): ?string
-    {
-        $path = trim($path, '/');
-        if (str_ends_with($path, '.git')) {
-            $path = substr($path, 0, -4);
-        }
-        if ($path === '' || $host === '') {
-            return null;
-        }
-
-        return sprintf('%s://%s/%s', $scheme, $host, $path);
     }
 
     /**
@@ -335,7 +234,7 @@ final class Git
         $namespaces = $this->branchNamespaces($remote);
         $result = $this->run('for-each-ref', '--sort=-committerdate', '--format=' . self::BRANCH_FORMAT, ...$namespaces);
 
-        return self::branchesFromRefs($result->lines(), $namespaces);
+        return GitOutput::branchesFromRefs($result->lines(), $namespaces);
     }
 
     /** Where a branch is, when it moved, and its tip. */
@@ -355,7 +254,7 @@ final class Git
             ...array_map(static fn (string $namespace): string => $namespace . $branch, $namespaces),
         );
 
-        foreach (self::branchesFromRefs($result->lines(), $namespaces) as $found) {
+        foreach (GitOutput::branchesFromRefs($result->lines(), $namespaces) as $found) {
             if ($found->name === $branch) {
                 return $found;
             }
@@ -396,55 +295,6 @@ final class Git
     }
 
     /**
-     * The subject is last, so a tab in it stays whole.
-     *
-     * @param list<string> $lines
-     * @param list<string> $namespaces
-     *
-     * @return list<Branch>
-     */
-    public static function branchesFromRefs(array $lines, array $namespaces): array
-    {
-        $seen = [];
-        $onRemote = [];
-        foreach ($lines as $line) {
-            [$ref, $when, $sha, $subject] = array_pad(explode("\t", $line, 4), 4, '');
-            $branch = null;
-            $namespace = null;
-            foreach ($namespaces as $candidate) {
-                if (str_starts_with($ref, $candidate)) {
-                    $branch = substr($ref, strlen($candidate));
-                    $namespace = $candidate;
-
-                    break;
-                }
-            }
-            // Matched against the whole ref: "refs/remotes/origin/HEAD" shortens to
-            // "origin", which passed every guard against HEAD.
-            if ($branch === null || $branch === '' || $branch === 'HEAD') {
-                continue;
-            }
-            if ($namespace !== 'refs/heads/') {
-                $onRemote[$branch] = true;
-            }
-            // The first dates the branch; a second ref only says where else it is.
-            $seen[$branch] ??= ['when' => (int) $when, 'sha' => $sha, 'subject' => $subject];
-        }
-
-        $branches = [];
-        foreach ($seen as $branch => $said) {
-            $branches[] = new Branch(
-                (string) $branch,
-                $said['when'],
-                $said['sha'] === '' ? null : ['sha' => $said['sha'], 'subject' => $said['subject']],
-                isset($onRemote[$branch]),
-            );
-        }
-
-        return $branches;
-    }
-
-    /**
      * Asked only after a fetch has failed, so an https remote is not blamed on a
      * missing ssh key and the developer sent after "ddev auth ssh" for nothing.
      */
@@ -452,20 +302,7 @@ final class Git
     {
         $url = $this->urlOf($remote);
 
-        return $url !== null && self::isSsh($url);
-    }
-
-    /** The scp-like form is the one to get right: it is ssh and carries no scheme. */
-    public static function isSsh(string $url): bool
-    {
-        $url = trim($url);
-        if (preg_match('#^(?:[^@/]+@)?[^/:]+:(?!//)#', $url) === 1) {
-            return true;
-        }
-
-        $scheme = parse_url($url, PHP_URL_SCHEME);
-
-        return is_string($scheme) && in_array(strtolower($scheme), ['ssh', 'git+ssh'], true);
+        return $url !== null && GitOutput::isSsh($url);
     }
 
     public function fetch(?string $remote = null): CommandResult
@@ -576,7 +413,7 @@ final class Git
             }
             // A rename names both paths; the one there afterwards is the last.
             $files[] = [
-                'status' => self::statusWord($columns[0]),
+                'status' => GitOutput::statusWord($columns[0]),
                 'path' => $columns[\count($columns) - 1],
             ];
         }
@@ -596,18 +433,7 @@ final class Git
             throw new \RuntimeException(sprintf('Reading %s in %s: %s', $path, $sha, $result->message()));
         }
 
-        return self::held($result->output);
-    }
-
-    /**
-     * A string handed to git is a revision -- a tag, `HEAD@{yesterday}`, or a dash
-     * it reads as an option -- so only a hash is let through.
-     */
-    public static function asSha(string $sha): ?string
-    {
-        $sha = trim($sha);
-
-        return preg_match('/^[0-9a-f]{4,40}$/', $sha) === 1 ? $sha : null;
+        return GitOutput::held($result->output);
     }
 
     /**
@@ -769,8 +595,8 @@ final class Git
 
         // Quoted for the shell, a project path being the developer's to choose, and
         // escaped for sed, which reads "&" in a replacement as the text it matched.
-        $from = self::sedPattern($seenHere);
-        $to = self::sedReplacement($hostRoot);
+        $from = GitOutput::sedPattern($seenHere);
+        $to = GitOutput::sedReplacement($hostRoot);
         $result = $this->web->run(['bash', '-c', sprintf(
             'gitfile=%s/.git; ' .
             '[ -f "$gitfile" ] || exit 0; ' .
@@ -786,18 +612,6 @@ final class Git
         if (!$result->isSuccessful()) {
             throw new \RuntimeException(sprintf('Repairing the paths of the worktree "%s": %s', $name, $result->message()));
         }
-    }
-
-    /** A path as a literal on the left of a sed expression delimited by "|". */
-    public static function sedPattern(string $path): string
-    {
-        return (string) preg_replace('/[\\\\|.*^$\[\]]/', '\\\\$0', $path);
-    }
-
-    /** The same for the right side, where "&" is the one a directory name has. */
-    public static function sedReplacement(string $path): string
-    {
-        return (string) preg_replace('/[\\\\|&]/', '\\\\$0', $path);
     }
 
     /**
@@ -861,7 +675,7 @@ final class Git
             'bash', '-c', self::FINISHED . "\nfinished \"\$1\" \"\$2\"", 'branchery', $this->project->hostRoot(), $base,
         ]);
 
-        return self::finishedOf($result->output);
+        return GitOutput::finishedOf($result->output);
     }
 
     /** The same as a shell function, because it is asked from two scripts. */
@@ -899,41 +713,17 @@ final class Git
             finished "$1" "$3"
             SH;
 
-        $said = self::sectionsOf($this->web->run([
+        $said = GitOutput::sectionsOf($this->web->run([
             'bash', '-c', $script, 'branchery',
             $this->project->hostRoot(), $remote ?? '', $this->currentBranch(), self::BRANCH_FORMAT,
         ])->output);
 
         $this->defaultBranch = trim($said['default'] ?? '');
-        $this->byRecency = self::branchesFromRefs(
+        $this->byRecency = GitOutput::branchesFromRefs(
             array_values(array_filter(explode("\n", $said['refs'] ?? ''), static fn (string $line): bool => $line !== '')),
             $namespaces,
         );
-        $this->finished = self::finishedOf($said['finished'] ?? '');
-    }
-
-    /**
-     * @return array{merged: list<string>, gone: list<string>}
-     */
-    public static function finishedOf(string $output): array
-    {
-        $finished = ['merged' => [], 'gone' => []];
-        foreach (explode("\n", $output) as $line) {
-            $line = trim($line);
-            foreach (['merged', 'gone'] as $kind) {
-                if (str_starts_with($line, $kind . ' ')) {
-                    $branch = trim(substr($line, \strlen($kind) + 1));
-                    // git marks the checked-out one with an asterisk, and the project's own
-                    // branch always is.
-                    $branch = ltrim($branch, '* ');
-                    if ($branch !== '') {
-                        $finished[$kind][] = $branch;
-                    }
-                }
-            }
-        }
-
-        return $finished;
+        $this->finished = GitOutput::finishedOf($said['finished'] ?? '');
     }
 
     /**
@@ -960,7 +750,7 @@ final class Git
      */
     public function changes(?string $name): array
     {
-        return self::changesOf($this->inCheckout($name, ...self::STATUS)->output);
+        return GitOutput::changesOf($this->inCheckout($name, ...self::STATUS)->output);
     }
 
     /**
@@ -971,44 +761,6 @@ final class Git
      * @var list<string>
      */
     private const array STATUS = ['status', '--porcelain', '--untracked-files=all'];
-
-    /**
-     * The two columns are the index and the working copy, and the reader is told
-     * the one word that fits both; a rename is named by its new path.
-     *
-     * @return list<array{status: string, path: string}>
-     */
-    public static function changesOf(string $status): array
-    {
-        $changes = [];
-        foreach (explode("\n", $status) as $line) {
-            if (\strlen($line) < 4) {
-                continue;
-            }
-            $code = substr($line, 0, 2);
-            $path = substr($line, 3);
-            if (str_contains($path, ' -> ')) {
-                $path = substr($path, strrpos($path, ' -> ') + 4);
-            }
-            $changes[] = ['status' => self::statusWord($code), 'path' => trim($path, '"')];
-        }
-
-        return $changes;
-    }
-
-    private static function statusWord(string $code): string
-    {
-        return match (true) {
-            $code === '??' => 'untracked',
-            str_contains($code, 'D') => 'deleted',
-            str_contains($code, 'R') => 'renamed',
-            str_contains($code, 'A') => 'added',
-            default => 'modified',
-        };
-    }
-
-    /** Enough of a change for a review, not a vendor directory. */
-    private const int DIFF_LIMIT = 200_000;
 
     /**
      * Against HEAD, so staged and unstaged read as one change; an untracked file
@@ -1027,71 +779,7 @@ final class Git
             throw new \RuntimeException(sprintf('Reading the change in %s: %s', $path, $result->message()));
         }
 
-        return self::held($result->output);
-    }
-
-    /**
-     * The same limit wherever a diff is read: a lock file is a lock file either way.
-     *
-     * @return array{lines: list<array{kind: string, text: string}>, truncated: bool}
-     */
-    private static function held(string $diff): array
-    {
-        $truncated = \strlen($diff) > self::DIFF_LIMIT;
-
-        return [
-            'lines' => self::diffLines($truncated ? substr($diff, 0, self::DIFF_LIMIT) : $diff),
-            'truncated' => $truncated,
-        ];
-    }
-
-    /**
-     * The file headers are dropped -- the page shows the path already -- while a
-     * hunk header stays as context, since it says where in the file the reader is.
-     *
-     * @return list<array{kind: string, text: string}>
-     */
-    public static function diffLines(string $diff): array
-    {
-        $lines = [];
-        foreach (explode("\n", $diff) as $line) {
-            if ($line === '' && $lines === []) {
-                continue;
-            }
-            if (preg_match('/^(diff --git|index |--- |\+\+\+ |new file mode|deleted file mode|old mode|new mode|similarity index|rename from|rename to)/', $line) === 1) {
-                continue;
-            }
-            $kind = match (true) {
-                str_starts_with($line, '+') => 'add',
-                str_starts_with($line, '-') => 'del',
-                default => 'context',
-            };
-            $lines[] = ['kind' => $kind, 'text' => $kind === 'context' ? preg_replace('/^ /', '', $line) ?? $line : substr($line, 1)];
-        }
-        while ($lines !== [] && $lines[\count($lines) - 1]['text'] === '' && $lines[\count($lines) - 1]['kind'] === 'context') {
-            array_pop($lines);
-        }
-
-        return $lines;
-    }
-
-    /**
-     * A request can name any path, and one leading out of the checkout would be
-     * answered with a file of the machine's.
-     */
-    public static function insideCheckout(string $path): ?string
-    {
-        $path = trim($path);
-        if ($path === '' || str_starts_with($path, '/') || str_contains($path, "\0")) {
-            return null;
-        }
-        foreach (explode('/', $path) as $segment) {
-            if ($segment === '' || $segment === '.' || $segment === '..') {
-                return null;
-            }
-        }
-
-        return $path;
+        return GitOutput::held($result->output);
     }
 
     /** Only for a worktree the list did not reach; the rest read checkoutState(). */
@@ -1103,18 +791,7 @@ final class Git
     /** Untracked files are not counted: a hard reset leaves them where they are. */
     public function modifiedCount(string $name): int
     {
-        return \count(self::modifiedOf($this->inWorktree($name, ...self::STATUS)->output));
-    }
-
-    /**
-     * @return list<string>
-     */
-    public static function modifiedOf(string $status): array
-    {
-        return array_values(array_filter(
-            explode("\n", $status),
-            static fn (string $line): bool => trim($line) !== '' && !str_starts_with($line, '??'),
-        ));
+        return \count(GitOutput::modifiedOf($this->inWorktree($name, ...self::STATUS)->output));
     }
 
     /**
@@ -1179,7 +856,7 @@ final class Git
             $this->project->hostRoot(), self::PROJECT_STATE,
         ]);
 
-        $states = self::statesOf($result->output);
+        $states = GitOutput::statesOf($result->output);
         if (isset($states[self::PROJECT_STATE])) {
             $this->projectState = $states[self::PROJECT_STATE];
             unset($states[self::PROJECT_STATE]);
@@ -1286,69 +963,7 @@ final class Git
             'bash', '-c', self::CHECKOUT_STATE . "\nstate \"\$1\" \"\$2\"", 'branchery', $directory, $metadata,
         ]);
 
-        return array_values(self::statesOf($result->output))[0] ?? new WorktreeState(0, null, null);
-    }
-
-    /**
-     * What is missing from a block is missing because git had nothing to say -- a
-     * branch that tracks nothing has no counts, which is not nought.
-     *
-     * @return array<string, WorktreeState>
-     */
-    public static function statesOf(string $output): array
-    {
-        // Made into a state once per block: it is immutable, so building it per
-        // line would rebuild it six times.
-        $blocks = [];
-        $name = null;
-        foreach (explode("\n", $output) as $line) {
-            $line = trim($line);
-            if (str_starts_with($line, '# ')) {
-                $name = basename(trim(substr($line, 2)));
-                $blocks[$name] = [];
-
-                continue;
-            }
-            if ($name === null || !preg_match('/^(changes|head|change|issue|tracking|rebuild|tip) ?(.*)$/', $line, $hit)) {
-                continue;
-            }
-            $blocks[$name][$hit[1]] = trim($hit[2]);
-        }
-
-        $states = [];
-        foreach ($blocks as $name => $said) {
-            // "3\t2": ahead, then behind, as --left-right counts them.
-            $apart = preg_match('/(\d+)\s+(\d+)/', $said['tracking'] ?? '', $count) === 1
-                ? [(int) $count[1], (int) $count[2]]
-                : [null, null];
-            $states[$name] = new WorktreeState(
-                (int) ($said['changes'] ?? 0),
-                $apart[0],
-                $apart[1],
-                $said['head'] ?? '',
-                $said['change'] ?? '',
-                $said['issue'] ?? '',
-                (int) ($said['rebuild'] ?? 0) > 0,
-                self::tipOf($said['tip'] ?? ''),
-            );
-        }
-
-        return $states;
-    }
-
-    /**
-     * The commit a checkout stands on, out of "log -1 --format=%h%x09%s".
-     *
-     * @return ?array{sha: string, subject: string}
-     */
-    public static function tipOf(string $line): ?array
-    {
-        $parts = explode("\t", trim($line), 2);
-        if ($parts[0] === '') {
-            return null;
-        }
-
-        return ['sha' => $parts[0], 'subject' => trim($parts[1] ?? '')];
+        return array_values(GitOutput::statesOf($result->output))[0] ?? new WorktreeState(0, null, null);
     }
 
     /**
@@ -1380,7 +995,7 @@ final class Git
             return [];
         }
 
-        $this->measure(self::pairsOf($branches, $candidates, $this->distances));
+        $this->measure(GitOutput::pairsOf($branches, $candidates, $this->distances));
 
         $answer = [];
         foreach ($branches as $branch) {
@@ -1393,32 +1008,6 @@ final class Git
         }
 
         return $answer;
-    }
-
-    /**
-     * Each unordered pair once: git prints both sides of the distance in one answer.
-     * A pair git could not answer is in no answer and is asked about again.
-     *
-     * @param list<string>                                  $branches
-     * @param list<string>                                  $candidates
-     * @param array<string, array<string, array{int, int}>> $known
-     *
-     * @return list<string>
-     */
-    public static function pairsOf(array $branches, array $candidates, array $known = []): array
-    {
-        $pairs = [];
-        foreach ($branches as $branch) {
-            foreach ($candidates as $candidate) {
-                if ($candidate === $branch || isset($known[$branch][$candidate])) {
-                    continue;
-                }
-                // One key whichever way round it was asked.
-                $pairs[$branch < $candidate ? $branch . "\t" . $candidate : $candidate . "\t" . $branch] = true;
-            }
-        }
-
-        return array_keys($pairs);
     }
 
     /**
@@ -1456,31 +1045,5 @@ final class Git
                 $this->distances[$candidate][$branch] = [$count[1], $count[0]];
             }
         }
-    }
-
-    /**
-     * Only what lies under the given directory: the project's own checkout is in
-     * that list too, and is not one of the worktrees.
-     *
-     * @return array<string, string>
-     */
-    public static function branchesOf(string $output, string $prefix): array
-    {
-        $branches = [];
-        $name = null;
-        foreach (explode("\n", $output) as $line) {
-            $line = trim($line);
-            if (str_starts_with($line, 'worktree ')) {
-                $path = substr($line, \strlen('worktree '));
-                $name = str_starts_with($path, $prefix) ? substr($path, \strlen($prefix)) : null;
-
-                continue;
-            }
-            if ($name !== null && str_starts_with($line, 'branch refs/heads/')) {
-                $branches[$name] = substr($line, \strlen('branch refs/heads/'));
-            }
-        }
-
-        return $branches;
     }
 }
