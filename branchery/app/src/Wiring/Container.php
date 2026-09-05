@@ -90,12 +90,19 @@ final class Container
     private const string WORKTREES = '.worktrees';
 
     /**
-     * The image copies it to one place and the working copy is in another; both are
-     * answered by asking the code where it is rather than by naming either.
+     * Where this application is installed: the image copies it to one place and
+     * the working copy stands in another, and both are answered by asking the
+     * code where it is rather than by naming either.
+     *
+     * Counted from this file, so a move of it is a change here -- and nothing
+     * about that is a type or a call: what a wrong answer here does is leave the
+     * shipped configurations unfindable and every background operation starting
+     * a console that is not there, minutes later, in front of a developer. See
+     * App\Tests\Wiring\InstalledTest, which is what says so at the right moment.
      */
     private static function home(): string
     {
-        return \dirname(__DIR__);
+        return \dirname(__DIR__, 2);
     }
 
     public static function fromEnvironment(): self
