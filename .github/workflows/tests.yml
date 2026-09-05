@@ -81,6 +81,11 @@ jobs:
       # the half that does ship is a failure and not a note.
       - run: composer audit --no-dev
       - run: npm audit --omit=dev
+      # What the suite reaches, said once in the run that changed it. A floor and
+      # not a target: a number people write tests against is a number that gets
+      # tests nobody reads. This is for the other direction.
+      - run: sudo pecl install pcov && sudo phpenmod pcov
+      - run: ../../tools/coverage.sh
       - run: composer stan
       - run: composer test
       - run: composer cs
