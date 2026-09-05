@@ -144,25 +144,33 @@ final readonly class DatabaseOperations
      */
     public function replace(string $from, string $to): void
     {
+        // Every name goes through the shell quoted, the statements included: what
+        // this is handed is built three classes away, and a method that quotes one
+        // of its two names and writes the other out reads as the oversight it was.
         $script = match ($this->database->kind()) {
             'postgres' => sprintf(
                 'pg_dump %1$s %2$s > "$dump"; '
-                . 'psql %1$s -d postgres -c \'DROP DATABASE IF EXISTS "%3$s";\'; '
-                . 'psql %1$s -d postgres -c \'CREATE DATABASE "%3$s" OWNER "%4$s";\'; '
-                . 'psql -v ON_ERROR_STOP=1 %1$s -d %3$s -f "$dump"',
+                . 'psql %1$s -d postgres -c %3$s; '
+                . 'psql %1$s -d postgres -c %4$s; '
+                . 'psql -v ON_ERROR_STOP=1 %1$s -d %5$s -f "$dump"',
                 $this->postgresConnection(),
                 escapeshellarg($from),
-                $to,
-                $this->database->user(),
+                escapeshellarg(sprintf('DROP DATABASE IF EXISTS "%s";', $to)),
+                escapeshellarg(sprintf('CREATE DATABASE "%s" OWNER "%s";', $to, $this->database->user())),
+                escapeshellarg($to),
             ),
             default => sprintf(
                 'mysqldump %1$s --single-transaction --routines --triggers %2$s > "$dump"; '
-                . 'mysql %1$s -e \'DROP DATABASE IF EXISTS `%3$s`; CREATE DATABASE `%3$s`; GRANT ALL ON `%3$s`.* TO "%4$s"@"%%";\'; '
-                . 'mysql %1$s %3$s < "$dump"',
+                . 'mysql %1$s -e %3$s; '
+                . 'mysql %1$s %4$s < "$dump"',
                 $this->mysqlConnection(),
                 escapeshellarg($from),
-                $to,
-                $this->database->user(),
+                escapeshellarg(sprintf(
+                    'DROP DATABASE IF EXISTS `%1$s`; CREATE DATABASE `%1$s`; GRANT ALL ON `%1$s`.* TO \'%2$s\'@\'%%\';',
+                    $to,
+                    $this->database->user(),
+                )),
+                escapeshellarg($to),
             ),
         };
 

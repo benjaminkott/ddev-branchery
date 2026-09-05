@@ -8,6 +8,7 @@ use App\Service\StepReporter;
 use App\Service\WorktreeManager;
 use App\Tests\Fake\Wiring;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -150,6 +151,48 @@ final class WorktreeOperationsTest extends TestCase
         } finally {
             self::assertFalse($this->wiring->web->ran('DROP DATABASE'), 'the database was dropped anyway');
         }
+    }
+
+    /**
+     * The copy goes through a shell, and what it is handed is built three classes
+     * away: a name that reaches that shell unquoted is safe only for as long as
+     * nothing upstream widens what a worktree may be called. Read as the property
+     * it is -- outside its quotes, the name does not appear at all.
+     */
+    #[DataProvider('databaseServers')]
+    public function testNoNameReachesTheShellUnquotedWhenDataIsReplaced(string $family): void
+    {
+        $this->wiring->worktree('my-fix');
+        $web = $this->wiring->web;
+        $web->answer('DDEV_DATABASE_FAMILY', $family);
+
+        $this->wiring->manager->syncDatabase('my-fix', null, $this->reporter());
+
+        $script = self::lineWith($web->lines(), 'DROP DATABASE');
+        $bare = (string) preg_replace("/'[^']*'/", '', $script);
+        self::assertStringNotContainsString('branchery_my_fix', $bare, 'the name reached the shell unquoted: ' . $script);
+        self::assertStringNotContainsString(' db ', $bare, 'the source reached the shell unquoted: ' . $script);
+    }
+
+    /** @return iterable<string, array{string}> */
+    public static function databaseServers(): iterable
+    {
+        yield 'mariadb' => ['mysql'];
+        yield 'postgres' => ['postgres'];
+    }
+
+    /**
+     * @param list<string> $lines
+     */
+    private static function lineWith(array $lines, string $match): string
+    {
+        foreach ($lines as $line) {
+            if (str_contains($line, $match)) {
+                return $line;
+            }
+        }
+
+        self::fail('nothing ran that carried "' . $match . '": ' . implode("\n", $lines));
     }
 
     /**
