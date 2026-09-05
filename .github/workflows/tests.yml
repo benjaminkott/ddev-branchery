@@ -66,6 +66,13 @@ jobs:
       # commit is the stale one.
       - name: The built interface is the one the sources make
         run: git diff --exit-code -- public
+      # The floor under the interface: that every page draws at all. A view that
+      # throws and an address that leads to an empty page are invisible to the
+      # types, to the linter and to the tests that need no browser -- and are a
+      # page that does not come up. Its own steps, because the engine is
+      # downloaded and is larger than the rest of this repository together.
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:pages
       - run: composer install --no-interaction --prefer-dist
       - run: composer stan
       - run: composer test

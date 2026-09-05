@@ -17,6 +17,10 @@
 /branchery/app/.php-cs-fixer.cache
 
 
+# What the page smoke tests leave behind -- traces and a report of the last run.
+/branchery/app/test-results/
+/branchery/app/playwright-report/
+
 # playwright
 /.playwright-mcp/
 

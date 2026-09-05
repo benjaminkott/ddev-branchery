@@ -18,10 +18,12 @@
         "lint": "eslint .",
         "format:check": "prettier --check .",
         "test": "npm run build:tests && node --test .tests/*.test.js dev/*.test.mjs",
+        "test:pages": "playwright test",
         "check": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm run build"
     },
     "devDependencies": {
         "@eslint/js": "10.0.1",
+        "@playwright/test": "^1.50.0",
         "@types/node": "^26.2.0",
         "esbuild": "^0.25.0",
         "eslint": "10.10.0",

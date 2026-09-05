@@ -59,6 +59,7 @@ What the check has to cover:
 ```bash
 cd branchery/app
 npm run check                # formatting, linter, types, tests, then the bundle and the stylesheet
+npm run test:pages           # that every page draws -- a browser, against the mock
 composer test                # PHPUnit
 composer stan                # static analysis, level 8
 composer cs                  # coding style
@@ -90,8 +91,14 @@ finding about the code and is nothing of the sort.
 `npm test` runs what can be tested without a browser: the rules the interface
 applies -- a name made into a hostname, a length of time, what a search leaves
 standing -- and that the mocked API answers the same doors as the container,
-with the same fields behind them. Everything else about the interface is looked
-at, which is the section above.
+with the same fields behind them.
+
+`npm run test:pages` is the floor under the section above: a browser, the dev
+server, and every address the router knows opened in turn. It checks that a page
+draws and says what it is about, and nothing whatever about how it looks -- that
+is still looked at. It is out of `npm run check` because it downloads a browser
+engine; a server already answering on the port is used as it stands, so it runs
+beside a `make start` rather than over it.
 
 `bats tests/test.bats` is the only thing that walks the way a developer actually
 arrives: `ddev add-on get`, in a project this repository has never seen, with

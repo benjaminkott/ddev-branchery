@@ -54,10 +54,10 @@ export default tseslint.config(
         },
     },
     {
-        // The mocked API and the build scripts: node, and no types to read
-        // them with -- so what is checked here is what a linter can see in
-        // the text of a file.
-        files: ['dev/**/*.mjs', 'scripts/**/*.mjs'],
+        // The mocked API, the build scripts and what drives a browser: node,
+        // and no types to read them with -- so what is checked here is what a
+        // linter can see in the text of a file.
+        files: ['dev/**/*.mjs', 'scripts/**/*.mjs', 'playwright.config.mjs'],
         languageOptions: {
             globals: {
                 Buffer: 'readonly',
@@ -67,6 +67,18 @@ export default tseslint.config(
                 process: 'readonly',
                 setTimeout: 'readonly',
             },
+        },
+    },
+    {
+        /*
+         * The page tests are node, but what they hand to page.evaluate() is
+         * not: that callback is sent to the browser and runs there. Said as the
+         * few names it actually reaches for, rather than by declaring the whole
+         * file a browser.
+         */
+        files: ['dev/**/*.spec.mjs'],
+        languageOptions: {
+            globals: { document: 'readonly', localStorage: 'readonly', window: 'readonly' },
         },
     },
 );

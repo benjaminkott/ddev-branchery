@@ -14,3 +14,7 @@ vendor/
 # Built beside the versioned bundle by the dev server and the test run.
 .dev/
 .tests/
+
+# What the page smoke tests leave behind.
+test-results/
+playwright-report/
