@@ -32,15 +32,15 @@ A moment is the lines it runs, in the order they are written:
 
     install:
       - ./bin/write-registry-token.sh
-      - profile
+      - inherit: profile
       - npm ci
 
-``profile`` is the one word in that list which is not a line to run: it is where
-the configuration this is built on does its own work. So the list above writes a
-token, then installs the dependencies the shipped profile installs, then builds
-the assets — and a later change to that profile reaches this project. Left out,
-the moment is what stands there and no more. The word is reserved; a program of
-that name is written out as ``exec: profile``.
+``inherit: profile`` is the one entry in that list which is not a line to run: it
+is where the configuration this is built on does its own work. So the list above
+writes a token, then installs the dependencies the shipped profile installs, then
+builds the assets — and a later change to that profile reaches this project. Left
+out, the moment is what stands there and no more. It is written as a task and not
+as a word, so no line a project writes can be taken for it.
 
 A line is a command, or a task written the way DDEV writes a hook task:
 ``exec:`` for a command, ``composer:`` for composer. A bare string is ``exec:``.

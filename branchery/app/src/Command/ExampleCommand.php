@@ -106,15 +106,15 @@ final class ExampleCommand extends Command
             . "#\n"
             . "# What \"%1\$s\" does is a file in the image, in this same grammar:\n"
             . "#   ddev branchery config:example --profile=%1\$s --full\n"
-            . "# Everything written here stands over it. In a moment, \"profile\" is\n"
-            . "# where that file does its own work; left out, the moment is what\n"
-            . "# stands here and no more.\n"
+            . "# Everything written here stands over it. In a moment,\n"
+            . "# \"inherit: profile\" is where that file does its own work; left out,\n"
+            . "# the moment is what stands here and no more.\n"
             . "profile: %1\$s\n"
             . "\n"
             . "# docroot: .build/public   # what is served, where it is not %2\$s\n"
             . "# bin: .build/bin          # where this project's binaries are\n"
             . "# install:\n"
-            . "#   - profile\n"
+            . "#   - inherit: profile\n"
             . "#   - npm ci\n",
             $name,
             // What the shipped file serves from, said in its own words: the checkout

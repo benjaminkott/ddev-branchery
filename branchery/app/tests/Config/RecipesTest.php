@@ -79,7 +79,7 @@ final class RecipesTest extends TestCase
             profile: demo
             docroot: .build/public
             install:
-              - profile
+              - inherit: profile
               - npm ci
             finish: []
             YAML);

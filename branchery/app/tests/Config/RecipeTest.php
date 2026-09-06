@@ -25,7 +25,7 @@ final class RecipeTest extends TestCase
      */
     public function testTheOrderOfAMomentIsTheOrderItIsWrittenIn(): void
     {
-        $recipe = Recipe::fromArray(['setup' => ['./bin/pre.sh', 'profile', './bin/post.sh', 'npm run build']]);
+        $recipe = Recipe::fromArray(['setup' => ['./bin/pre.sh', ['inherit' => 'profile'], './bin/post.sh', 'npm run build']]);
 
         self::assertSame(['./bin/pre.sh', null, './bin/post.sh', 'npm run build'], self::lines($recipe->plan('setup')));
     }
@@ -58,17 +58,26 @@ final class RecipeTest extends TestCase
     }
 
     /**
-     * The word is reserved, and a program of that name is written out as the task
-     * it is -- otherwise the one line that means "and here the profile builds"
-     * could not be told from a line that runs something.
+     * A task and not a word, so nothing a project writes as a line can be taken
+     * for the one entry that is not a line.
      */
-    public function testAProgramOfThatNameIsWrittenOutAsATask(): void
+    public function testALineIsALineWhateverItSays(): void
     {
-        $recipe = Recipe::fromArray(['setup' => [['exec' => 'profile'], 'profile']]);
+        $recipe = Recipe::fromArray(['setup' => ['profile', 'inherit', ['inherit' => 'profile']]]);
         $plan = $recipe->plan('setup');
 
         self::assertSame('profile', $plan[0]?->line);
-        self::assertNull($plan[1]);
+        self::assertSame('inherit', $plan[1]?->line);
+        self::assertNull($plan[2]);
+    }
+
+    /** There is one thing to inherit, and it is said one way. */
+    public function testInheritingAnythingElseIsRefused(): void
+    {
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessageMatches('/inherits is the profile/');
+
+        Recipe::fromArray(['setup' => [['inherit' => 'everything']]]);
     }
 
     /** Once, because what it is built on does its work once. */
@@ -77,7 +86,7 @@ final class RecipeTest extends TestCase
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessageMatches('/more than once/');
 
-        Recipe::fromArray(['setup' => ['profile', 'a', 'profile']]);
+        Recipe::fromArray(['setup' => [['inherit' => 'profile'], 'a', ['inherit' => 'profile']]]);
     }
 
     /**
@@ -86,7 +95,7 @@ final class RecipeTest extends TestCase
      */
     public function testAPlaceForAProfileThatIsNotNamedIsRefused(): void
     {
-        self::assertTrue(Recipe::fromArray(['setup' => ['profile', 'a']])->wantsTheProfile());
+        self::assertTrue(Recipe::fromArray(['setup' => [['inherit' => 'profile'], 'a']])->wantsTheProfile());
     }
 
     /** A version written without quotes is a number in YAML, and 8.3 is meant. */
@@ -205,7 +214,7 @@ final class RecipeTest extends TestCase
     public function testAMomentThatIsNotAListOfCommandsIsRefused(): void
     {
         $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessageMatches('/list of what it runs.*profile/s');
+        $this->expectExceptionMessageMatches('/list of what it runs.*inherit: profile/s');
 
         Recipe::fromArray(['install' => 'composer install']);
     }
@@ -370,7 +379,7 @@ final class RecipeTest extends TestCase
 
     public function testConfiguringMayStillBeAddedTo(): void
     {
-        $recipe = Recipe::fromArray(['configure' => ['profile', './bin/extra-config.sh']]);
+        $recipe = Recipe::fromArray(['configure' => [['inherit' => 'profile'], './bin/extra-config.sh']]);
 
         self::assertSame([null, './bin/extra-config.sh'], self::lines($recipe->plan('configure')));
     }

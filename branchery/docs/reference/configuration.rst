@@ -102,11 +102,11 @@ Complete example
       addresses:
         - config/sites
 
-    # A moment is the lines it runs, in order. "profile" is where the shipped
-    # configuration does its own work, so this installs what typo3-app installs
-    # and builds the assets afterwards. This is what most projects need.
+    # A moment is the lines it runs, in order. "inherit: profile" is where the
+    # shipped configuration does its own work, so this installs what typo3-app
+    # installs and builds the assets after. This is what most projects need.
     install:
-      - profile
+      - inherit: profile
       - npm ci
       - npm run build
       - composer: dump-autoload --classmap-authoritative

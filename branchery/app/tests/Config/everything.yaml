@@ -74,16 +74,15 @@ data:
 # inherit is set up, one that has data is fitted to it.
 #
 # A moment is the lines it runs, in the order they are written. One of them may
-# be the word "profile", which is where the configuration this is built on does
+# be "inherit: profile", which is where the configuration this is built on does
 # its own work -- so a project keeps what that file installs and puts its own
 # lines around it. Left out, the moment is what stands here and no more; written
 # as an empty list, the moment does nothing at all.
 #
-# The word is reserved. A program of that name is written out as a task:
-# "exec: profile".
+# It is a task and not a word, so no line a project writes can be taken for it.
 install:
   - ./bin/write-registry-token.sh
-  - profile
+  - inherit: profile
   - npm ci
   # A line may also be written the way DDEV writes a hook task, and such a task
   # may say the build survives its failure.
@@ -92,17 +91,17 @@ install:
     optional: true
 
 configure:
-  - profile
+  - inherit: profile
   - ./bin/extra-config.sh
 
-# No "profile" line: this moment is what stands here, and what it is built on
+# No "inherit" line: this moment is what stands here, and what it is built on
 # does nothing at this one.
 setup:
   - ./bin/install-fresh.sh
 
 migrate:
-  - profile
+  - inherit: profile
   - $BRANCHERY_PHP $BRANCHERY_BIN/typo3 extension:setup
 
 finish:
-  - profile
+  - inherit: profile

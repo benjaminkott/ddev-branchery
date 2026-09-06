@@ -46,12 +46,16 @@ final readonly class Recipe
 
     private const SETTINGS = ['profile', 'docroot', 'php', 'node', 'bin'];
 
+    private const INHERIT_KEY = 'inherit';
+
+    private const INHERIT_VALUE = 'profile';
+
     /**
-     * The one word in a moment that is not a line to run: where what this is
-     * built on does its own work. Reserved, so a program of that name is written
-     * out as a task -- "exec: profile".
+     * The one entry in a moment that is not a line to run: where what this is
+     * built on does its own work. A task and not a word, so no line a project
+     * writes can be taken for it.
      */
-    public const INHERITED = 'profile';
+    public const INHERITED = self::INHERIT_KEY . ': ' . self::INHERIT_VALUE;
 
     /** The review a checkout belongs to, the issue it closes, and the commit itself. */
     private const LINKS = ['review', 'issue', 'commit'];
@@ -591,9 +595,9 @@ final readonly class Recipe
     }
 
     /**
-     * A moment is the lines it runs, in order, and one of them may be the word
-     * "profile" -- the place where what this is built on does its own work. Left
-     * out, this moment is what the project wrote and no more.
+     * A moment is the lines it runs, in order, and one of them may be
+     * "inherit: profile" -- the place where what this is built on does its own
+     * work. Left out, this moment is what the project wrote and no more.
      *
      * @return list<?RecipeCommand>
      */
@@ -610,7 +614,7 @@ final readonly class Recipe
      * A line is either what to run, or a task written the way DDEV writes a hook
      * task -- "exec:" and "composer:" -- so a developer who has written hooks in
      * .ddev/config.yaml is writing the same thing here. Such a task may add
-     * "optional: true". The word "profile" alone is not a line at all.
+     * "optional: true". "inherit: profile" is no line at all.
      *
      * @param list<mixed> $commands
      *
@@ -625,12 +629,20 @@ final readonly class Recipe
                 if (trim($entry) === '') {
                     throw new \RuntimeException(sprintf('%s: "%s" holds a command with nothing in it.', self::FILE, $moment));
                 }
-                $read[] = trim($entry) === self::INHERITED ? null : new RecipeCommand('exec', trim($entry));
+                $read[] = new RecipeCommand('exec', trim($entry));
                 continue;
             }
 
             if (!is_array($entry) || $entry === []) {
-                throw new \RuntimeException(sprintf('%s: every command under "%s" is a line to run, "%s", or one of %s.', self::FILE, $moment, self::INHERITED, implode(', ', array_map(static fn (string $kind): string => $kind . ':', RecipeCommand::KINDS))));
+                throw new \RuntimeException(sprintf('%s: every entry under "%s" is a line to run, "%s", or one of %s.', self::FILE, $moment, self::INHERITED, implode(', ', array_map(static fn (string $kind): string => $kind . ':', RecipeCommand::KINDS))));
+            }
+
+            if (array_key_exists(self::INHERIT_KEY, $entry)) {
+                if (count($entry) !== 1 || $entry[self::INHERIT_KEY] !== self::INHERIT_VALUE) {
+                    throw new \RuntimeException(sprintf('%s: what a moment inherits is the profile, written "%s".', self::FILE, self::INHERITED));
+                }
+                $read[] = null;
+                continue;
             }
 
             $optional = self::readOptional($moment, $entry);
@@ -639,7 +651,7 @@ final readonly class Recipe
             // nobody can read off the file.
             unset($entry['optional']);
             if (count($entry) !== 1) {
-                throw new \RuntimeException(sprintf('%s: every command under "%s" is a line to run, "%s", or one of %s.', self::FILE, $moment, self::INHERITED, implode(', ', array_map(static fn (string $kind): string => $kind . ':', RecipeCommand::KINDS))));
+                throw new \RuntimeException(sprintf('%s: every entry under "%s" is a line to run, "%s", or one of %s.', self::FILE, $moment, self::INHERITED, implode(', ', array_map(static fn (string $kind): string => $kind . ':', RecipeCommand::KINDS))));
             }
 
             $kind = (string) array_key_first($entry);
@@ -657,7 +669,7 @@ final readonly class Recipe
         // Twice, and the second is the same work a second time -- which nobody
         // means, and which an operation would do without a word.
         if (count(array_filter($read, static fn (?RecipeCommand $c): bool => $c === null)) > 1) {
-            throw new \RuntimeException(sprintf('%s: "%s" names "%s" more than once, and what it is built on does its work once.', self::FILE, $moment, self::INHERITED));
+            throw new \RuntimeException(sprintf('%s: "%s" says "%s" more than once, and what it is built on does its work once.', self::FILE, $moment, self::INHERITED));
         }
 
         return $read;
