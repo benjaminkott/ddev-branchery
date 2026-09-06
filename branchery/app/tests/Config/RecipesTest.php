@@ -79,8 +79,8 @@ final class RecipesTest extends TestCase
             profile: demo
             docroot: .build/public
             install:
-              after:
-                - npm ci
+              - profile
+              - npm ci
             finish: []
             YAML);
         $build = $this->recipes()->for($this->project);

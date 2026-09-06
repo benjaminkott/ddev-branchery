@@ -7,6 +7,7 @@ namespace App\Operation;
 use App\Config\Build;
 use App\Config\Recipe;
 use App\Config\Recipes;
+use App\Config\Version;
 use App\Git\Git;
 use App\Jobs\StepReporter;
 use App\Project;
@@ -266,7 +267,7 @@ final readonly class Provisioning
         // What was read before anything existed comes first -- the answer the
         // operation was allowed to refuse on. What is pointed at can only be
         // answered now, with the checkout in front of us.
-        $wanted = $required ?? $build->php() ?? $this->versionWritten($name, $build->phpRead(), 'PHP', $reporter);
+        $wanted = $required ?? $this->versionAsked($name, $build->php(), 'PHP', $reporter);
         $project = $this->php->projectVersion();
 
         // Said rather than passed over: it would otherwise be the one setting in
@@ -300,27 +301,32 @@ final readonly class Provisioning
      * so in its test runner -- the configuration points at the file and the pattern
      * rather than at a number that would be wrong on the next branch.
      *
-     * @param ?array{read: string, match: string} $where what the recipe points at
-     * @param string                              $what  PHP or Node, as the notes name it
+     * @param string $what PHP or Node, as the notes name it
      */
-    private function versionWritten(string $name, ?array $where, string $what, StepReporter $reporter): ?string
+    private function versionAsked(string $name, ?Version $asked, string $what, StepReporter $reporter): ?string
     {
-        if ($where === null) {
+        if ($asked === null) {
             return null;
         }
-        // Every outcome is said: a file missing from this branch, a pattern that
-        // no longer matches and a version that was read are three different
+        if ($asked->number !== null) {
+            return $asked->number;
+        }
+        // Every outcome is said: a file missing from this branch, one that says
+        // nothing this can read and a version that was read are three different
         // answers to "why is it built with this".
-        $file = $this->project->worktreeDirectory($name) . '/' . $where['read'];
+        $where = (string) $asked->read;
+        $file = $this->project->worktreeDirectory($name) . '/' . $where;
         if (!is_file($file)) {
-            $reporter->note(sprintf('%s is not in this checkout, so there is no %s version to read from it.', $where['read'], $what));
+            $reporter->note(sprintf('%s is not in this checkout, so there is no %s version to read from it.', $where, $what));
 
             return null;
         }
-        $version = Recipe::versionIn((string) file_get_contents($file), $where['match']);
-        $reporter->note($version === null
-            ? sprintf('Nothing in %s matches the pattern %s.', $where['read'], $where['match'])
-            : sprintf('%s says %s %s.', $where['read'], $what, $version));
+        $version = $asked->in((string) file_get_contents($file));
+        $reporter->note(match (true) {
+            $version !== null => sprintf('%s says %s %s.', $where, $what, $version),
+            $asked->match !== null => sprintf('Nothing in %s matches the pattern %s.', $where, $asked->match),
+            default => sprintf('%s holds no version to read.', $where),
+        });
 
         return $version;
     }
@@ -334,7 +340,7 @@ final readonly class Provisioning
     {
         // The recipe first, then where it points, and only then the checkout's own
         // files -- which n reads itself.
-        $said = $build->node() ?? $this->versionWritten($name, $build->nodeRead(), 'Node', $reporter);
+        $said = $this->versionAsked($name, $build->node(), 'Node', $reporter);
         $wanted = $said ?? ($this->node->writtenIn($this->project->worktreeDirectory($name)) ? 'auto' : null);
         $project = $this->node->projectVersion();
 

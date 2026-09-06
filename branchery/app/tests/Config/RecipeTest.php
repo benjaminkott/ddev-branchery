@@ -6,6 +6,7 @@ namespace App\Tests\Config;
 
 use App\Config\Recipe;
 use App\Config\RecipeCommand;
+use App\Config\Version;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Yaml\Yaml;
@@ -22,30 +23,29 @@ final class RecipeTest extends TestCase
      * The order is what a recipe is for, so it is read back rather than trusted:
      * null is where what this is built on does its own work.
      */
-    public function testTheOrderOfAMomentIsWhatItIsBuiltOnBetweenWhatWasAdded(): void
+    public function testTheOrderOfAMomentIsTheOrderItIsWrittenIn(): void
     {
-        $recipe = Recipe::fromArray(['setup' => [
-            'before' => ['./bin/pre.sh'],
-            'after' => ['./bin/post.sh', 'npm run build'],
-        ]]);
+        $recipe = Recipe::fromArray(['setup' => ['./bin/pre.sh', 'profile', './bin/post.sh', 'npm run build']]);
 
         self::assertSame(['./bin/pre.sh', null, './bin/post.sh', 'npm run build'], self::lines($recipe->plan('setup')));
     }
 
-    public function testAReplacedMomentLeavesWhatItIsBuiltOnOut(): void
+    /** Left out, this moment is what the project wrote and no more. */
+    public function testAMomentWithoutThePlaceForItLeavesWhatItIsBuiltOnOut(): void
     {
-        $recipe = Recipe::fromArray(['setup' => ['before' => ['a'], 'run' => ['b'], 'after' => ['c']]]);
+        $recipe = Recipe::fromArray(['setup' => ['a', 'b', 'c']]);
 
         self::assertSame(['a', 'b', 'c'], self::lines($recipe->plan('setup')));
+        self::assertFalse($recipe->wantsTheProfile());
     }
 
-    /** A moment nobody wrote about is whatever it is built on, alone. */
+    /** A moment nobody wrote about is that work alone. */
     public function testAMomentWithoutARecipeIsWhatItIsBuiltOnAlone(): void
     {
         self::assertSame([null], self::lines(Recipe::none()->plan('setup')));
     }
 
-    /** "run" with nothing in it is a moment the project has switched off. */
+    /** An empty list is a moment the project has switched off. */
     public function testAMomentSetToNothingDoesNothing(): void
     {
         self::assertSame([], Recipe::fromArray(['finish' => []])->plan('finish'));
@@ -57,29 +57,36 @@ final class RecipeTest extends TestCase
         self::assertTrue(Recipe::fromArray([])->isEmpty());
     }
 
-    public function testTheShortFormOfAMomentReplacesWhatItIsBuiltOnDoes(): void
+    /**
+     * The word is reserved, and a program of that name is written out as the task
+     * it is -- otherwise the one line that means "and here the profile builds"
+     * could not be told from a line that runs something.
+     */
+    public function testAProgramOfThatNameIsWrittenOutAsATask(): void
     {
-        $recipe = Recipe::fromArray(['install' => ['composer install', 'npm ci']]);
+        $recipe = Recipe::fromArray(['setup' => [['exec' => 'profile'], 'profile']]);
+        $plan = $recipe->plan('setup');
 
-        self::assertTrue($recipe->replaces('install'));
-        self::assertSame(['composer install', 'npm ci'], self::lines($recipe->commands('install', 'run')));
+        self::assertSame('profile', $plan[0]?->line);
+        self::assertNull($plan[1]);
     }
 
-    public function testWhatIsAddedLeavesWhatItIsBuiltOnDoingItsOwnWork(): void
+    /** Once, because what it is built on does its work once. */
+    public function testTheSamePlaceTwiceIsRefused(): void
     {
-        $recipe = Recipe::fromArray(['install' => ['after' => ['npm run build']]]);
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessageMatches('/more than once/');
 
-        self::assertFalse($recipe->replaces('install'));
-        self::assertSame(['npm run build'], self::lines($recipe->commands('install', 'after')));
-        self::assertSame([], $recipe->commands('install', 'before'));
+        Recipe::fromArray(['setup' => ['profile', 'a', 'profile']]);
     }
 
-    public function testAMomentNobodyWroteAboutSaysNothing(): void
+    /**
+     * A moment written around work that is not there is a line the developer
+     * expects to happen, so it is said rather than passed over.
+     */
+    public function testAPlaceForAProfileThatIsNotNamedIsRefused(): void
     {
-        $recipe = Recipe::fromArray(['install' => ['composer install']]);
-
-        self::assertFalse($recipe->replaces('setup'));
-        self::assertSame([], $recipe->commands('setup', 'after'));
+        self::assertTrue(Recipe::fromArray(['setup' => ['profile', 'a']])->wantsTheProfile());
     }
 
     /** A version written without quotes is a number in YAML, and 8.3 is meant. */
@@ -98,20 +105,46 @@ final class RecipeTest extends TestCase
         self::assertSame('22', Recipe::fromArray(['node' => 22])->node?->number);
         self::assertSame('20.11.1', Recipe::fromArray(['node' => '20.11.1'])->node?->number);
 
-        $pointed = Recipe::fromArray(['node' => ['read' => 'Build/.nvmrc', 'match' => 'v?(\d+)']]);
+        $pointed = Recipe::fromArray(['node' => ['read' => 'Build/.nvmrc']])->node;
 
-        self::assertNull($pointed->node?->number);
-        self::assertSame(['read' => 'Build/.nvmrc', 'match' => 'v?(\d+)'], $pointed->node?->where());
-        self::assertFalse($pointed->isEmpty());
+        self::assertNotNull($pointed);
+        self::assertNull($pointed->number);
+        self::assertSame('Build/.nvmrc', $pointed->read);
+        self::assertNull($pointed->match);
+    }
+
+    /**
+     * A file made to hold a version holds one line and says nothing about how to
+     * read it, so a project that names such a file says only that. A pattern is
+     * for a file that holds more -- the core's test runner.
+     */
+    public function testAFileMadeToHoldAVersionIsReadWithoutBeingToldHow(): void
+    {
+        $nvmrc = Version::readFrom('Build/.nvmrc');
+
+        self::assertSame('22.11.0', $nvmrc->in("v22.11.0\n"));
+        self::assertSame('20.11.1', $nvmrc->in('20.11.1'));
+        self::assertSame('22', $nvmrc->in("# the version the assets build with\nv22\n"));
+        // A word rather than a number: n understands it and it is handed on whole.
+        self::assertSame('lts/iron', $nvmrc->in("lts/iron\n"));
+        self::assertNull($nvmrc->in("\n\n"));
     }
 
     /** What is refused about the PHP version is refused about this one. */
-    public function testANodeVersionWithoutAValueIsRefused(): void
+    public function testANodeVersionWithAnEmptyPatternIsRefused(): void
     {
         $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessageMatches('/"node\.match"/');
+        $this->expectExceptionMessageMatches('/"node\.match".*holds the version and nothing else/s');
 
         Recipe::fromArray(['node' => ['read' => 'Build/.nvmrc', 'match' => '  ']]);
+    }
+
+    public function testAVersionPointedAtNoFileIsRefused(): void
+    {
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessageMatches('/"node\.read"/');
+
+        Recipe::fromArray(['node' => ['match' => 'v?(\\d+)']]);
     }
 
     public function testASettingIsTakenAsWritten(): void
@@ -155,10 +188,10 @@ final class RecipeTest extends TestCase
     {
         $runner = "#!/usr/bin/env bash\nPHP_VERSION=\"8.4\"\nCONTAINER=podman\n";
 
-        self::assertSame('8.4', Recipe::versionIn($runner, 'PHP_VERSION="(\d+\.\d+)"'));
-        self::assertSame('8.4', Recipe::versionIn($runner, '\d+\.\d+'));
-        self::assertNull(Recipe::versionIn($runner, 'PHP_MINOR="(\d+)"'));
-        self::assertSame('7.4', Recipe::versionIn('php: 7.4/fpm', 'php: (\d+\.\d+)/fpm'));
+        self::assertSame('8.4', Version::readFrom('runTests.sh', 'PHP_VERSION="(\d+\.\d+)"')->in($runner));
+        self::assertSame('8.4', Version::readFrom('runTests.sh', '\d+\.\d+')->in($runner));
+        self::assertNull(Version::readFrom('runTests.sh', 'PHP_MINOR="(\d+)"')->in($runner));
+        self::assertSame('7.4', Version::readFrom('any', 'php: (\d+\.\d+)/fpm')->in('php: 7.4/fpm'));
     }
 
     public function testAKeyItDoesNotKnowIsRefusedAndSaysWhatItKnows(): void
@@ -169,28 +202,33 @@ final class RecipeTest extends TestCase
         Recipe::fromArray(['instal' => ['composer install']]);
     }
 
-    public function testAMomentThatIsNotCommandsIsRefused(): void
+    public function testAMomentThatIsNotAListOfCommandsIsRefused(): void
     {
         $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessageMatches('/before\/run\/after/');
+        $this->expectExceptionMessageMatches('/list of what it runs.*profile/s');
 
         Recipe::fromArray(['install' => 'composer install']);
     }
 
-    public function testAMomentWithAWordItDoesNotKnowIsRefused(): void
+    /**
+     * A moment used to be a mapping of before, run and after. The order is now
+     * the order it is written in, so a mapping earns the same refusal as anything
+     * else that is not a list.
+     */
+    public function testAMomentWrittenAsAMappingIsRefused(): void
     {
         $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessageMatches('/"durin".*before, run, after/');
+        $this->expectExceptionMessageMatches('/list of what it runs/');
 
-        Recipe::fromArray(['install' => ['durin' => ['composer install']]]);
+        Recipe::fromArray(['install' => ['after' => ['npm ci']]]);
     }
 
     public function testACommandThatIsNeitherALineNorATaskIsRefused(): void
     {
         $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessageMatches('/install\.after.*exec:.*composer:/s');
+        $this->expectExceptionMessageMatches('/install.*exec:.*composer:/s');
 
-        Recipe::fromArray(['install' => ['after' => [['composer', 'install']]]]);
+        Recipe::fromArray(['install' => [['composer', 'install']]]);
     }
 
     /**
@@ -261,7 +299,7 @@ final class RecipeTest extends TestCase
     {
         $this->expectException(\RuntimeException::class);
 
-        Recipe::fromArray(['install' => ['after' => ['  ']]]);
+        Recipe::fromArray(['install' => ['  ']]);
     }
 
     public function testASettingWithoutAValueIsRefused(): void
@@ -332,7 +370,7 @@ final class RecipeTest extends TestCase
 
     public function testConfiguringMayStillBeAddedTo(): void
     {
-        $recipe = Recipe::fromArray(['configure' => ['after' => ['./bin/extra-config.sh']]]);
+        $recipe = Recipe::fromArray(['configure' => ['profile', './bin/extra-config.sh']]);
 
         self::assertSame([null, './bin/extra-config.sh'], self::lines($recipe->plan('configure')));
     }
@@ -579,7 +617,8 @@ final class RecipeTest extends TestCase
 
         self::assertNotNull($laid->php);
         self::assertSame('8.3', $laid->php->number);
-        self::assertNull($laid->php->where());
+        self::assertNull($laid->php->read);
+        self::assertNull($laid->php->match);
     }
 
     /** Every key this file knows, written out where a person can review it. */

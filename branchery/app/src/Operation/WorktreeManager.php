@@ -314,7 +314,7 @@ final readonly class WorktreeManager
 
         // Where the version is pointed at rather than written down, nothing can be
         // said until the checkout is there to read it from.
-        $readFrom = $build->phpRead()['read'] ?? null;
+        $readFrom = $build->php()?->read;
 
         return [
             'php' => $php ?? ($readFrom === null ? $this->preflight->projectPhp() : null),

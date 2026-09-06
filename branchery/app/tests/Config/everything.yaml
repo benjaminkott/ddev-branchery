@@ -17,12 +17,22 @@ docroot: web
 # Where the project's binaries are, and what $BRANCHERY_BIN points at.
 bin: .build/bin
 
-# A version, or where in the checkout it is written down. Never both: a version
+# A version, or the file in the checkout it stands in. Never both: a version
 # written out over a configuration that points at a file leaves no pointer.
+#
+# "match" is only for a file holding more than the version -- the TYPO3 core
+# says its PHP in its own test runner:
+#
+#   php:
+#     read: Build/Scripts/runTests.sh
+#     match: 'PHP_VERSION="(\d+\.\d+)"'
 php: '8.4'
+
+# A file made to hold a version is read without being told how, so a .nvmrc or
+# a .node-version is named and no more. One lying in the checkout's own root is
+# found without being named at all.
 node:
   read: Build/.nvmrc
-  match: 'v?(\d+(?:\.\d+)*)'
 
 # The pages a worktree is worth opening at, in the order they are offered. A
 # path and not an address -- the worktree's own goes in front of it. Written as
@@ -59,36 +69,40 @@ data:
   addresses:
     - config/sites
 
-# The moments, in the order a build asks for them. "setup" and "migrate" are the
-# two halves of one question and never both: a worktree with no data to inherit
-# is set up, one that has data is fitted to it.
+# The moments, in the order a build asks for them. "setup" and "migrate" are
+# the two halves of one question and never both: a worktree with no data to
+# inherit is set up, one that has data is fitted to it.
 #
-# A moment written as a list is what that moment now is. One written as
-# before/run/after keeps what the shipped configuration does and puts something
-# around it -- and that is what most projects need.
+# A moment is the lines it runs, in the order they are written. One of them may
+# be the word "profile", which is where the configuration this is built on does
+# its own work -- so a project keeps what that file installs and puts its own
+# lines around it. Left out, the moment is what stands here and no more; written
+# as an empty list, the moment does nothing at all.
+#
+# The word is reserved. A program of that name is written out as a task:
+# "exec: profile".
 install:
-  before:
-    - ./bin/before-install.sh
-  after:
-    - npm ci
-    # A line may also be written the way DDEV writes a hook task, and such a
-    # task may say the build survives its failure.
-    - composer: dump-autoload --classmap-authoritative
-    - exec: cd Build && npm ci
-      optional: true
+  - ./bin/write-registry-token.sh
+  - profile
+  - npm ci
+  # A line may also be written the way DDEV writes a hook task, and such a task
+  # may say the build survives its failure.
+  - composer: dump-autoload --classmap-authoritative
+  - exec: cd Build && npm ci
+    optional: true
 
 configure:
-  after:
-    - ./bin/extra-config.sh
+  - profile
+  - ./bin/extra-config.sh
 
-# Written as a list: what this moment now is, instead of what it is built on.
+# No "profile" line: this moment is what stands here, and what it is built on
+# does nothing at this one.
 setup:
   - ./bin/install-fresh.sh
 
 migrate:
+  - profile
   - $BRANCHERY_PHP $BRANCHERY_BIN/typo3 extension:setup
 
-# The last step of every operation that touches a worktree. An empty list is how
-# a project takes a moment away.
 finish:
-  - $BRANCHERY_PHP $BRANCHERY_BIN/typo3 cache:flush
+  - profile

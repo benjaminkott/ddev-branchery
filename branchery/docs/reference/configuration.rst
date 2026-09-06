@@ -102,17 +102,18 @@ Complete example
       addresses:
         - config/sites
 
-    # A moment written as a list is what that moment now is.
+    # A moment is the lines it runs, in order. "profile" is where the shipped
+    # configuration does its own work, so this installs what typo3-app installs
+    # and builds the assets afterwards. This is what most projects need.
+    install:
+      - profile
+      - npm ci
+      - npm run build
+      - composer: dump-autoload --classmap-authoritative
+
+    # Left out, the moment is what stands here and no more.
     setup:
       - ./bin/install-fresh.sh
-
-    # A moment written as before/run/after keeps what the shipped configuration
-    # does and puts something around it. This is what most projects need.
-    install:
-      after:
-        - npm ci
-        - npm run build
-        - composer: dump-autoload --classmap-authoritative
 
 Every key is optional, and every one of them is refused if it is spelled wrong
 -- a key that silently did nothing would leave a worktree missing exactly the
@@ -149,7 +150,23 @@ and are described under :ref:`php-and-node-versions`.
 PHP and Node versions
 =====================
 
-``php:`` is a version, or where in the checkout the version is written down:
+``php:`` and ``node:`` are a version, or the file in the checkout it stands in:
+
+..  code-block:: yaml
+
+    php: "8.3"
+
+    node:
+      read: Build/.nvmrc
+
+``read`` names the file and nothing more. A file made to hold a version — a
+``.nvmrc``, a ``.node-version`` — holds one line and is read without being told
+how: the first line that is neither blank nor a remark, without the ``v`` such a
+file may or may not carry. A word rather than a number, ``lts/iron``, is handed
+on as it stands.
+
+``match`` is for a file that holds more than the version, and it is the only
+reason to write one:
 
 ..  code-block:: yaml
 
@@ -161,21 +178,14 @@ That is what ``typo3-core`` says, because a core branch names the version it
 tests itself with. A version written out is read before anything is created, so
 a branch asking for a version the web image has no pool for is refused while
 nothing exists yet. What was read, and out of which file, is said in the log of
-the operation either way — and so is a pattern that matched nothing.
+the operation either way — and so is a file that held no version.
 
-``node:`` is the same thing for the toolchain, in the same two spellings:
-
-..  code-block:: yaml
-
-    node:
-      read: Build/.nvmrc
-      match: 'v?(\d+(?:\.\d+)*)'
-
-Most projects need neither: a checkout that says which Node it wants in the
-usual places — ``.nvmrc``, ``.node-version``, or the ``engines`` of the root
-``package.json`` — is read without being asked to, and ``node:`` is for a
-project that keeps the file somewhere else. ``typo3-core`` is such a project,
-which is where the lines above come from: its ``.nvmrc`` is under ``Build/``.
+Most projects need neither spelling for Node: a checkout that says which version
+it wants in the usual places — ``.nvmrc``, ``.node-version``, or the ``engines``
+of the root ``package.json`` — is read without being asked to, and ``node:`` is
+for a project that keeps the file somewhere else. ``typo3-core`` is such a
+project, which is where the lines above come from: its ``.nvmrc`` is under
+``Build/``.
 
 Nothing is served with Node, so nothing about it is refused ahead of time. The
 version decides what a line like ``npm ci`` runs as — it is put in front of the

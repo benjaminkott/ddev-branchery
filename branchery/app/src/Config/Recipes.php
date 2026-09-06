@@ -54,6 +54,11 @@ final class Recipes
     public function build(Recipe $recipe): Build
     {
         $name = $recipe->profile;
+        if ($name === null && $recipe->wantsTheProfile()) {
+            // Said rather than passed over: a moment written around work that is
+            // not there is a line the developer expects to happen.
+            throw new \RuntimeException(sprintf('%s: a moment leaves a place for "%s", and this file names none.', Recipe::FILE, Recipe::INHERITED));
+        }
 
         return new Build($recipe->over($name === null ? Recipe::none() : $this->shipped($name)), $name);
     }
@@ -141,6 +146,9 @@ final class Recipes
         $recipe = Recipe::fromFile($file);
         if ($recipe->profile !== null) {
             throw new \RuntimeException(sprintf('The shipped configuration "%s" names "%s" as its own profile, and a shipped one is built on nothing: a chain of them is one nobody can follow.', $name, $recipe->profile));
+        }
+        if ($recipe->wantsTheProfile()) {
+            throw new \RuntimeException(sprintf('The shipped configuration "%s" leaves a place for "%s", and it is built on nothing.', $name, Recipe::INHERITED));
         }
 
         return $recipe;

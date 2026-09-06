@@ -61,14 +61,14 @@ final readonly class Checks
      */
     public function phpFor(Build $build, string $subject, StepReporter $reporter): ?string
     {
-        $said = $build->php();
+        $asked = $build->php();
+        $said = $asked?->number;
         if ($said === null) {
             // Pointed at is not nothing asked for: saying "the project's own" here was
             // read as the decision.
-            $where = $build->phpRead();
-            $reporter->note($where === null
+            $reporter->note($asked === null
                 ? 'No version asked for; the project\'s own applies.'
-                : sprintf('The version is written in %s; it is read once the checkout is there.', $where['read']));
+                : sprintf('The version is written in %s; it is read once the checkout is there.', (string) $asked->read));
 
             return null;
         }

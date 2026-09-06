@@ -17,10 +17,10 @@ php:
 
 # And the Node version, out of the file the core keeps it in. Said here rather
 # than left to be found: that file is under Build/, and what reads a checkout's
-# own version reads from its root.
+# own version reads from its root. No pattern, because a .nvmrc holds the
+# version and nothing else.
 node:
   read: Build/.nvmrc
-  match: 'v?(\d+(?:\.\d+)*)'
 
 # Both known because this configuration is that repository and nothing else.
 # The review is asked for by Change-Id: the change number is Gerrit's own and is

@@ -50,36 +50,16 @@ final readonly class Build
         return $this->recipe->bin ?? 'vendor/bin';
     }
 
-    /** The version this checkout is to be served with, where one is named. */
-    public function php(): ?string
+    /** What this checkout is to be served with, where anything is asked for. */
+    public function php(): ?Version
     {
-        return $this->recipe->php?->number;
-    }
-
-    /**
-     * For a project whose branches do not all want the same one. Null where a
-     * version is written out, including where the project wrote one over a
-     * configuration that pointed at a file.
-     *
-     * @return ?array{read: string, match: string}
-     */
-    public function phpRead(): ?array
-    {
-        return $this->recipe->php?->where();
+        return $this->recipe->php;
     }
 
     /** Nothing is served with it; it is what `npm` in a recipe line runs under. */
-    public function node(): ?string
+    public function node(): ?Version
     {
-        return $this->recipe->node?->number;
-    }
-
-    /**
-     * @return ?array{read: string, match: string}
-     */
-    public function nodeRead(): ?array
-    {
-        return $this->recipe->node?->where();
+        return $this->recipe->node;
     }
 
     /**

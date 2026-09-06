@@ -46,6 +46,13 @@ final readonly class Recipe
 
     private const SETTINGS = ['profile', 'docroot', 'php', 'node', 'bin'];
 
+    /**
+     * The one word in a moment that is not a line to run: where what this is
+     * built on does its own work. Reserved, so a program of that name is written
+     * out as a task -- "exec: profile".
+     */
+    public const INHERITED = 'profile';
+
     /** The review a checkout belongs to, the issue it closes, and the commit itself. */
     private const LINKS = ['review', 'issue', 'commit'];
 
@@ -66,11 +73,11 @@ final readonly class Recipe
      * how they are laid over one another: a project that only says where its issues
      * are tracked keeps the review address of what it is built on.
      *
-     * @param ?list<array{name: string, path: string}>                                                                 $entrypoints
-     * @param array{review: ?string, issue: ?string, commit: ?string}                                                  $links
-     * @param array{from: ?string, needs: ?list<string>, addresses: ?list<string>}                                     $data
-     * @param array{only: ?list<string>, except: ?list<string>}                                                        $copy
-     * @param array<string, array{before: list<RecipeCommand>, run: ?list<RecipeCommand>, after: list<RecipeCommand>}> $moments
+     * @param ?list<array{name: string, path: string}>                             $entrypoints
+     * @param array{review: ?string, issue: ?string, commit: ?string}              $links
+     * @param array{from: ?string, needs: ?list<string>, addresses: ?list<string>} $data
+     * @param array{only: ?list<string>, except: ?list<string>}                    $copy
+     * @param array<string, list<?RecipeCommand>>                                  $moments
      */
     private function __construct(
         /**
@@ -256,52 +263,33 @@ final readonly class Recipe
         ));
     }
 
-    /** Whether the profile's own work at that moment is replaced. */
-    public function replaces(string $moment): bool
-    {
-        return ($this->moments[$moment]['run'] ?? null) !== null;
-    }
-
-    /** @return list<RecipeCommand> */
-    public function commands(string $moment, string $when): array
-    {
-        return $this->moments[$moment][$when] ?? [];
-    }
-
     /**
      * The order is the whole of what a recipe does, and it is worth being able to
-     * read back without running anything: null stands for the profile doing its own
-     * work, a command for a line the project wrote.
+     * read back without running anything: null is where the shipped configuration
+     * does its own work, a command a line the project wrote.
+     *
+     * A moment nobody wrote about is that work alone.
      *
      * @return list<?RecipeCommand>
      */
     public function plan(string $moment): array
     {
-        $plan = [];
-        foreach ($this->commands($moment, 'before') as $line) {
-            $plan[] = $line;
-        }
-        if ($this->replaces($moment)) {
-            foreach ($this->commands($moment, 'run') as $line) {
-                $plan[] = $line;
-            }
-        } else {
-            $plan[] = null;
-        }
-        foreach ($this->commands($moment, 'after') as $line) {
-            $plan[] = $line;
-        }
-
-        return $plan;
+        return $this->moments[$moment] ?? [null];
     }
 
     /**
-     * The first group where the pattern has one, the whole match where it has not.
-     * Null where the pattern matches nothing.
+     * Whether any moment leaves a place for the work of what this is built on. A
+     * file that does and names no profile has written a line about nothing.
      */
-    public static function versionIn(string $contents, string $match): ?string
+    public function wantsTheProfile(): bool
     {
-        return preg_match(self::patternOf($match), $contents, $hit) === 1 ? ($hit[1] ?? $hit[0]) : null;
+        foreach ($this->moments as $plan) {
+            if (in_array(null, $plan, true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -345,7 +333,7 @@ final readonly class Recipe
      * even where nothing is left to run: "finish: []" is how a project switches one
      * off, and dropping it would read as a project that never mentioned it.
      *
-     * @return array<string, array{before: list<RecipeCommand>, run: ?list<RecipeCommand>, after: list<RecipeCommand>}>
+     * @return array<string, list<?RecipeCommand>>
      */
     private function momentsOver(self $base): array
     {
@@ -361,7 +349,7 @@ final readonly class Recipe
                 $lines = [...$lines, ...$base->lines($moment)];
             }
             if ($lines !== [] || $this->speaksOf($moment) || $base->speaksOf($moment)) {
-                $moments[$moment] = ['before' => [], 'run' => $lines, 'after' => []];
+                $moments[$moment] = $lines;
             }
         }
 
@@ -374,10 +362,13 @@ final readonly class Recipe
     }
 
     /**
-     * The one written here, or where in the checkout it is written down. The second
+     * The one written here, or the file in the checkout it stands in. The second
      * form is what a repository whose branches build against their own versions
      * needs -- the TYPO3 core says its PHP in the test runner and its Node in
      * `Build/.nvmrc`.
+     *
+     * "match" is only for a file that holds more than the version: a file made to
+     * hold one, as `.nvmrc` is, is read without being told how.
      */
     private static function readVersion(mixed $value, string $key): ?Version
     {
@@ -395,31 +386,29 @@ final readonly class Recipe
             return Version::of($version);
         }
         if (!is_array($value) || array_is_list($value)) {
-            throw new \RuntimeException(sprintf('%s: "%s" is a version, or "read" and "match" saying where in the checkout it stands.', self::FILE, $key));
+            throw new \RuntimeException(sprintf('%s: "%s" is a version, or "read" saying which file in the checkout holds it.', self::FILE, $key));
         }
         foreach (array_keys($value) as $under) {
             if (!in_array($under, ['read', 'match'], true)) {
                 throw new \RuntimeException(sprintf('%s: "%s" under "%s" is not "read" or "match".', self::FILE, (string) $under, $key));
             }
         }
-        foreach (['read', 'match'] as $needed) {
-            if (!isset($value[$needed]) || !is_string($value[$needed]) || trim($value[$needed]) === '') {
-                throw new \RuntimeException(sprintf('%s: "%s.%s" has to be a value, and not an empty one.', self::FILE, $key, $needed));
-            }
+        if (!isset($value['read']) || !is_string($value['read']) || trim($value['read']) === '') {
+            throw new \RuntimeException(sprintf('%s: "%s.read" has to be a value, and not an empty one.', self::FILE, $key));
         }
-        if (@preg_match(self::patternOf(trim($value['match'])), '') === false) {
+        if (!array_key_exists('match', $value)) {
+            return Version::readFrom(trim($value['read']));
+        }
+        if (!is_string($value['match']) || trim($value['match']) === '') {
+            throw new \RuntimeException(sprintf('%s: "%s.match" has to be a value, and not an empty one. Leave it out where the file holds the version and nothing else.', self::FILE, $key));
+        }
+        if (!Version::isReadable(trim($value['match']))) {
             // Said now: a pattern that cannot be read would otherwise be a version
             // nobody finds, in an operation that reports success.
             throw new \RuntimeException(sprintf('%s: "%s.match" is not a pattern this can read.', self::FILE, $key));
         }
 
         return Version::readFrom(trim($value['read']), trim($value['match']));
-    }
-
-    /** The pattern as written, made into one preg reads -- slashes and all. */
-    private static function patternOf(string $match): string
-    {
-        return '/' . str_replace('/', '\\/', $match) . '/';
     }
 
     /**
@@ -601,79 +590,74 @@ final readonly class Recipe
         return $read;
     }
 
-    /** @return array{before: list<RecipeCommand>, run: ?list<RecipeCommand>, after: list<RecipeCommand>} */
+    /**
+     * A moment is the lines it runs, in order, and one of them may be the word
+     * "profile" -- the place where what this is built on does its own work. Left
+     * out, this moment is what the project wrote and no more.
+     *
+     * @return list<?RecipeCommand>
+     */
     private static function readMoment(string $moment, mixed $value): array
     {
-        if (!is_array($value)) {
-            throw new \RuntimeException(sprintf('%s: "%s" has to be a list of commands, or before/run/after.', self::FILE, $moment));
+        if (!is_array($value) || !array_is_list($value)) {
+            throw new \RuntimeException(sprintf('%s: "%s" has to be a list of what it runs, in order, with "%s" where what this is built on does its own work.', self::FILE, $moment, self::INHERITED));
         }
 
-        // The short form says what the moment is: "installing is these commands".
-        if (array_is_list($value)) {
-            return ['before' => [], 'run' => self::readCommands($moment, 'run', $value), 'after' => []];
-        }
-
-        $step = ['before' => [], 'run' => null, 'after' => []];
-        foreach ($value as $when => $commands) {
-            if (!in_array($when, ['before', 'run', 'after'], true)) {
-                throw new \RuntimeException(sprintf('%s: "%s" under "%s" is not one of before, run, after.', self::FILE, (string) $when, $moment));
-            }
-            if (!is_array($commands) || !array_is_list($commands)) {
-                throw new \RuntimeException(sprintf('%s: "%s.%s" has to be a list of commands.', self::FILE, $moment, (string) $when));
-            }
-            $step[$when] = self::readCommands($moment, (string) $when, $commands);
-        }
-
-        return $step;
+        return self::readCommands($moment, $value);
     }
 
     /**
      * A line is either what to run, or a task written the way DDEV writes a hook
      * task -- "exec:" and "composer:" -- so a developer who has written hooks in
      * .ddev/config.yaml is writing the same thing here. Such a task may add
-     * "optional: true".
+     * "optional: true". The word "profile" alone is not a line at all.
      *
      * @param list<mixed> $commands
      *
-     * @return list<RecipeCommand>
+     * @return list<?RecipeCommand>
      */
-    private static function readCommands(string $moment, string $when, array $commands): array
+    private static function readCommands(string $moment, array $commands): array
     {
-        $where = $moment . ($when === 'run' ? '' : '.' . $when);
         $read = [];
 
         foreach ($commands as $entry) {
             if (is_string($entry)) {
                 if (trim($entry) === '') {
-                    throw new \RuntimeException(sprintf('%s: "%s" holds a command with nothing in it.', self::FILE, $where));
+                    throw new \RuntimeException(sprintf('%s: "%s" holds a command with nothing in it.', self::FILE, $moment));
                 }
-                $read[] = new RecipeCommand('exec', trim($entry));
+                $read[] = trim($entry) === self::INHERITED ? null : new RecipeCommand('exec', trim($entry));
                 continue;
             }
 
             if (!is_array($entry) || $entry === []) {
-                throw new \RuntimeException(sprintf('%s: every command under "%s" is a line to run, or one of %s.', self::FILE, $where, implode(', ', array_map(static fn (string $kind): string => $kind . ':', RecipeCommand::KINDS))));
+                throw new \RuntimeException(sprintf('%s: every command under "%s" is a line to run, "%s", or one of %s.', self::FILE, $moment, self::INHERITED, implode(', ', array_map(static fn (string $kind): string => $kind . ':', RecipeCommand::KINDS))));
             }
 
-            $optional = self::readOptional($where, $entry);
+            $optional = self::readOptional($moment, $entry);
             // Whatever is left once "optional" is taken out is the task itself, and
             // there is exactly one: two kinds under one entry is a line whose order
             // nobody can read off the file.
             unset($entry['optional']);
             if (count($entry) !== 1) {
-                throw new \RuntimeException(sprintf('%s: every command under "%s" is a line to run, or one of %s.', self::FILE, $where, implode(', ', array_map(static fn (string $kind): string => $kind . ':', RecipeCommand::KINDS))));
+                throw new \RuntimeException(sprintf('%s: every command under "%s" is a line to run, "%s", or one of %s.', self::FILE, $moment, self::INHERITED, implode(', ', array_map(static fn (string $kind): string => $kind . ':', RecipeCommand::KINDS))));
             }
 
             $kind = (string) array_key_first($entry);
             $line = reset($entry);
             if (!in_array($kind, RecipeCommand::KINDS, true)) {
-                throw new \RuntimeException(sprintf('%s: "%s" under "%s" is not one of %s.', self::FILE, $kind, $where, implode(', ', RecipeCommand::KINDS)));
+                throw new \RuntimeException(sprintf('%s: "%s" under "%s" is not one of %s.', self::FILE, $kind, $moment, implode(', ', RecipeCommand::KINDS)));
             }
             if (!is_string($line) || trim($line) === '') {
-                throw new \RuntimeException(sprintf('%s: "%s:" under "%s" needs something to run.', self::FILE, $kind, $where));
+                throw new \RuntimeException(sprintf('%s: "%s:" under "%s" needs something to run.', self::FILE, $kind, $moment));
             }
 
             $read[] = new RecipeCommand($kind, trim($line), $optional);
+        }
+
+        // Twice, and the second is the same work a second time -- which nobody
+        // means, and which an operation would do without a word.
+        if (count(array_filter($read, static fn (?RecipeCommand $c): bool => $c === null)) > 1) {
+            throw new \RuntimeException(sprintf('%s: "%s" names "%s" more than once, and what it is built on does its work once.', self::FILE, $moment, self::INHERITED));
         }
 
         return $read;
@@ -686,13 +670,13 @@ final readonly class Recipe
      *
      * @param array<mixed> $entry
      */
-    private static function readOptional(string $where, array $entry): bool
+    private static function readOptional(string $moment, array $entry): bool
     {
         if (!array_key_exists('optional', $entry)) {
             return false;
         }
         if (!is_bool($entry['optional'])) {
-            throw new \RuntimeException(sprintf('%s: "optional" under "%s" is true or false.', self::FILE, $where));
+            throw new \RuntimeException(sprintf('%s: "optional" under "%s" is true or false.', self::FILE, $moment));
         }
 
         return $entry['optional'];

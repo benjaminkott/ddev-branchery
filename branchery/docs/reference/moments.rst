@@ -26,6 +26,22 @@ Lifecycle moments
     ``finish``    the last step of every one of them, and of a version switch
     ============= =====================================================================================
 
+A moment is the lines it runs, in the order they are written:
+
+..  code-block:: yaml
+
+    install:
+      - ./bin/write-registry-token.sh
+      - profile
+      - npm ci
+
+``profile`` is the one word in that list which is not a line to run: it is where
+the configuration this is built on does its own work. So the list above writes a
+token, then installs the dependencies the shipped profile installs, then builds
+the assets — and a later change to that profile reaches this project. Left out,
+the moment is what stands there and no more. The word is reserved; a program of
+that name is written out as ``exec: profile``.
+
 A line is a command, or a task written the way DDEV writes a hook task:
 ``exec:`` for a command, ``composer:`` for composer. A bare string is ``exec:``.
 Everything runs in the worktree, in the project's web container, through a
