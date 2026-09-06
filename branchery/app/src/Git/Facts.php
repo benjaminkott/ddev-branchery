@@ -19,6 +19,14 @@ use App\Project;
  * moves it: the Runner tells this one whenever a command wrote, and invalidate()
  * is the whole of the reaction. That is why there is one place to add a field
  * to and one place to clear it from.
+ *
+ * Which holds for git run through the Runner, and that is every git command
+ * this application runs itself. A recipe line is the other way into the same
+ * container -- see Worktree\Place -- and a project whose recipe commits would
+ * leave what is kept here a moment out of date, for the rest of the operation
+ * that ran it. Nothing is read from here after that point, so it is a boundary
+ * to know about rather than a hole to plug: a reader that starts asking after
+ * the recipe lines have run needs the Runner told about them.
  */
 final class Facts
 {
