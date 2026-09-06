@@ -3,6 +3,7 @@
 import { api, ApiError } from './api.js';
 import { loadStrings, translate } from './i18n.js';
 import { keep, recall } from './kept.js';
+import { doingKey, historyKey } from './rules/operations.js';
 import { createStore, differs } from './store.js';
 import type { AppState, JobKind, RunningJob, ServerState, TrackedJob } from './types.js';
 
@@ -207,35 +208,17 @@ export function trackJob(id: string, expected: string | null = null, kind: JobKi
 }
 
 /**
- * What kind of operation a console command is, what it is called in a worktree's
- * history, and what a row says while it runs. One table, because those three
- * places used to keep one each -- and an operation called two things is two
- * operations to whoever reads both. Anything not named here builds a worktree.
+ * The words the table in rules/operations.ts names, in the reader's language.
+ * Said here because that is where the language is, and decided there because a
+ * decision is worth asking without a page around it.
  */
-const COMMANDS: Record<string, { kind: JobKind; history: string; doing: string }> = {
-    'worktree:add': { kind: 'create', history: 'history.add', doing: 'job.doing.create' },
-    'worktree:fork': { kind: 'create', history: 'history.fork', doing: 'job.doing.create' },
-    'worktree:provision': { kind: 'create', history: 'history.provision', doing: 'job.doing.provision' },
-    'worktree:remove': { kind: 'remove', history: 'history.remove', doing: 'job.doing.remove' },
-    'database:sync': { kind: 'sync', history: 'history.sync', doing: 'job.doing.sync' },
-    'worktree:pull': { kind: 'pull', history: 'history.pull', doing: 'job.doing.pull' },
-    'worktree:restore': { kind: 'restore', history: 'history.restore', doing: 'job.doing.restore' },
-    'worktree:discard': { kind: 'discard', history: 'history.discard', doing: 'job.doing.discard' },
-    'git:fetch': { kind: 'fetch', history: 'history.fetch', doing: 'job.doing.fetch' },
-};
-
-export function kindOf(command: string): JobKind {
-    return COMMANDS[command]?.kind ?? 'create';
-}
-
-/** What an operation is called, from the command it ran. */
 export function operationName(command: string): string {
-    return t(COMMANDS[command]?.history ?? 'history.other');
+    return t(historyKey(command));
 }
 
 /** What a row says about an operation that has not said which step it is on. */
 export function doingWord(command: string): string {
-    return t(COMMANDS[command]?.doing ?? 'job.doing.create');
+    return t(doingKey(command));
 }
 
 /**

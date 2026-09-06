@@ -14,7 +14,8 @@ import { buildButton, formatDuration, maybe, runSteps, setButtonLabel } from '..
 import { EDITOR } from '../editor.js';
 import { gather, unread } from '../rules/journal.js';
 import { poll } from '../rules/polling.js';
-import { kindOf, operationName, refresh, state, stateWords, subscribe, t, trackJob } from '../state.js';
+import { kindOf } from '../rules/operations.js';
+import { operationName, refresh, state, stateWords, subscribe, t, trackJob } from '../state.js';
 import type { JobKind, TrackedJob } from '../types.js';
 import { hasResult, titleOf, whyItStopped } from '../rules/verdict.js';
 import {
