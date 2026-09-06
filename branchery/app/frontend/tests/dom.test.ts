@@ -48,6 +48,19 @@ describe('slug', () => {
         assert.equal(slug('/feature/x/'), 'feature-x');
         assert.equal(slug('---'), '');
     });
+
+    /**
+     * The same four names stand in App\Tests\ProjectTest, because this rule
+     * decides a directory, an address and a database name on the other side of
+     * the API and only offers one here. The last of them is the one the two
+     * disagreed on: a letter no ASCII lowercase reaches.
+     */
+    it('says what Project::slug() says', () => {
+        assert.equal(slug('Feature/Cache-Headers'), 'feature-cache-headers');
+        assert.equal(slug('release/13.4'), 'release-13-4');
+        assert.equal(slug('TASK/ÄNDERUNG'), 'task-nderung');
+        assert.equal(slug('İ'), '');
+    });
 });
 
 describe('compareVersions', () => {

@@ -101,6 +101,23 @@ final class ProjectTest extends TestCase
         $project->assertNotItself('blog');
     }
 
+    /**
+     * The name a branch is made into, which is a directory, an address and a
+     * database name. The interface makes the same one to offer it before the
+     * press -- frontend/dom.ts, where these four names stand again, because a
+     * reader shown one name and given another has no way of telling where that
+     * happened.
+     */
+    public function testABranchBecomesTheNameTheInterfaceOffersForIt(): void
+    {
+        self::assertSame('feature-cache-headers', Project::slug('Feature/Cache-Headers'));
+        self::assertSame('release-13-4', Project::slug('release/13.4'));
+        // Lowered a byte at a time, which is what leaves a letter outside ASCII
+        // standing to be replaced as a separator rather than becoming one.
+        self::assertSame('task-nderung', Project::slug('TASK/ÄNDERUNG'));
+        self::assertSame('', Project::slug('İ'));
+    }
+
     /** Where a relative link placed at $link actually points. */
     private static function resolved(string $link, string $target): string
     {

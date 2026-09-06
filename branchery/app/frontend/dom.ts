@@ -32,10 +32,19 @@ export function isBranchName(value: string): boolean {
 
 const BRANCH_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._/-]{0,99}$/;
 
-/** Same rule as Project::slug(): hostnames only take [a-z0-9-]. */
+/**
+ * Same rule as Project::slug(): hostnames only take [a-z0-9-]. The same rule
+ * and not merely the same idea -- the page offers a name and the container makes
+ * the directory, the address and the database under it, and a reader who is
+ * shown one name and given another has no way of telling where that happened.
+ *
+ * Which is why the letters are lowered one range at a time rather than by
+ * toLowerCase(): PHP lowers bytes, so "İ" reaches strtolower() as two it does
+ * not know and comes out a separator, where toLowerCase() would make it an "i".
+ */
 export function slug(value: string): string {
     return value
-        .toLowerCase()
+        .replace(/[A-Z]/g, (letter) => letter.toLowerCase())
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-+|-+$/g, '');
 }

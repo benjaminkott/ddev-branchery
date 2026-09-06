@@ -12,7 +12,7 @@ export const TLD = 'branchery.ddev.site';
 /** Same rule as Project::slug(): hostnames only take [a-z0-9-]. */
 export function slug(value) {
     return value
-        .toLowerCase()
+        .replace(/[A-Z]/g, (letter) => letter.toLowerCase())
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-+|-+$/g, '');
 }
