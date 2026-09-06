@@ -14,7 +14,7 @@
 
 FROM docker:27-cli AS dockercli
 
-FROM php:8.4-cli AS build
+FROM php:8.5-cli AS build
 COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
 RUN apt-get update \
     && apt-get install -y --no-install-recommends git unzip \
@@ -30,7 +30,7 @@ RUN composer install --no-dev --no-scripts --no-autoloader --no-interaction --pr
 COPY app/ ./
 RUN composer dump-autoload --no-dev --classmap-authoritative
 
-FROM php:8.4-cli
+FROM php:8.5-cli
 COPY --from=dockercli /usr/local/bin/docker /usr/local/bin/docker
 COPY --from=build /build /opt/branchery
 # The documentation travels with the application and not with the project.
