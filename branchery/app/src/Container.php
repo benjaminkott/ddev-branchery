@@ -59,6 +59,7 @@ use App\Worktree\NodeVersions;
 use App\Worktree\PhpVersions;
 use App\Worktree\Places;
 use App\Worktree\Surroundings;
+use App\Worktree\Traces;
 use App\Worktree\Usage;
 use App\Worktree\VersionMap;
 use App\Worktree\Worktrees;
@@ -439,14 +440,12 @@ final class Container
         return $this->share(Removal::class, fn (): Removal => new Removal(
             $this->project(),
             $this->git(),
-            $this->worktrees(),
             $this->files(),
             $this->databaseServer(),
             $this->databases(),
-            $this->php(),
-            $this->node(),
-            $this->surroundings(),
-            $this->describe(),
+            // Not shared on its own: a removal is the only thing that forgets a
+            // worktree, so there is one of these anyway.
+            new Traces($this->surroundings(), $this->worktrees(), $this->php(), $this->node(), $this->describe()),
             $this->checks(),
         ));
     }

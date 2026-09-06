@@ -10,20 +10,17 @@ use App\ManagedFiles;
 use App\Project;
 use App\Web\Databases;
 use App\Web\DatabaseServer;
-use App\Worktree\Description;
-use App\Worktree\NodeVersions;
-use App\Worktree\PhpVersions;
-use App\Worktree\Surroundings;
-use App\Worktree\Worktrees;
+use App\Worktree\Traces;
 
 /**
  * Taking a worktree away, and everything that was made for it.
  *
  * Written out here rather than folded into the operations that make one,
  * because what it touches is the honest list of what a worktree is: a database,
- * a checkout, git's entry for it, the branch, the link it was served through,
- * two version maps, its record, and what "ddev describe" says. Anything left
- * behind is a name that cannot be used again.
+ * a checkout, git's entry for it, the branch, and everything written down about
+ * it -- which is Traces, so that a new kind of record is forgotten by being
+ * added there and not by being remembered here. Anything left behind is a name
+ * that cannot be used again.
  *
  * The one step that must get through even when the one before it did not is the
  * directory: git refuses to remove a worktree holding a submodule or a locked
@@ -34,14 +31,10 @@ final readonly class Removal
     public function __construct(
         private Project $project,
         private Git $git,
-        private Worktrees $worktrees,
         private ManagedFiles $files,
         private DatabaseServer $database,
         private Databases $databases,
-        private PhpVersions $php,
-        private NodeVersions $node,
-        private Surroundings $surroundings,
-        private Description $describe,
+        private Traces $traces,
         private Checks $preflight,
     ) {
     }
@@ -75,12 +68,8 @@ final readonly class Removal
         }
 
         $reporter->step('Cleaning up');
-        $this->surroundings->unlinkDocroot($name);
-        $this->worktrees->forget($name);
-        $this->php->forget($name);
-        $this->node->forget($name);
         $this->preflight->forgetOperations($name, $reporter);
-        $this->describe->refresh();
+        $this->traces->forget($name);
         // A branch left behind is the one thing here the developer has to know
         // about, so the operation fails though the rest is done.
         if ($problems !== []) {
