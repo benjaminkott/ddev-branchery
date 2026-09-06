@@ -23,7 +23,7 @@ final class ListWorktreesStateTest extends TestCase
         return new Worktree(...[
             'name' => 'my-fix', 'branch' => 'my-fix', 'madeFor' => 'my-fix', 'php' => '8.3', 'minPhp' => null, 'node' => null,
             'database' => 'branchery_my_fix', 'profile' => null, 'docroot' => '', 'url' => 'https://my-fix.blog.ddev.site/',
-            'backend' => null, 'path' => '/home/dev/blog/.worktrees/my-fix', 'changes' => 0, 'ahead' => 0, 'behind' => 0,
+            'entrypoints' => [], 'path' => '/home/dev/blog/.worktrees/my-fix', 'changes' => 0, 'ahead' => 0, 'behind' => 0,
             'ready' => true, 'isProject' => false,
             ...$with,
         ]);

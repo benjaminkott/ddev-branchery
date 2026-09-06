@@ -24,7 +24,7 @@ function worktree(values: Partial<Worktree> & { name: string }): Worktree {
         profile: 'typo3-app',
         docroot: 'public',
         url: `https://${values.name}.example.ddev.site/`,
-        backend: null,
+        entrypoints: [],
         path: `/home/dev/project/.worktrees/${values.name}`,
         changes: 0,
         ahead: 0,

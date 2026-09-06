@@ -1,0 +1,94 @@
+# Every key .ddev/branchery.yaml knows, written once so the whole of the
+# grammar can be read on one page -- and read by RecipeTest, which holds it to
+# the keys the reader actually knows and lays it over an empty recipe in both
+# directions. A key added to the file and not to this one fails there.
+#
+# It is not a configuration anybody would write: it says everything at once,
+# where a project says the two or three lines it needs. `defaults/` holds the
+# ones written to be copied.
+
+# The shipped configuration this builds on. Everything beside it stands over
+# what that file says.
+profile: typo3-app
+
+# What is served out of the checkout. "" is the checkout's own root.
+docroot: web
+
+# Where the project's binaries are, and what $BRANCHERY_BIN points at.
+bin: .build/bin
+
+# A version, or where in the checkout it is written down. Never both: a version
+# written out over a configuration that points at a file leaves no pointer.
+php: '8.4'
+node:
+  read: Build/.nvmrc
+  match: 'v?(\d+(?:\.\d+)*)'
+
+# The pages a worktree is worth opening at, in the order they are offered. A
+# path and not an address -- the worktree's own goes in front of it. Written as
+# an empty list, it says this project has none although its profile has.
+entrypoints:
+  - Backend: /typo3
+  - Storybook: /storybook
+
+# Where the work in a checkout is talked about. The number comes out of the last
+# commit's own trailers, and the placeholder is where it goes. Laid over key by
+# key: a project that only says where its issues are tracked keeps the review
+# address of what it is built on.
+links:
+  review: https://review.typo3.org/q/{change}
+  issue: https://forge.typo3.org/issues/{issue}
+  commit: https://github.com/TYPO3/typo3/commit/{commit}
+
+# What a fork copies over from the checkout it was cut from. A list is the whole
+# answer -- these and nothing else. A mapping amends the answer that needs no
+# writing down, which is everything git ignores.
+copy:
+  except:
+    - var
+    - node_modules
+
+# Where a new worktree's data comes from, what has to travel with it in order to
+# be readable, and which of those files carry addresses to be pointed at this
+# worktree. "from" is "source" or "none".
+data:
+  from: source
+  needs:
+    - config/sites
+    - config/system/settings.php
+  addresses:
+    - config/sites
+
+# The moments, in the order a build asks for them. "setup" and "migrate" are the
+# two halves of one question and never both: a worktree with no data to inherit
+# is set up, one that has data is fitted to it.
+#
+# A moment written as a list is what that moment now is. One written as
+# before/run/after keeps what the shipped configuration does and puts something
+# around it -- and that is what most projects need.
+install:
+  before:
+    - ./bin/before-install.sh
+  after:
+    - npm ci
+    # A line may also be written the way DDEV writes a hook task, and such a
+    # task may say the build survives its failure.
+    - composer: dump-autoload --classmap-authoritative
+    - exec: cd Build && npm ci
+      optional: true
+
+configure:
+  after:
+    - ./bin/extra-config.sh
+
+# Written as a list: what this moment now is, instead of what it is built on.
+setup:
+  - ./bin/install-fresh.sh
+
+migrate:
+  - $BRANCHERY_PHP $BRANCHERY_BIN/typo3 extension:setup
+
+# The last step of every operation that touches a worktree. An empty list is how
+# a project takes a moment away.
+finish:
+  - $BRANCHERY_PHP $BRANCHERY_BIN/typo3 cache:flush

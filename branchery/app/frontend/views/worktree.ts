@@ -210,7 +210,11 @@ export class WorktreeView extends View {
                 </h1>
                 <span class="sds-row sds-row__end">
                     ${away(worktree.url, t('table.openSite'))}
-                    ${away(worktree.backend, t('detail.backend'))}
+                    ${
+                        /* The project's own words, so each is drawn rather than
+                          written into the button it was first given. */
+                        worktree.entrypoints.map((entry) => saying(entry.name, html`${away(entry.url, entry.name)}`))
+                    }
                     ${
                         /* On the project and not on every worktree: the remote is the same
                           for all of them, and a link that says the same thing on twelve

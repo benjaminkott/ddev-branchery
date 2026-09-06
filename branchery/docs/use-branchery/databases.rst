@@ -19,7 +19,7 @@ whether a new worktree starts with source data or an empty database. The
 shipped application profiles copy the project checkout's data by default.
 
 When data is copied, Branchery also brings the unversioned configuration named
-under ``data.bring`` and points the files named under ``data.addresses`` at the
+under ``data.needs`` and points the files named under ``data.addresses`` at the
 new worktree. A site configuration committed to git is never rewritten: that
 would make a fresh checkout dirty with an address that must not be pushed.
 
@@ -84,7 +84,7 @@ The dump is taken before the target is dropped, so a dump that fails leaves the
 target's data in place. The copy runs through the administrative account DDEV
 configured and the native client for MariaDB, MySQL or PostgreSQL; a dump or
 restore that fails stops the operation. The code is not changed, and neither
-are files outside what ``data.bring`` names — an upload tree such as
+are files outside what ``data.needs`` names — an upload tree such as
 ``fileadmin`` stays as it is. :ref:`sync <operations-sync>` is the operation,
 step by step.
 

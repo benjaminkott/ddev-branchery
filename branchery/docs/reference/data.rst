@@ -7,7 +7,7 @@ Data source and site addresses
 ==============================
 
 ``data.from`` is ``source`` to copy the database of the checkout this worktree
-is created from, or ``none`` to start empty. ``data.bring`` names unversioned
+is created from, or ``none`` to start empty. ``data.needs`` names unversioned
 files or directories that must travel with that data. ``data.addresses`` names
 files in which copied DDEV URLs may be pointed at the new worktree.
 

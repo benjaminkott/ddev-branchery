@@ -42,6 +42,10 @@ final class ApiAnswersTest extends TestCase
     protected function setUp(): void
     {
         $this->wiring = new Wiring(sys_get_temp_dir() . '/branchery-answers-' . bin2hex(random_bytes(4)));
+        // A page worth opening, because a shape only reached through a list is
+        // never walked by a project that names none -- and an unwalked shape is
+        // one the contract holds nobody to.
+        $this->wiring->recipe("entrypoints:\n  - Backend: /typo3\n");
         $this->wiring->worktree(self::NAME);
         $this->tell();
         $this->finished = $this->ran();

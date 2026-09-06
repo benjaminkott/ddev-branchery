@@ -78,7 +78,9 @@ function worktree(values) {
         tip: { sha: '5e9a71b', subject: '[BUGFIX] Keep the language of a copied record' },
         isProject: false,
         url: url(values.name ?? null),
-        backend: (values.profile ?? 'typo3-app').startsWith('typo3') ? `${url(values.name ?? null)}typo3` : null,
+        entrypoints: (values.profile ?? 'typo3-app').startsWith('typo3')
+            ? [{ name: 'Backend', url: `${url(values.name ?? null)}typo3` }]
+            : [],
         path: values.isProject ? HOST_ROOT : `${HOST_ROOT}/.worktrees/${values.name ?? ''}`,
         ...values,
     };
@@ -129,7 +131,7 @@ export function createWorld() {
             isProject: true,
             changes: 3,
             url: url(null),
-            backend: `${url(null)}typo3`,
+            entrypoints: [{ name: 'Backend', url: `${url(null)}typo3` }],
             base: null,
             tip: { sha: 'b02c8d4', subject: '[TASK] Raise doctrine/dbal to 4.2' },
         }),
@@ -147,6 +149,12 @@ export function createWorld() {
                 review: 'https://review.typo3.org/q/I4e71cccf7b662070d934680cf283e896a110dc99',
                 issue: 'https://forge.typo3.org/issues/81291',
                 issueId: '81291',
+                // More than one, because a project has as many pages worth
+                // opening as it has -- and that is what the header draws.
+                entrypoints: [
+                    { name: 'Backend', url: `${url('feature-checkout')}typo3` },
+                    { name: 'Storybook', url: `${url('feature-checkout')}storybook` },
+                ],
             }),
             worktree({
                 name: 'bugfix-cache-headers',

@@ -8,6 +8,7 @@ use App\Config\Recipe;
 use App\Config\RecipeCommand;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Yaml\Yaml;
 
 /**
  * The recipe is a public contract: written by hand, in projects this add-on
@@ -115,11 +116,11 @@ final class RecipeTest extends TestCase
 
     public function testASettingIsTakenAsWritten(): void
     {
-        $recipe = Recipe::fromArray(['profile' => 'typo3-app', 'docroot' => 'web', 'backend' => '/typo3']);
+        $recipe = Recipe::fromArray(['profile' => 'typo3-app', 'docroot' => 'web', 'bin' => '.build/bin']);
 
         self::assertSame('typo3-app', $recipe->profile);
         self::assertSame('web', $recipe->docroot);
-        self::assertSame('/typo3', $recipe->backend);
+        self::assertSame('.build/bin', $recipe->bin);
         self::assertFalse($recipe->isEmpty());
     }
 
@@ -394,6 +395,50 @@ final class RecipeTest extends TestCase
     }
 
     /**
+     * A project has as many pages worth opening as it has, and each is offered
+     * under the word the project writes -- the same one-key shape a recipe line
+     * uses, so nothing new has to be learned for it.
+     */
+    public function testThePagesWorthOpeningAreReadInTheOrderTheyAreOffered(): void
+    {
+        $recipe = Recipe::fromArray(['entrypoints' => [['Backend' => '/typo3'], ['Storybook' => 'storybook/']]]);
+
+        self::assertSame(
+            [['name' => 'Backend', 'path' => '/typo3'], ['name' => 'Storybook', 'path' => '/storybook']],
+            $recipe->entrypoints,
+        );
+    }
+
+    /** How a project says it has none although what it is built on has. */
+    public function testAnEmptyListOfPagesIsSaidAndNotUnsaid(): void
+    {
+        $laid = Recipe::fromArray(['entrypoints' => []])
+            ->over(Recipe::fromArray(['entrypoints' => [['Backend' => '/typo3']]]));
+
+        self::assertSame([], $laid->entrypoints);
+    }
+
+    public function testAPageWithoutAPathIsRefused(): void
+    {
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessageMatches('/"Backend".*path/');
+
+        Recipe::fromArray(['entrypoints' => [['Backend' => '']]]);
+    }
+
+    /**
+     * Two under one entry is an offer whose word nobody can read off the file --
+     * the same refusal a recipe line earns for the same reason.
+     */
+    public function testAPageThatIsNotOneNameAndOnePathIsRefused(): void
+    {
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessageMatches('/one name and one path/');
+
+        Recipe::fromArray(['entrypoints' => [['Backend' => '/typo3', 'Storybook' => '/storybook']]]);
+    }
+
+    /**
      * A list is the whole answer -- these and nothing else -- and a mapping amends
      * the answer that needs no writing down: everything git ignores.
      */
@@ -431,8 +476,8 @@ final class RecipeTest extends TestCase
     public function testAnEmptyListIsSaidAndNotUnsaid(): void
     {
         self::assertSame([], Recipe::fromArray(['copy' => ['except' => []]])->copy['except']);
-        self::assertSame([], Recipe::fromArray(['data' => ['bring' => []]])->data['bring']);
-        self::assertNull(Recipe::fromArray(['data' => ['from' => 'none']])->data['bring']);
+        self::assertSame([], Recipe::fromArray(['data' => ['needs' => []]])->data['needs']);
+        self::assertNull(Recipe::fromArray(['data' => ['from' => 'none']])->data['needs']);
     }
 
     public function testAWordUnderCopyThatIsNotExceptIsRefused(): void
@@ -472,10 +517,26 @@ final class RecipeTest extends TestCase
      */
     public function testEveryKeyIsCarriedAcrossTheArrangement(): void
     {
-        $everything = Recipe::fromArray(self::EVERYTHING);
+        $read = self::everything();
 
-        self::assertEquals($everything, $everything->over(Recipe::none()));
-        self::assertEquals($everything, Recipe::none()->over($everything));
+        // Read from outside, so this is every public key and not the moments --
+        // those are laid differently by design, the slot for the base's own work
+        // being filled in, and the tests above hold them. Everything else has to
+        // come across exactly as the file wrote it, from either side.
+        self::assertEquals(get_object_vars($read), get_object_vars($read->over(Recipe::none())));
+        self::assertEquals(get_object_vars($read), get_object_vars(Recipe::none()->over($read)));
+    }
+
+    /**
+     * And that the file is what its name says. A key the reader knows and the
+     * file does not is a key nobody reviews and the guard above never sees.
+     */
+    public function testTheFileThatSaysEverythingLeavesNothingOut(): void
+    {
+        $said = Yaml::parseFile(self::EVERYTHING);
+        self::assertIsArray($said);
+
+        self::assertSame([], array_values(array_diff(Recipe::keys(), array_keys($said))));
     }
 
     /** The other spelling of "copy", which the one above cannot hold at once. */
@@ -498,12 +559,12 @@ final class RecipeTest extends TestCase
             'docroot' => 'web',
             'links' => ['issue' => 'https://tracker.example.org/{issue}'],
         ]);
-        $laid = $own->over(Recipe::fromArray(self::EVERYTHING));
+        $laid = $own->over(self::everything());
 
         self::assertSame('web', $laid->docroot);
         self::assertSame('https://tracker.example.org/{issue}', $laid->links['issue']);
-        self::assertSame('https://review.example.org/q/{change}', $laid->links['review']);
-        self::assertSame('8.3', $laid->php?->number);
+        self::assertSame('https://review.typo3.org/q/{change}', $laid->links['review']);
+        self::assertSame('8.4', $laid->php?->number);
     }
 
     /**
@@ -521,27 +582,13 @@ final class RecipeTest extends TestCase
         self::assertNull($laid->php->where());
     }
 
-    /** Every key this file knows, to be carried across as a whole. */
-    private const EVERYTHING = [
-        'profile' => 'demo',
-        'docroot' => 'web',
-        'php' => '8.3',
-        'node' => '22',
-        'backend' => '/typo3',
-        'bin' => '.build/bin',
-        'links' => [
-            'review' => 'https://review.example.org/q/{change}',
-            'issue' => 'https://forge.example.org/issues/{issue}',
-            'commit' => 'https://github.example.org/commit/{commit}',
-        ],
-        'data' => ['from' => 'source', 'bring' => ['config/system'], 'addresses' => ['config/sites']],
-        'copy' => ['except' => ['var']],
-        'install' => ['composer install'],
-        'setup' => ['./bin/setup.sh'],
-        'migrate' => ['./bin/migrate.sh'],
-        'configure' => ['./bin/configure.sh'],
-        'finish' => ['./bin/finish.sh'],
-    ];
+    /** Every key this file knows, written out where a person can review it. */
+    private const EVERYTHING = __DIR__ . '/everything.yaml';
+
+    private static function everything(): Recipe
+    {
+        return Recipe::fromFile(self::EVERYTHING);
+    }
 
     /**
      * @param list<?RecipeCommand> $commands

@@ -30,10 +30,12 @@ final readonly class Worktree implements \JsonSerializable
         public string $docroot,
         public string $url,
         /**
-         * Where a worktree is opened all day. Derived from the profile rather
-         * than guessed at by the reader.
+         * Where a worktree is opened all day, in the order the configuration
+         * offers them. Derived from what it says rather than guessed at.
+         *
+         * @var list<array{name: string, url: string}>
          */
-        public ?string $backend,
+        public array $entrypoints,
         /**
          * Where it lies as the host sees it: whoever works in several worktrees
          * changes directory far more often than they open a page, and the
@@ -116,7 +118,7 @@ final readonly class Worktree implements \JsonSerializable
             'profile' => $this->profile,
             'docroot' => $this->docroot,
             'url' => $this->url,
-            'backend' => $this->backend,
+            'entrypoints' => $this->entrypoints,
             'path' => $this->path,
             'changes' => $this->changes,
             'ahead' => $this->ahead,

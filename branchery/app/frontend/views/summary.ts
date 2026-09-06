@@ -77,9 +77,11 @@ export function summaryFacts(worktree: Worktree, usage: Usage): FactGroup[] {
             title: t('table.address'),
             facts: [
                 { label: t('detail.site'), value: host(worktree.url), copy: true },
-                ...(worktree.backend === null
-                    ? []
-                    : [{ label: t('detail.backend'), value: host(worktree.backend), copy: true }]),
+                ...worktree.entrypoints.map((entry) => ({
+                    label: entry.name,
+                    value: host(entry.url),
+                    copy: true,
+                })),
             ],
         },
         {
@@ -113,13 +115,13 @@ export function summaryFacts(worktree: Worktree, usage: Usage): FactGroup[] {
                 { label: t('table.directory'), value: worktree.path, copy: true },
                 { label: t('table.database'), value: worktree.database, copy: true },
                 // The same login every time and in the documentation; having it here is
-                // the difference between opening the backend and hunting through the log
+                // the difference between opening the editing interface and hunting through the log
                 // of an operation from last week.
                 //
                 // Two rows and not one, because a login is pasted into two fields, one at
                 // a time -- "admin / Password1!" was one button copying a line that fits
                 // in neither of them.
-                ...(worktree.backend === null
+                ...(worktree.entrypoints.length === 0
                     ? []
                     : [
                           { label: t('detail.user'), value: EDITOR.user, copy: true },

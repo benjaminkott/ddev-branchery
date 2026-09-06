@@ -321,7 +321,7 @@ function outcome(job: TrackedJob): string | TemplateResult {
                 ? t('job.done.restore', { branch: worktree.branch })
                 : job.kind === 'discard'
                   ? t('job.done.discard', { branch: worktree.branch })
-                  : worktree.backend === null
+                  : worktree.entrypoints.length === 0
                     ? t('job.done.built', { php: worktree.php })
                     : `${t('job.done.built', { php: worktree.php })} ${t('job.login', EDITOR)}`;
 

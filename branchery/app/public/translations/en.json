@@ -37,7 +37,6 @@
     "confirm.worktree.unpushed.one": "1 commit on this branch was never pushed.",
     "detail.actions": "Actions",
     "detail.back": "All worktrees",
-    "detail.backend": "Backend",
     "detail.base": "Base",
     "detail.branchHasWorktree": "This branch is checked out in",
     "detail.built": "Built",

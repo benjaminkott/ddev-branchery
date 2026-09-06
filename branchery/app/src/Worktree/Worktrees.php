@@ -182,7 +182,7 @@ final readonly class Worktrees
             profile: $build->name(),
             docroot: (string) ($meta['docroot'] ?? ''),
             url: $url,
-            backend: $this->backendUnder($url, $build->backend()),
+            entrypoints: self::entrypointsUnder($url, $build->entrypoints()),
             path: $this->project->hostWorktreeDirectory($name),
             changes: $state->changes,
             ahead: $state->ahead,
@@ -255,7 +255,7 @@ final readonly class Worktrees
             profile: $build->name(),
             docroot: '',
             url: $url,
-            backend: $this->backendUnder($url, $build->backend()),
+            entrypoints: self::entrypointsUnder($url, $build->entrypoints()),
             path: $this->project->hostRoot(),
             changes: $state->changes,
             ahead: $state->ahead,
@@ -454,12 +454,19 @@ final readonly class Worktrees
     }
 
     /**
-     * Only what the configuration says: a project that never named one has no
-     * answer, and a guess would be a link to a page that is not there.
+     * Only what the configuration says: a project that named none is offered none,
+     * and a guess would be a link to a page that is not there.
+     *
+     * @param list<array{name: string, path: string}> $entrypoints
+     *
+     * @return list<array{name: string, url: string}>
      */
-    private function backendUnder(string $url, ?string $path): ?string
+    private static function entrypointsUnder(string $url, array $entrypoints): array
     {
-        return $path === null ? null : rtrim($url, '/') . $path;
+        return array_map(
+            static fn (array $entry): array => ['name' => $entry['name'], 'url' => rtrim($url, '/') . $entry['path']],
+            $entrypoints,
+        );
     }
 
     /** Composer projects are free to put their vendor directory anywhere. */

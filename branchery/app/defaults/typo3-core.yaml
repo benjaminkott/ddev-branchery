@@ -6,7 +6,8 @@
 
 docroot: ''
 bin: bin
-backend: /typo3
+entrypoints:
+  - Backend: /typo3
 
 # Taken out of the checkout rather than written down: a core branch says it in
 # its own test runner, and that is what the branch is built against.
@@ -31,7 +32,7 @@ links:
 
 data:
   from: source
-  bring:
+  needs:
     - typo3conf/sites
     - typo3conf/system/settings.php
   addresses:

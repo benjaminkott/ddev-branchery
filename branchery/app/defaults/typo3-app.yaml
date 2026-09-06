@@ -10,14 +10,15 @@
 # connection to this worktree's own database is BRANCHERY_DB_*.
 
 docroot: public
-backend: /typo3
+entrypoints:
+  - Backend: /typo3
 
 # The data of the checkout this worktree was cut from, and what has to travel
 # with it in order to be readable: a site points at its root page by uid, and
 # an application without a settings file is an installer with no console.
 data:
   from: source
-  bring:
+  needs:
     - config/sites
     - config/system/settings.php
   addresses:

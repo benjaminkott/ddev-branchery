@@ -58,7 +58,7 @@ final readonly class DataTransfer
         // A site points at its root page by uid, and those uids came with the
         // data -- so what reads them comes along, its addresses put back on ours.
         $reporter->step('Putting the addresses back');
-        $this->surroundings->bring($from, $name, $data['bring']);
+        $this->surroundings->bring($from, $name, $data['needs']);
         $this->surroundings->retargetSites($name, $place->url, $data['addresses'], $reporter);
 
         // The data was written by another state of the code, and half of it would

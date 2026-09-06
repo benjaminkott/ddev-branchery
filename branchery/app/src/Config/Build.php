@@ -83,14 +83,15 @@ final readonly class Build
     }
 
     /**
-     * "/" is how a project says it has none although the file it is built on says
-     * it has: a path that is nothing.
+     * The pages worth opening, in the order the file offers them. A list written
+     * empty is how a project says it has none although the configuration it is
+     * built on has.
+     *
+     * @return list<array{name: string, path: string}>
      */
-    public function backend(): ?string
+    public function entrypoints(): array
     {
-        $said = $this->recipe->backend;
-
-        return $said === null || $said === '/' ? null : $said;
+        return $this->recipe->entrypoints ?? [];
     }
 
     /**
@@ -118,13 +119,13 @@ final readonly class Build
     }
 
     /**
-     * @return array{from: ?string, bring: list<string>, addresses: list<string>}
+     * @return array{from: ?string, needs: list<string>, addresses: list<string>}
      */
     public function data(): array
     {
         return [
             'from' => $this->recipe->data['from'],
-            'bring' => $this->recipe->data['bring'] ?? [],
+            'needs' => $this->recipe->data['needs'] ?? [],
             'addresses' => $this->recipe->data['addresses'] ?? [],
         ];
     }

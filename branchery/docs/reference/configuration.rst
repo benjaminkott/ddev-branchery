@@ -29,8 +29,8 @@ of.
     Key                                                              What it says                                      Where
     ================================================================ ================================================= ===========================================
     ``profile``                                                      the shipped configuration this builds on          :ref:`configuration-profiles`
-    ``docroot``, ``bin``, ``backend``                                what is served, where the binaries and the        :ref:`configuration-basic`
-                                                                     editing interface are
+    ``docroot``, ``bin``                                             what is served and where the binaries are         :ref:`configuration-basic`
+    ``entrypoints``                                                  the pages a worktree is opened at                 :ref:`configuration-basic`
     ``php``, ``node``                                                the versions, or where they are written down      :ref:`php-and-node-versions`
     ``install``, ``configure``, ``setup``, ``migrate``, ``finish``   what runs at each moment of a build               :ref:`configuration-moments`
     ``copy``                                                         what travels from the source into a fork          :ref:`copied-files`
@@ -71,7 +71,12 @@ Complete example
     docroot: web           # what is served; "" is the checkout itself
     bin: .build/bin        # where this project's binaries are
     php: "8.3"             # the version this is served with
-    backend: /typo3        # where the editing interface is; "/" means there is none
+
+    # The pages worth opening, in the order they are offered. Written empty,
+    # the list says this project has none although its profile has.
+    entrypoints:
+      - Backend: /typo3
+      - Storybook: /storybook
 
     # Where the work in a checkout is talked about. The number comes out of the
     # last commit's own trailers -- "Change-Id" and "Resolves: #12345" -- and is
@@ -91,7 +96,7 @@ Complete example
     # order to be readable at all.
     data:
       from: source         # the checkout this one was cut from; "none" for an empty database
-      bring:
+      needs:
         - config/sites
         - config/system/settings.php
       addresses:
@@ -133,10 +138,11 @@ An empty string serves the checkout root. ``bin`` is the relative directory that
 contains project commands and is exposed to configuration tasks as
 ``BRANCHERY_BIN``.
 
-``backend`` is the path to the application's editing interface, such as
-``/typo3``. Use ``/`` when there is no separate backend link. ``php`` and
-``node`` select runtimes and are described under
-:ref:`php-and-node-versions`.
+``entrypoints`` are the pages a worktree is worth opening at, each written as
+the word it is offered under and the path it stands at. They are drawn beside
+the site link, in the order they are written. A path and not a whole address:
+the worktree's own is put in front of it. ``php`` and ``node`` select runtimes
+and are described under :ref:`php-and-node-versions`.
 
 ..  _php-and-node-versions:
 

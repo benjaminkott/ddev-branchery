@@ -56,7 +56,7 @@ Checks out a branch that exists locally or on a remote, and builds it.
 
 #.  **Preparing the database.** ``branchery_<name>`` is created on the project's
     server. With ``data.from: source`` the project checkout's data is copied
-    into it, the files ``data.bring`` names come with it, and the addresses in
+    into it, the files ``data.needs`` names come with it, and the addresses in
     the files ``data.addresses`` names are pointed at this worktree. Then
     **migrate** (**config**) fits the schema to the checked-out code.
 

@@ -31,7 +31,7 @@ final class RecipesTest extends TestCase
             bin: vendor/bin
             data:
               from: source
-              bring: [config/sites]
+              needs: [config/sites]
               addresses: [config/sites]
             copy:
               except: [var]
@@ -68,7 +68,7 @@ final class RecipesTest extends TestCase
         self::assertSame('demo', $build->name());
         self::assertSame('public', $build->docroot());
         self::assertTrue($build->does('install'));
-        self::assertSame(['from' => 'source', 'bring' => ['config/sites'], 'addresses' => ['config/sites']], $build->data());
+        self::assertSame(['from' => 'source', 'needs' => ['config/sites'], 'addresses' => ['config/sites']], $build->data());
         self::assertSame(['var'], $build->copyExcept());
     }
 

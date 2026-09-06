@@ -160,6 +160,7 @@ describe('the shapes the interface is written against', () => {
     const DECLARED = {
         state: 'ServerState',
         worktree: 'Worktree',
+        entrypoint: 'Entrypoint',
         cut: 'Cut',
         tip: 'Tip',
         branch: 'Branch',

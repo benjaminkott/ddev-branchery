@@ -129,7 +129,7 @@ final readonly class Provisioning
             $this->surroundings->bring(
                 $copyFrom === self::PROJECT_SOURCE ? null : $copyFrom,
                 $name,
-                $data['bring'],
+                $data['needs'],
             );
             $this->surroundings->retargetSites($name, $place->url, $data['addresses'], $reporter);
             $this->fitOrInstall($build, $place, $reporter);

@@ -16,6 +16,12 @@ export interface Tip {
     subject: string;
 }
 
+/** A page a worktree is opened at, under the word the project offers it by. */
+export interface Entrypoint {
+    name: string;
+    url: string;
+}
+
 export interface Worktree {
     name: string;
     branch: string;
@@ -49,8 +55,8 @@ export interface Worktree {
     ready: boolean;
     isProject: boolean;
     url: string;
-    /** Where the application's own editing interface answers, where it has one. */
-    backend: string | null;
+    /** The pages worth opening, in the order the configuration offers them. */
+    entrypoints: Entrypoint[];
     /** Where it lies on the machine, as the terminal would have to be told. */
     path: string;
     /** Letting the worktree go loses nothing that is not kept elsewhere. */

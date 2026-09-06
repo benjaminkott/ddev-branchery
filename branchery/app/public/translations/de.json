@@ -37,7 +37,6 @@
     "confirm.worktree.unpushed.one": "1 Commit auf diesem Branch wurde nie gepusht.",
     "detail.actions": "Aktionen",
     "detail.back": "Alle Worktrees",
-    "detail.backend": "Backend",
     "detail.base": "Basis",
     "detail.branchHasWorktree": "Dieser Branch ist ausgecheckt in",
     "detail.built": "Gebaut",

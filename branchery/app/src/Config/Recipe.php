@@ -44,7 +44,7 @@ final readonly class Recipe
      */
     private const NEVER = ['.git', '.ddev'];
 
-    private const SETTINGS = ['profile', 'docroot', 'php', 'node', 'backend', 'bin'];
+    private const SETTINGS = ['profile', 'docroot', 'php', 'node', 'bin'];
 
     /** The review a checkout belongs to, the issue it closes, and the commit itself. */
     private const LINKS = ['review', 'issue', 'commit'];
@@ -57,7 +57,7 @@ final readonly class Recipe
 
     private const NOTHING_SAID = [
         'links' => ['review' => null, 'issue' => null, 'commit' => null],
-        'data' => ['from' => null, 'bring' => null, 'addresses' => null],
+        'data' => ['from' => null, 'needs' => null, 'addresses' => null],
         'copy' => ['only' => null, 'except' => null],
     ];
 
@@ -66,8 +66,9 @@ final readonly class Recipe
      * how they are laid over one another: a project that only says where its issues
      * are tracked keeps the review address of what it is built on.
      *
+     * @param ?list<array{name: string, path: string}>                                                                 $entrypoints
      * @param array{review: ?string, issue: ?string, commit: ?string}                                                  $links
-     * @param array{from: ?string, bring: ?list<string>, addresses: ?list<string>}                                     $data
+     * @param array{from: ?string, needs: ?list<string>, addresses: ?list<string>}                                     $data
      * @param array{only: ?list<string>, except: ?list<string>}                                                        $copy
      * @param array<string, array{before: list<RecipeCommand>, run: ?list<RecipeCommand>, after: list<RecipeCommand>}> $moments
      */
@@ -85,7 +86,13 @@ final readonly class Recipe
          * what `npm` in a recipe line runs under, and no more.
          */
         public ?Version $node,
-        public ?string $backend,
+        /**
+         * The pages worth opening, in the order they are offered -- an editing
+         * interface, a component library, a profiler. A list because a project has
+         * as many as it has, and an empty one says it has none although the
+         * configuration it is built on has.
+         */
+        public ?array $entrypoints,
         /** Where the project's own binaries are -- composer's bin-dir. */
         public ?string $bin,
         public array $links,
@@ -107,7 +114,7 @@ final readonly class Recipe
             docroot: null,
             php: null,
             node: null,
-            backend: null,
+            entrypoints: null,
             bin: null,
             links: self::NOTHING_SAID['links'],
             data: self::NOTHING_SAID['data'],
@@ -149,10 +156,22 @@ final readonly class Recipe
         return self::fromArray($data);
     }
 
+    /**
+     * Every key this file knows. Said out loud rather than kept inside the reader,
+     * because it is what a refusal names and what tests/Config/everything.yaml is
+     * held to.
+     *
+     * @return list<string>
+     */
+    public static function keys(): array
+    {
+        return [...self::SETTINGS, 'entrypoints', 'links', 'copy', 'data', ...self::MOMENTS];
+    }
+
     /** @param array<mixed> $data */
     public static function fromArray(array $data): self
     {
-        $known = [...self::SETTINGS, 'links', 'copy', 'data', ...self::MOMENTS];
+        $known = self::keys();
         foreach (array_keys($data) as $key) {
             if (!in_array($key, $known, true)) {
                 throw new \RuntimeException(sprintf('%s: "%s" is not something this understands. It knows %s.', self::FILE, (string) $key, implode(', ', $known)));
@@ -171,7 +190,7 @@ final readonly class Recipe
             docroot: self::readDocroot($data),
             php: self::readVersion($data['php'] ?? null, 'php'),
             node: self::readVersion($data['node'] ?? null, 'node'),
-            backend: self::readSetting($data, 'backend'),
+            entrypoints: self::readEntrypoints($data['entrypoints'] ?? null),
             bin: self::readSetting($data, 'bin'),
             links: self::readLinks($data['links'] ?? null),
             data: self::readData($data['data'] ?? null),
@@ -196,7 +215,7 @@ final readonly class Recipe
             docroot: $this->docroot ?? $base->docroot,
             php: $this->php ?? $base->php,
             node: $this->node ?? $base->node,
-            backend: $this->backend ?? $base->backend,
+            entrypoints: $this->entrypoints ?? $base->entrypoints,
             bin: $this->bin ?? $base->bin,
             links: [
                 'review' => $this->links['review'] ?? $base->links['review'],
@@ -205,7 +224,7 @@ final readonly class Recipe
             ],
             data: [
                 'from' => $this->data['from'] ?? $base->data['from'],
-                'bring' => $this->data['bring'] ?? $base->data['bring'],
+                'needs' => $this->data['needs'] ?? $base->data['needs'],
                 'addresses' => $this->data['addresses'] ?? $base->data['addresses'],
             ],
             copy: [
@@ -298,7 +317,7 @@ final readonly class Recipe
             'docroot' => $this->docroot,
             'php' => $this->php,
             'node' => $this->node,
-            'backend' => $this->backend,
+            'entrypoints' => $this->entrypoints,
             'bin' => $this->bin,
             'links' => self::spoken($this->links),
             'data' => self::spoken($this->data),
@@ -409,7 +428,7 @@ final readonly class Recipe
      * a settings file, not a schema. Both are paths in the checkout, so the project
      * names them rather than Branchery knowing them.
      *
-     * @return array{from: ?string, bring: ?list<string>, addresses: ?list<string>}
+     * @return array{from: ?string, needs: ?list<string>, addresses: ?list<string>}
      */
     private static function readData(mixed $value): array
     {
@@ -417,11 +436,11 @@ final readonly class Recipe
             return self::NOTHING_SAID['data'];
         }
         if (!is_array($value) || array_is_list($value)) {
-            throw new \RuntimeException(sprintf('%s: "data" has to be a mapping of from, bring and addresses.', self::FILE));
+            throw new \RuntimeException(sprintf('%s: "data" has to be a mapping of from, needs and addresses.', self::FILE));
         }
 
         $from = null;
-        $paths = ['bring' => null, 'addresses' => null];
+        $paths = ['needs' => null, 'addresses' => null];
         foreach ($value as $key => $said) {
             switch ($key) {
                 case 'from':
@@ -430,7 +449,7 @@ final readonly class Recipe
                     }
                     $from = $said;
                     break;
-                case 'bring':
+                case 'needs':
                 case 'addresses':
                     if (!is_array($said) || !array_is_list($said)) {
                         throw new \RuntimeException(sprintf('%s: "data.%s" has to be a list of paths.', self::FILE, (string) $key));
@@ -438,11 +457,48 @@ final readonly class Recipe
                     $paths[$key] = self::readPaths($said, 'data.' . (string) $key);
                     break;
                 default:
-                    throw new \RuntimeException(sprintf('%s: "%s" under "data" is not one of from, bring, addresses.', self::FILE, (string) $key));
+                    throw new \RuntimeException(sprintf('%s: "%s" under "data" is not one of from, needs, addresses.', self::FILE, (string) $key));
             }
         }
 
-        return ['from' => $from, 'bring' => $paths['bring'], 'addresses' => $paths['addresses']];
+        return ['from' => $from, 'needs' => $paths['needs'], 'addresses' => $paths['addresses']];
+    }
+
+    /**
+     * The pages worth opening, each written as the word it is offered under and
+     * the path it stands at -- the same one-key shape a recipe line is written in.
+     * A path and not an address: the worktree's own is put in front of it, and a
+     * whole one would be the same page for every branch.
+     *
+     * @return ?list<array{name: string, path: string}>
+     */
+    private static function readEntrypoints(mixed $value): ?array
+    {
+        if ($value === null) {
+            return null;
+        }
+        if (!is_array($value) || !array_is_list($value)) {
+            throw new \RuntimeException(sprintf('%s: "entrypoints" has to be a list of what a worktree is opened at, each written as "Name: /path".', self::FILE));
+        }
+
+        $read = [];
+        foreach ($value as $entry) {
+            if (!is_array($entry) || count($entry) !== 1) {
+                throw new \RuntimeException(sprintf('%s: every entry under "entrypoints" is one name and one path, written as "Name: /path".', self::FILE));
+            }
+            $name = trim((string) array_key_first($entry));
+            $path = reset($entry);
+            if ($name === '') {
+                throw new \RuntimeException(sprintf('%s: an entry under "entrypoints" has no name to offer it under.', self::FILE));
+            }
+            if (!is_string($path) || trim($path) === '') {
+                throw new \RuntimeException(sprintf('%s: "%s" under "entrypoints" needs a path to open.', self::FILE, $name));
+            }
+            $path = '/' . trim(trim($path), '/');
+            $read[] = ['name' => $name, 'path' => $path === '/' ? '' : $path];
+        }
+
+        return $read;
     }
 
     /**

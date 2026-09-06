@@ -18,7 +18,7 @@ sync
 
 Replaces the worktree's data with the project checkout's, or another
 worktree's. The code is not touched, and neither are files outside what
-``data.bring`` names.
+``data.needs`` names.
 
 #.  **Copying** ``<source>`` **into** ``<target>``. How far this branch is
     behind the source is reported first, because that is what explains errors
