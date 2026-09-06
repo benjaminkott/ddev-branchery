@@ -53,6 +53,23 @@ jobs:
       # looks at are rendered by one description of how it is done.
       - run: make docs
 
+      # The README names pages of this site, which makes it a second list
+      # beside the toctree -- and a section cut differently leaves it pointing
+      # at addresses nobody renders. The manual refuses a ":ref:" that no
+      # longer resolves; this is the same refusal for the one list that stands
+      # outside it, and it is the front page of the repository.
+      - name: Every page the README names is one the manual renders
+        run: |
+          missing=0
+          for page in $(grep -oE 'https://benjaminkott\.github\.io/ddev-branchery/[A-Za-z0-9./_-]+' README.md \
+              | sed 's|https://benjaminkott\.github\.io/ddev-branchery/||' | sort -u); do
+            if [ ! -f "site/$page" ]; then
+              echo "The README links $page, which the manual does not render."
+              missing=1
+            fi
+          done
+          exit $missing
+
       - uses: actions/upload-pages-artifact@v4
         with:
           path: site

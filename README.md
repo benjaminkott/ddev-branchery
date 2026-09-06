@@ -101,11 +101,11 @@ the image and are read in the terminal with `ddev branchery docs [<page>]`.
 | Read this | When you need it |
 |---|---|
 | [Getting started](https://benjaminkott.github.io/ddev-branchery/getting-started.html) | Install, configure and create the first worktree |
-| [Worktree operations](https://benjaminkott.github.io/ddev-branchery/operations.html) | Add, fork, update, rebuild, restore and remove worktrees |
-| [Databases and data](https://benjaminkott.github.io/ddev-branchery/databases.html) | Understand copies, synchronization and database cleanup |
-| [Configuration reference](https://benjaminkott.github.io/ddev-branchery/configuration.html) | Write `.ddev/branchery.yaml`, key by key |
-| [CLI and automation](https://benjaminkott.github.io/ddev-branchery/automation.html) | Use JSON output, detached jobs and the REST API |
-| [Troubleshooting](https://benjaminkott.github.io/ddev-branchery/troubleshooting.html) | Recover stopped builds and clear leftovers safely |
+| [Worktree operations](https://benjaminkott.github.io/ddev-branchery/reference/operations.html) | Add, fork, update, rebuild, restore and remove worktrees |
+| [Databases and data](https://benjaminkott.github.io/ddev-branchery/use-branchery/databases.html) | Understand copies, synchronization and database cleanup |
+| [Configuration reference](https://benjaminkott.github.io/ddev-branchery/reference/configuration.html) | Write `.ddev/branchery.yaml`, key by key |
+| [CLI and automation](https://benjaminkott.github.io/ddev-branchery/reference/automation.html) | Use JSON output, detached jobs and the REST API |
+| [Troubleshooting](https://benjaminkott.github.io/ddev-branchery/use-branchery/troubleshooting.html) | Recover stopped builds and clear leftovers safely |
 | [How Branchery works](https://benjaminkott.github.io/ddev-branchery/architecture.html) | Understand containers, files, locks and generated state |
 
 ## What stays separate
