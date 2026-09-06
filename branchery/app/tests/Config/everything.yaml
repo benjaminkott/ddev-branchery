@@ -84,8 +84,10 @@ install:
   - ./bin/write-registry-token.sh
   - inherit: profile
   - npm ci
-  # A line may also be written the way DDEV writes a hook task, and such a task
-  # may say the build survives its failure.
+  # A line on its own is "exec:", so those two above are tasks already. Written
+  # out, a task can carry "optional: true" -- which is the only reason to write
+  # one out, and why some lines here have a kind in front of them and most do
+  # not. A line holding ": " is read as a task by YAML itself: quote such a one.
   - composer: dump-autoload --classmap-authoritative
   - exec: cd Build && npm ci
     optional: true

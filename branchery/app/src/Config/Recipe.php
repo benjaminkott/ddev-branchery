@@ -657,7 +657,9 @@ final readonly class Recipe
             $kind = (string) array_key_first($entry);
             $line = reset($entry);
             if (!in_array($kind, RecipeCommand::KINDS, true)) {
-                throw new \RuntimeException(sprintf('%s: "%s" under "%s" is not one of %s.', self::FILE, $kind, $moment, implode(', ', RecipeCommand::KINDS)));
+                // The likeliest cause is not a kind spelt wrong but a line holding
+                // a colon, which YAML reads as a task before this ever sees it.
+                throw new \RuntimeException(sprintf('%s: "%s" under "%s" is not one of %s. A line holding ": " is read as one of these -- put such a line in quotes.', self::FILE, $kind, $moment, implode(', ', RecipeCommand::KINDS)));
             }
             if (!is_string($line) || trim($line) === '') {
                 throw new \RuntimeException(sprintf('%s: "%s:" under "%s" needs something to run.', self::FILE, $kind, $moment));

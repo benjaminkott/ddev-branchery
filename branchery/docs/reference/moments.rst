@@ -43,7 +43,12 @@ out, the moment is what stands there and no more. It is written as a task and no
 as a word, so no line a project writes can be taken for it.
 
 A line is a command, or a task written the way DDEV writes a hook task:
-``exec:`` for a command, ``composer:`` for composer. A bare string is ``exec:``.
+``exec:`` for a command, ``composer:`` for composer. A bare string is ``exec:``
+and means exactly the same thing, so the long form is worth writing only for a
+task that carries ``optional:`` — which is why most lines here have no kind in
+front of them and a few do. A line holding ``": "`` is read as a task by YAML
+before Branchery sees it, so put such a line in quotes.
+
 Everything runs in the worktree, in the project's web container, through a
 shell, so pipes, ``&&`` and heredocs work. A line that fails stops the
 operation.

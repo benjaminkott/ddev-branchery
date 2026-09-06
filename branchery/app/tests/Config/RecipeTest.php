@@ -296,6 +296,19 @@ final class RecipeTest extends TestCase
         Recipe::fromArray(['install' => [['drush' => 'cr']]]);
     }
 
+    /**
+     * A shell line is written as it is typed, and YAML reads a colon in one as
+     * the start of a task -- so the refusal says what to do about it rather than
+     * talking about kinds the developer never meant to write.
+     */
+    public function testALineHoldingAColonSaysToQuoteIt(): void
+    {
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessageMatches('/"echo building".*in quotes/s');
+
+        Recipe::fromString("install:\n  - echo building: now\n");
+    }
+
     public function testATaskWithNothingToRunIsRefused(): void
     {
         $this->expectException(\RuntimeException::class);
