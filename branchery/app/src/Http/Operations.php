@@ -29,14 +29,22 @@ final readonly class Operations
      * same moment both got past -- see Locks::STARTING. Held only for the writes
      * that make the job findable, which is what the next question reads.
      *
+     * Let go of by name rather than by the variable's life, although the
+     * destructor would do it: what the exclusion rests on is then a line somebody
+     * would have to decide to delete, and not an assignment nothing reads. Two
+     * requests inside one moment is the only thing this guards against, and there
+     * is no test that can stand between them.
+     *
      * @param list<string> $arguments
      */
     public function on(string $name, array $arguments): Response
     {
         $starting = $this->locks->hold(Locks::STARTING);
         $this->assertFree($name);
+        $job = $this->jobs->start($arguments, $name);
+        $starting->release();
 
-        return self::accepted($this->jobs->start($arguments, $name));
+        return self::accepted($job);
     }
 
     /**

@@ -87,26 +87,90 @@ final class WorktreeOperationsTest extends TestCase
      *
      * Asked of a second Locks over the same files, which is what another process
      * is: flock is per open file, so this one blocks against the operation's.
+     *
+     * And asked of every operation rather than of one: they reach the claim four
+     * different ways, and a build being claimed said nothing whatever about a
+     * removal being claimed.
+     *
+     * @param \Closure(Wiring, StepReporter): void $operation
      */
-    public function testAWorktreeIsClaimedForTheWholeOfAnOperation(): void
+    #[DataProvider('operations')]
+    public function testAWorktreeIsClaimedForTheWholeOfAnOperation(\Closure $operation): void
     {
-        $web = $this->wiring->web;
-        $web->answer('rev-parse --verify --quiet refs/heads/my-fix', 'refs/heads/my-fix');
-
         $beside = new Locks($this->wiring->project, $this->wiring->files);
         $key = Locks::forWorktree('my-fix');
         $seen = [];
-        $web->whileRunning('worktree add', static function () use ($beside, $key, &$seen): void {
+        // Whatever runs, rather than one command the operation is known to run:
+        // what is asked here is that nothing it does happens outside the claim.
+        $this->wiring->web->whileRunning('', static function () use ($beside, $key, &$seen): void {
             $seen[] = $beside->heldElsewhere($key);
         });
 
-        $this->wiring->manager->add('my-fix', null, $this->reporter());
+        $operation($this->wiring, $this->reporter());
 
-        self::assertNotSame([], $seen, 'no checkout ran, so nothing was asked about the claim');
-        self::assertNotContains(false, $seen, 'the worktree was not claimed while it was being built');
+        self::assertNotSame([], $seen, 'nothing ran, so nothing was asked about the claim');
+        self::assertNotContains(false, $seen, 'the worktree was worked on while it was not claimed');
         // And let go of at the far end, or the next operation on it would wait
         // for a process that has finished.
         self::assertFalse($beside->heldElsewhere($key), 'the claim outlived the operation');
+    }
+
+    /**
+     * Every operation that claims a worktree, with whatever it takes to get that
+     * one as far as running something. All of them are about "my-fix", so the
+     * claim asked about above is the same one throughout.
+     *
+     * @return iterable<string, array{\Closure(Wiring, StepReporter): void}>
+     */
+    public static function operations(): iterable
+    {
+        yield 'add' => [static function (Wiring $wiring, StepReporter $reporter): void {
+            $wiring->web->answer('rev-parse --verify --quiet refs/heads/my-fix', 'refs/heads/my-fix');
+            $wiring->manager->add('my-fix', null, $reporter);
+        }];
+        // A branch nothing answers for is one the repository does not have, which
+        // is what a fork needs: it cuts the branch itself.
+        yield 'fork' => [static function (Wiring $wiring, StepReporter $reporter): void {
+            $wiring->web->answer('rev-parse --verify --quiet refs/heads/my-fix', '', 1);
+            $wiring->manager->fork('my-fix', null, null, $reporter);
+        }];
+        yield 'provision' => [static function (Wiring $wiring, StepReporter $reporter): void {
+            $wiring->worktree('my-fix');
+            $wiring->manager->provision('my-fix', false, $reporter);
+        }];
+        yield 'remove' => [static function (Wiring $wiring, StepReporter $reporter): void {
+            $wiring->worktree('my-fix');
+            $wiring->manager->remove('my-fix', $reporter);
+        }];
+        yield 'sync' => [static function (Wiring $wiring, StepReporter $reporter): void {
+            $wiring->worktree('my-fix');
+            $wiring->manager->syncDatabase('my-fix', null, $reporter);
+        }];
+        // The three that move a checkout need somewhere to move it from.
+        yield 'pull' => [static function (Wiring $wiring, StepReporter $reporter): void {
+            $wiring->worktree('my-fix');
+            $wiring->web->answer('@{upstream}', 'origin/my-fix');
+            $wiring->manager->pull('my-fix', $reporter);
+        }];
+        yield 'restore' => [static function (Wiring $wiring, StepReporter $reporter): void {
+            $wiring->worktree('my-fix');
+            $wiring->worktrees->store('my-fix', ['branch' => 'main']);
+            $wiring->manager->restoreBranch('my-fix', $reporter);
+        }];
+        yield 'discard' => [static function (Wiring $wiring, StepReporter $reporter): void {
+            $wiring->worktree('my-fix');
+            $wiring->web->answer('@{upstream}', 'origin/my-fix');
+            $wiring->manager->discardUnpushed('my-fix', $reporter);
+        }];
+        yield 'reconfigure' => [static function (Wiring $wiring, StepReporter $reporter): void {
+            $wiring->worktree('my-fix');
+            $wiring->manager->reconfigure('my-fix');
+        }];
+        yield 'the php version' => [static function (Wiring $wiring, StepReporter $reporter): void {
+            $wiring->worktree('my-fix');
+            $wiring->web->answer('php-fpm', "php 8.3\npool 8.4\n");
+            $wiring->manager->setPhpVersion('my-fix', '8.4');
+        }];
     }
 
     /**
