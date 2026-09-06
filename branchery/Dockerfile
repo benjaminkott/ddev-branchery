@@ -12,7 +12,7 @@
 # and an update in a version nobody could tell apart from the one before it.
 # What a project gets now is a tag, and a tag is a version.
 
-FROM docker:27-cli AS dockercli
+FROM docker:29-cli AS dockercli
 
 FROM php:8.4-cli AS build
 COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
