@@ -1,0 +1,42 @@
+{
+    "name": "bk2k/ddev-branchery",
+    "type": "project",
+    "license": "MIT",
+    "description": "Backend of Branchery",
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "require": {
+        "php": ">=8.4",
+        "ext-ctype": "*",
+        "ext-iconv": "*",
+        "ext-json": "*",
+        "symfony/console": "8.1.*",
+        "symfony/filesystem": "8.1.*",
+        "symfony/process": "8.1.*",
+        "symfony/yaml": "8.1.*"
+    },
+    "require-dev": {
+        "friendsofphp/php-cs-fixer": "^3.95",
+        "phpstan/phpstan": "^2.1",
+        "phpunit/phpunit": "^13.3"
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "App\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "cs": "php-cs-fixer check --diff",
+        "cs:fix": "php-cs-fixer fix",
+        "test": "phpunit",
+        "stan": "phpstan analyse --memory-limit=1G"
+    }
+}

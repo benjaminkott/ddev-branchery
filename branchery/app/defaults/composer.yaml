@@ -1,0 +1,19 @@
+# Any composer project without a framework this add-on knows: dependencies,
+# and nothing else. What no configuration knows how to set up, nobody sets up.
+#
+# A worktree still gets a database of its own -- every worktree does -- and it
+# stays empty unless something is written here to fill it.
+
+docroot: public
+
+# A fork copies over everything git ignores -- vendor, .env, uploads -- which
+# is what makes it run without a build. Not these: what a run left behind was
+# left behind for the code it ran on.
+copy:
+  except:
+    - var
+    - .vscode
+    - .idea
+
+install:
+  - $BRANCHERY_PHP /usr/local/bin/composer install --no-interaction --no-progress

@@ -1,0 +1,44 @@
+# What this is built on moves without anybody here touching it, and a tool that
+# reaches the Docker socket is not one to find that out late.
+#
+# Four ecosystems, because this repository has four: the PHP the application
+# runs on, the packages the interface is built with, the images the container is
+# made from, and the actions the workflows call. The last two are the ones
+# nobody remembers on their own -- an action pinned to a tag is a tag somebody
+# else can move.
+#
+# Weekly and grouped. A pull request per package is a pull request nobody reads;
+# what is wanted here is one that says "the tools moved" and a suite that says
+# whether that matters.
+version: 2
+
+updates:
+  - package-ecosystem: composer
+    directory: /branchery/app
+    schedule:
+      interval: weekly
+    groups:
+      php:
+        patterns: ['*']
+
+  - package-ecosystem: npm
+    directory: /branchery/app
+    schedule:
+      interval: weekly
+    groups:
+      interface:
+        patterns: ['*']
+
+  # The image the add-on ships as, and everything it is built out of.
+  - package-ecosystem: docker
+    directory: /branchery
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      workflows:
+        patterns: ['*']

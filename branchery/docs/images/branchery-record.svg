@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 204" role="img" aria-labelledby="record-t record-d">
+<title id="record-t">Two ends, one record</title>
+<desc id="record-d">The interface and the shell on the left, both asking for the same worktree; on the right the one record they write, its steps done one after another and the last still to come.</desc>
+
+<!-- An end is 76 high: 16 of room over its name and under its line, the name
+     on the line at 29 and the command at 55. The record stands as tall as the
+     two ends together, its steps 22 apart from the line at 80. Both ends run
+     into one line, and from the middle of it one connector reaches the record. -->
+
+<!-- The two ends: the same operation, asked for from either of them. -->
+<rect x="20" y="20" width="216" height="76" rx="6" fill="var(--surface-raised, #FFFFFF)" stroke="var(--border-strong, #C9C3B7)" stroke-width="1"></rect>
+<text x="40" y="49" fill="var(--text-primary, #1C1A17)" font-family="'Source Sans 3',system-ui,sans-serif" font-size="18" font-weight="700">the interface</text>
+<text x="40" y="75" fill="var(--text-secondary, #4A453D)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="14">worktree:add 13.4</text>
+<line x1="236" y1="58" x2="256" y2="58" stroke="var(--text-secondary, #4A453D)" stroke-width="1.5"></line>
+
+<rect x="20" y="108" width="216" height="76" rx="6" fill="var(--surface-raised, #FFFFFF)" stroke="var(--border-strong, #C9C3B7)" stroke-width="1"></rect>
+<text x="40" y="137" fill="var(--text-primary, #1C1A17)" font-family="'Source Sans 3',system-ui,sans-serif" font-size="18" font-weight="700">the shell</text>
+<text x="40" y="163" fill="var(--text-secondary, #4A453D)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="14">worktree:add 13.4</text>
+<line x1="236" y1="146" x2="256" y2="146" stroke="var(--text-secondary, #4A453D)" stroke-width="1.5"></line>
+
+<line x1="256" y1="58" x2="256" y2="146" stroke="var(--text-secondary, #4A453D)" stroke-width="1.5"></line>
+
+<!-- The one thing the drawing is about, and the one thing in the accent: the
+     two ends meeting in one record. -->
+<line x1="256" y1="102" x2="282" y2="102" stroke="var(--accent, #FF8700)" stroke-width="2"></line>
+<path d="M282 96 292 102 282 108Z" fill="var(--accent, #FF8700)"></path>
+<circle cx="256" cy="102" r="5" fill="var(--surface-raised, #FFFFFF)" stroke="var(--accent, #FF8700)" stroke-width="2"></circle>
+
+<!-- The record: every step, and the one not yet taken drawn dashed. -->
+<rect x="292" y="20" width="288" height="164" rx="6" fill="var(--surface-raised, #FFFFFF)" stroke="var(--border-strong, #C9C3B7)" stroke-width="1"></rect>
+<text x="312" y="50" fill="var(--text-primary, #1C1A17)" font-family="'Source Sans 3',system-ui,sans-serif" font-size="18" font-weight="700">one record</text>
+<text x="312" y="74" fill="var(--text-secondary, #4A453D)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="14">13.4 · worktree:add</text>
+<rect x="312" y="91" width="10" height="10" rx="2" fill="var(--text-primary, #1C1A17)"></rect>
+<text x="330" y="100" fill="var(--text-secondary, #4A453D)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13">checked out beside it</text>
+<rect x="312" y="113" width="10" height="10" rx="2" fill="var(--text-primary, #1C1A17)"></rect>
+<text x="330" y="122" fill="var(--text-secondary, #4A453D)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13">address and php pool</text>
+<rect x="312" y="135" width="10" height="10" rx="2" fill="var(--text-primary, #1C1A17)"></rect>
+<text x="330" y="144" fill="var(--text-secondary, #4A453D)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13">composer install</text>
+<rect x="312" y="157" width="10" height="10" rx="2" fill="none" stroke="var(--text-muted, #726C63)" stroke-width="1" stroke-dasharray="2 2"></rect>
+<text x="330" y="166" fill="var(--text-muted, #726C63)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13">database copied</text>
+</svg>

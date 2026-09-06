@@ -1,0 +1,15 @@
+# What a release tarball has no use for. "ddev add-on get" downloads the whole
+# of it and installs project_files out of it: the application is not among
+# them -- it travels in the image -- and neither is anything that only serves
+# working on this.
+tests/ export-ignore
+.github/ export-ignore
+branchery/app/ export-ignore
+branchery/Dockerfile export-ignore
+branchery/.dockerignore export-ignore
+.gitattributes export-ignore
+.editorconfig export-ignore
+AGENTS.md export-ignore
+CLAUDE.md export-ignore
+Makefile export-ignore
+tools/ export-ignore

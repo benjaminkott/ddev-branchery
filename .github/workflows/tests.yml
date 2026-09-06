@@ -1,0 +1,155 @@
+# The way a developer actually arrives, walked on a machine that has never seen
+# this project: "ddev add-on get", then every operation against a real DDEV
+# project. Against the stable DDEV and against its main branch both, because
+# what breaks an add-on is usually the other side moving.
+name: tests
+
+on:
+  pull_request:
+    paths-ignore:
+      - "**.md"
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - "**.md"
+
+  # An add-on can stop working without anybody touching it: a new DDEV, a new
+  # base image, a moved dependency. Nightly is how that is found before a
+  # developer finds it.
+  schedule:
+    - cron: '25 04 * * *'
+
+  workflow_dispatch:
+    inputs:
+      debug_enabled:
+        type: boolean
+        description: Debug with tmate
+        required: false
+        default: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # What can be checked without a project: the types, the unit tests and the
+  # bundle on the one side, static analysis, the PHP tests and the coding style
+  # on the other. Static analysis is the one that finds a method a refactoring
+  # left behind -- the paths that only run against a real project are the ones
+  # the tests walk least, and there such a method is a fatal error in front of
+  # a developer halfway through an operation.
+  app:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: branchery/app
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: branchery/app/package-lock.json
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          tools: composer
+      - run: npm ci
+      - run: npm run check
+      # The bundle is versioned and the image copies it, so a source change
+      # without a rebuild ships an interface that is not the one in the sources
+      # -- and passes everything above without a word. "check" has just written
+      # what the sources make; if that differs from what was committed, the
+      # commit is the stale one.
+      - name: The built interface is the one the sources make
+        run: git diff --exit-code -- public
+      # The floor under the interface: that every page draws at all. A view that
+      # throws and an address that leads to an empty page are invisible to the
+      # types, to the linter and to the tests that need no browser -- and are a
+      # page that does not come up. Its own steps, because the engine is
+      # downloaded and is larger than the rest of this repository together.
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:pages
+      - run: composer install --no-interaction --prefer-dist
+      # What is shipped, and only that: the image installs with "--no-dev", and
+      # what the interface is bundled out of goes into public/app.js. An advisory
+      # against a linter is worth a pull request from Dependabot and is not worth
+      # stopping one. This runs against a tool that reaches the Docker socket, so
+      # the half that does ship is a failure and not a note.
+      - run: composer audit --no-dev
+      - run: npm audit --omit=dev
+      # What the suite reaches, said once in the run that changed it. A floor and
+      # not a target: a number people write tests against is a number that gets
+      # tests nobody reads. This is for the other direction.
+      - run: sudo pecl install pcov && sudo phpenmod pcov
+      - run: ../../tools/coverage.sh
+      - run: composer stan
+      - run: composer test
+      - run: composer cs
+      # The release check, against a compose file that names another tag: it
+      # has to refuse, or the step in the image workflow guards nothing.
+      - run: sudo apt-get install -y bats
+      - run: bats ../../tests/release.bats
+      # What the two scripts in the web container write. They need no container
+      # to be read, and they are the part of this add-on that breaks quietest.
+      - run: bats ../../tests/scripts.bats
+
+  tests:
+    strategy:
+      matrix:
+        ddev_version: [stable, HEAD]
+      fail-fast: false
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: ddev/github-action-add-on-test@v2
+        with:
+          ddev_version: ${{ matrix.ddev_version }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          debug_enabled: ${{ github.event.inputs.debug_enabled }}
+          addon_repository: ${{ env.GITHUB_REPOSITORY }}
+          addon_ref: ${{ env.GITHUB_REF }}
+
+  # The same suite over the two project shapes it has never been run against.
+  # DatabaseOperations speaks a second dialect, and every statement in it drops
+  # or copies something; install.yaml writes Apache a module of its own and
+  # maps the addresses through VirtualDocumentRoot rather than a server block.
+  # Both were walked by hand and by nothing else, which is the least a
+  # destructive path deserves.
+  #
+  # Not on every pull request: each of these is a DDEV project built from
+  # nothing, and the shapes break when the other side moves rather than when
+  # this one does -- which is what the nightly run is for. "Run workflow"
+  # reaches it for a change that touches either.
+  shapes:
+    if: github.event_name != 'pull_request'
+
+    strategy:
+      matrix:
+        include:
+          - shape: postgres
+            database: postgres:16
+            webserver: ''
+          - shape: apache
+            database: ''
+            webserver: apache-fpm
+      fail-fast: false
+
+    runs-on: ubuntu-latest
+
+    env:
+      BRANCHERY_TEST_DATABASE: ${{ matrix.database }}
+      BRANCHERY_TEST_WEBSERVER: ${{ matrix.webserver }}
+
+    steps:
+      - uses: ddev/github-action-add-on-test@v2
+        with:
+          ddev_version: stable
+          token: ${{ secrets.GITHUB_TOKEN }}
+          debug_enabled: ${{ github.event.inputs.debug_enabled }}
+          addon_repository: ${{ env.GITHUB_REPOSITORY }}
+          addon_ref: ${{ env.GITHUB_REF }}

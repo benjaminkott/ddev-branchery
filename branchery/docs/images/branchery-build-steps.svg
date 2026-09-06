@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="990" viewBox="0 0 1200 990" role="img" aria-labelledby="bs-t bs-d">
+<title id="bs-t">Nothing about a project is guessed</title>
+<desc id="bs-d">The build of a worktree, step by step. On the left, what Branchery does by itself: read the configuration, check the branch out, give it an address and a PHP version, create an empty database. On the right, the steps that only happen because the project's own .ddev/branchery.yaml asks for them: installing dependencies, writing the worktree's configuration, bringing the data and fitting it to the code, flushing caches.</desc>
+<rect width="1200" height="990" fill="var(--surface-canvas, #FBFAF7)"></rect>
+
+<text x="60" y="60" fill="var(--accent, #FF8700)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13" font-weight="600" letter-spacing="1.6">ADD · FORK · PROVISION</text>
+<text x="60" y="108" fill="var(--text-primary, #1C1A17)" font-family="'Source Sans 3',system-ui,sans-serif" font-size="36" font-weight="700" letter-spacing="-0.5">Nothing about a project is guessed</text>
+<text x="60" y="140" fill="var(--text-secondary, #4A453D)" font-family="'Source Sans 3',system-ui,sans-serif" font-size="17">A checkout, an address, a PHP version and an empty database are made. Every other step stands in the project's own file.</text>
+<line x1="60" y1="176" x2="1140" y2="176" stroke="var(--border-subtle, #E3DFD6)" stroke-width="1"></line>
+
+<text x="100" y="232" fill="var(--text-muted, #726C63)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13" letter-spacing="0.8">WHAT BRANCHERY DOES ITSELF</text>
+<text x="620" y="232" fill="var(--text-muted, #726C63)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13" letter-spacing="0.8">WHAT THE PROJECT'S FILE SAYS</text>
+
+<line x1="600" y1="256" x2="600" y2="846" stroke="var(--border-subtle, #E3DFD6)" stroke-width="1.5"></line>
+
+<text x="1140" y="460" text-anchor="end" fill="var(--accent, #FF8700)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13" font-weight="600">.ddev/branchery.yaml</text>
+<path d="M1128 474 V817 M1128 513 H1108 M1128 589 H1108 M1128 741 H1108 M1128 817 H1108" stroke="var(--accent, #FF8700)" stroke-width="2" fill="none"></path>
+<path d="M1108 508 1098 513 1108 518Z" fill="var(--accent, #FF8700)"></path>
+<path d="M1108 584 1098 589 1108 594Z" fill="var(--accent, #FF8700)"></path>
+<path d="M1108 736 1098 741 1108 746Z" fill="var(--accent, #FF8700)"></path>
+<path d="M1108 812 1098 817 1108 822Z" fill="var(--accent, #FF8700)"></path>
+
+<path d="M580 285 H594" stroke="var(--text-muted, #726C63)" stroke-width="1.5"></path>
+<circle cx="600" cy="285" r="3.5" fill="var(--text-muted, #726C63)"></circle>
+<rect x="100" y="256" width="480" height="58" rx="6" fill="var(--surface-raised, #FFFFFF)" stroke="var(--border-subtle, #E3DFD6)" stroke-width="1"></rect>
+<text x="120" y="280" fill="var(--text-primary, #1C1A17)" font-family="'Source Sans 3',system-ui,sans-serif" font-size="16" font-weight="600">Read the configuration</text>
+<text x="120" y="301" fill="var(--text-muted, #726C63)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13">the branch's own file, else the project's</text>
+
+<path d="M580 361 H594" stroke="var(--text-muted, #726C63)" stroke-width="1.5"></path>
+<circle cx="600" cy="361" r="3.5" fill="var(--text-muted, #726C63)"></circle>
+<rect x="100" y="332" width="480" height="58" rx="6" fill="var(--surface-raised, #FFFFFF)" stroke="var(--border-subtle, #E3DFD6)" stroke-width="1"></rect>
+<text x="120" y="356" fill="var(--text-primary, #1C1A17)" font-family="'Source Sans 3',system-ui,sans-serif" font-size="16" font-weight="600">Check the branch out beside the project</text>
+<text x="120" y="377" fill="var(--text-muted, #726C63)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13">.worktrees/&lt;name&gt; — the checkout stays as it is</text>
+
+<path d="M580 437 H594" stroke="var(--text-muted, #726C63)" stroke-width="1.5"></path>
+<circle cx="600" cy="437" r="3.5" fill="var(--text-muted, #726C63)"></circle>
+<rect x="100" y="408" width="480" height="58" rx="6" fill="var(--surface-raised, #FFFFFF)" stroke="var(--border-subtle, #E3DFD6)" stroke-width="1"></rect>
+<text x="120" y="432" fill="var(--text-primary, #1C1A17)" font-family="'Source Sans 3',system-ui,sans-serif" font-size="16" font-weight="600">Give it an address and a PHP version</text>
+<text x="120" y="453" fill="var(--text-muted, #726C63)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13">&lt;name&gt;.&lt;project&gt;.ddev.site · the version it asks for</text>
+
+<path d="M606 513 H620" stroke="var(--text-muted, #726C63)" stroke-width="1.5"></path>
+<circle cx="600" cy="513" r="3.5" fill="var(--text-muted, #726C63)"></circle>
+<rect x="620" y="484" width="480" height="58" rx="6" fill="var(--surface-raised, #FFFFFF)" stroke="var(--border-subtle, #E3DFD6)" stroke-width="1"></rect>
+<text x="640" y="508" fill="var(--text-primary, #1C1A17)" font-family="'Source Sans 3',system-ui,sans-serif" font-size="16" font-weight="600">Install what this project needs</text>
+<text x="640" y="529" fill="var(--text-muted, #726C63)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13">install: composer install · npm ci</text>
+
+<path d="M606 589 H620" stroke="var(--text-muted, #726C63)" stroke-width="1.5"></path>
+<circle cx="600" cy="589" r="3.5" fill="var(--text-muted, #726C63)"></circle>
+<rect x="620" y="560" width="480" height="58" rx="6" fill="var(--surface-raised, #FFFFFF)" stroke="var(--border-subtle, #E3DFD6)" stroke-width="1"></rect>
+<text x="640" y="584" fill="var(--text-primary, #1C1A17)" font-family="'Source Sans 3',system-ui,sans-serif" font-size="16" font-weight="600">Write the worktree's own configuration</text>
+<text x="640" y="605" fill="var(--text-muted, #726C63)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13">configure: its database, its address</text>
+
+<path d="M580 665 H594" stroke="var(--text-muted, #726C63)" stroke-width="1.5"></path>
+<circle cx="600" cy="665" r="3.5" fill="var(--text-muted, #726C63)"></circle>
+<rect x="100" y="636" width="480" height="58" rx="6" fill="var(--surface-raised, #FFFFFF)" stroke="var(--border-subtle, #E3DFD6)" stroke-width="1"></rect>
+<text x="120" y="660" fill="var(--text-primary, #1C1A17)" font-family="'Source Sans 3',system-ui,sans-serif" font-size="16" font-weight="600">Create a database of its own</text>
+<text x="120" y="681" fill="var(--text-muted, #726C63)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13">branchery_&lt;name&gt; — empty, on the project's server</text>
+
+<path d="M606 741 H620" stroke="var(--text-muted, #726C63)" stroke-width="1.5"></path>
+<circle cx="600" cy="741" r="3.5" fill="var(--text-muted, #726C63)"></circle>
+<rect x="620" y="712" width="480" height="58" rx="6" fill="var(--surface-raised, #FFFFFF)" stroke="var(--border-subtle, #E3DFD6)" stroke-width="1"></rect>
+<text x="640" y="736" fill="var(--text-primary, #1C1A17)" font-family="'Source Sans 3',system-ui,sans-serif" font-size="16" font-weight="600">Bring the data, and fit it to the code</text>
+<text x="640" y="757" fill="var(--text-muted, #726C63)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13">data.from · migrate, or setup</text>
+
+<path d="M606 817 H620" stroke="var(--text-muted, #726C63)" stroke-width="1.5"></path>
+<circle cx="600" cy="817" r="3.5" fill="var(--text-muted, #726C63)"></circle>
+<rect x="620" y="788" width="480" height="58" rx="6" fill="var(--surface-raised, #FFFFFF)" stroke="var(--border-subtle, #E3DFD6)" stroke-width="1"></rect>
+<text x="640" y="812" fill="var(--text-primary, #1C1A17)" font-family="'Source Sans 3',system-ui,sans-serif" font-size="16" font-weight="600">Flush the caches</text>
+<text x="640" y="833" fill="var(--text-muted, #726C63)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13">flush:</text>
+
+<line x1="60" y1="890" x2="1140" y2="890" stroke="var(--border-strong, #C9C3B7)" stroke-width="1"></line>
+<text x="60" y="924" fill="var(--text-primary, #1C1A17)" font-family="'Source Sans 3',system-ui,sans-serif" font-size="16" font-weight="600">Take the file away and the right-hand column goes with it: the worktree is still a checkout at an address of its own.</text>
+<text x="60" y="950" fill="var(--text-secondary, #4A453D)" font-family="'Source Sans 3',system-ui,sans-serif" font-size="14">A project writes that file once. "profile: typo3-app" is one Branchery ships, and everything written beside it stands over it.</text>
+</svg>

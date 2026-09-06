@@ -1,0 +1,14 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+use App\Container;
+use Symfony\Component\Console\Application;
+
+require_once dirname(__DIR__) . '/vendor/autoload.php';
+
+$application = new Application('Branchery');
+$application->addCommands(Container::fromEnvironment()->commands());
+
+exit($application->run());

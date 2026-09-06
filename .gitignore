@@ -1,0 +1,41 @@
+# Dependencies. The PHP packages are installed by the image build (see
+# branchery/Dockerfile); the interface is built before a release and its
+# result under branchery/app/public/ is versioned.
+/branchery/app/vendor/
+/branchery/app/node_modules/
+
+# The bundle of the dev server (branchery/app/dev), built beside the versioned
+# one so watching does not overwrite it.
+/branchery/app/.dev/
+
+# The tests of the interface, bundled for node before they are run.
+/branchery/app/.tests/
+
+# Caches of the development tools, written where they are run.
+/branchery/app/.phpunit.cache/
+/branchery/app/phpunit.xml
+/branchery/app/.php-cs-fixer.cache
+
+
+# What the page smoke tests leave behind -- traces and a report of the last run.
+/branchery/app/test-results/
+/branchery/app/playwright-report/
+
+# playwright
+/.playwright-mcp/
+
+# vscode
+.vscode/
+
+# The documentation renderer, installed on demand -- "make docs". Nothing of it
+# is versioned, its manifests included: it is a tool this repository reaches
+# for, and the version it reaches for is the one current when it installs.
+/.renderer/
+
+# The mark, copied into the manual's tree by "make docs" because the renderer
+# will not read outside its own root. The drawing lives with the application.
+/branchery/docs/_images/
+
+# The rendered site. Published by the workflow that builds it, never from a
+# copy somebody committed.
+/site/

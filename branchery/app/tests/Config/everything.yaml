@@ -1,0 +1,109 @@
+# Every key .ddev/branchery.yaml knows, written once so the whole of the
+# grammar can be read on one page -- and read by RecipeTest, which holds it to
+# the keys the reader actually knows and lays it over an empty recipe in both
+# directions. A key added to the file and not to this one fails there.
+#
+# It is not a configuration anybody would write: it says everything at once,
+# where a project says the two or three lines it needs. `defaults/` holds the
+# ones written to be copied.
+
+# The shipped configuration this builds on. Everything beside it stands over
+# what that file says.
+profile: typo3-app
+
+# What is served out of the checkout. "" is the checkout's own root.
+docroot: web
+
+# Where the project's binaries are, and what $BRANCHERY_BIN points at.
+bin: .build/bin
+
+# A version, or the file in the checkout it stands in. Never both: a version
+# written out over a configuration that points at a file leaves no pointer.
+#
+# "match" is only for a file holding more than the version -- the TYPO3 core
+# says its PHP in its own test runner:
+#
+#   php:
+#     read: Build/Scripts/runTests.sh
+#     match: 'PHP_VERSION="(\d+\.\d+)"'
+php: '8.4'
+
+# A file made to hold a version is read without being told how, so a .nvmrc or
+# a .node-version is named and no more. One lying in the checkout's own root is
+# found without being named at all.
+node:
+  read: Build/.nvmrc
+
+# The pages a worktree is worth opening at, in the order they are offered. A
+# path and not an address -- the worktree's own goes in front of it. Written as
+# an empty list, it says this project has none although its profile has.
+entrypoints:
+  - Backend: /typo3
+  - Storybook: /storybook
+
+# Where the work in a checkout is talked about. The number comes out of the last
+# commit's own trailers, and the placeholder is where it goes. Laid over key by
+# key: a project that only says where its issues are tracked keeps the review
+# address of what it is built on.
+links:
+  review: https://review.typo3.org/q/{change}
+  issue: https://forge.typo3.org/issues/{issue}
+  commit: https://github.com/TYPO3/typo3/commit/{commit}
+
+# What a fork copies over from the checkout it was cut from. A list is the whole
+# answer -- these and nothing else. A mapping amends the answer that needs no
+# writing down, which is everything git ignores.
+copy:
+  except:
+    - var
+    - node_modules
+
+# Where a new worktree's data comes from, what has to travel with it in order to
+# be readable, and which of those files carry addresses to be pointed at this
+# worktree. "from" is "source" or "none".
+data:
+  from: source
+  needs:
+    - config/sites
+    - config/system/settings.php
+  addresses:
+    - config/sites
+
+# The moments, in the order a build asks for them. "setup" and "migrate" are
+# the two halves of one question and never both: a worktree with no data to
+# inherit is set up, one that has data is fitted to it.
+#
+# A moment is the lines it runs, in the order they are written. One of them may
+# be "inherit: profile", which is where the configuration this is built on does
+# its own work -- so a project keeps what that file installs and puts its own
+# lines around it. Left out, the moment is what stands here and no more; written
+# as an empty list, the moment does nothing at all.
+#
+# It is a task and not a word, so no line a project writes can be taken for it.
+install:
+  - ./bin/write-registry-token.sh
+  - inherit: profile
+  - npm ci
+  # A line on its own is "exec:", so those two above are tasks already. Written
+  # out, a task can carry "optional: true" -- which is the only reason to write
+  # one out, and why some lines here have a kind in front of them and most do
+  # not. A line holding ": " is read as a task by YAML itself: quote such a one.
+  - composer: dump-autoload --classmap-authoritative
+  - exec: cd Build && npm ci
+    optional: true
+
+configure:
+  - inherit: profile
+  - ./bin/extra-config.sh
+
+# No "inherit" line: this moment is what stands here, and what it is built on
+# does nothing at this one.
+setup:
+  - ./bin/install-fresh.sh
+
+migrate:
+  - inherit: profile
+  - $BRANCHERY_PHP $BRANCHERY_BIN/typo3 extension:setup
+
+finish:
+  - inherit: profile

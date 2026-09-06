@@ -1,0 +1,23 @@
+{# The theme's hero, with the picture written into the page instead of linked.
+
+   The theme links every picture, and a linked drawing renders in a document of
+   its own: the tokens in it fall back to their light values and a frame is
+   drawn around it, whatever mode the reader is in. The picture here is a
+   drawing in Soul's own diagram grammar, and inline it reads the page's tokens
+   -- so it follows the reader into dark, and stands on the canvas with no
+   frame, as decoration beside the claim rather than a figure to open.
+
+   Everything else is the theme's template as it stands. #}
+<div class="sds-sections">
+    <div class="sds-split sds-split--center">
+        <div class="sds-column">
+            {{- renderNode(node.children|first) -}}
+        </div>
+        <div class="sds-column">
+            {{ source(node.option('src')) }}
+        </div>
+    </div>
+    {%- for child in node.children|slice(1) -%}
+        {{ renderNode(child) }}
+    {%- endfor -%}
+</div>

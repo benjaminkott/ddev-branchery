@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="780" viewBox="0 0 1200 780" role="img" aria-labelledby="os-t os-d">
+<title id="os-t">A worktree owns what makes it separate</title>
+<desc id="os-d">Inside one DDEV project: the original project keeps its address, its PHP version and its database, and every worktree has its own beside it. Underneath, held once for all of them, are the git object store, the project's web container with git, Composer, Node and the database client, and the database server the worktree databases live on.</desc>
+<rect width="1200" height="780" fill="var(--surface-canvas, #FBFAF7)"></rect>
+
+<text x="60" y="60" fill="var(--accent, #FF8700)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13" font-weight="600" letter-spacing="1.6">OWNED · SHARED</text>
+<text x="60" y="108" fill="var(--text-primary, #1C1A17)" font-family="'Source Sans 3',system-ui,sans-serif" font-size="36" font-weight="700" letter-spacing="-0.5">A worktree owns what makes it separate</text>
+<text x="60" y="140" fill="var(--text-secondary, #4A453D)" font-family="'Source Sans 3',system-ui,sans-serif" font-size="17">An address, a PHP pool, a checkout and a database belong to one worktree. What is expensive is the project's, held once.</text>
+<line x1="60" y1="176" x2="1140" y2="176" stroke="var(--border-subtle, #E3DFD6)" stroke-width="1"></line>
+
+<rect x="60" y="210" width="1080" height="430" rx="6" fill="none" stroke="var(--border-strong, #C9C3B7)" stroke-width="1.5"></rect>
+<text x="92" y="244" fill="var(--text-muted, #726C63)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13" letter-spacing="0.8">ONE DDEV PROJECT</text>
+
+<rect x="92" y="268" width="239" height="140" rx="6" fill="var(--text-primary, #1C1A17)"></rect>
+<text x="112" y="302" fill="var(--surface-canvas, #FBFAF7)" font-family="'Source Sans 3',system-ui,sans-serif" font-size="16" font-weight="700">the project</text>
+<text x="112" y="336" fill="var(--surface-canvas, #FBFAF7)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13" opacity="0.72">blog.ddev.site</text>
+<text x="112" y="360" fill="var(--surface-canvas, #FBFAF7)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13" opacity="0.72">php 8.3</text>
+<text x="112" y="384" fill="var(--surface-canvas, #FBFAF7)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13" opacity="0.72">db</text>
+
+<rect x="351" y="268" width="239" height="140" rx="6" fill="var(--surface-raised, #FFFFFF)" stroke="var(--border-subtle, #E3DFD6)" stroke-width="1"></rect>
+<text x="371" y="302" fill="var(--text-primary, #1C1A17)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="16" font-weight="600">13.4</text>
+<text x="371" y="336" fill="var(--text-muted, #726C63)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13">13-4.blog.ddev.site</text>
+<text x="371" y="360" fill="var(--text-muted, #726C63)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13">php 8.4</text>
+<text x="371" y="384" fill="var(--text-muted, #726C63)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13">branchery_13_4</text>
+
+<rect x="610" y="268" width="239" height="140" rx="6" fill="var(--surface-raised, #FFFFFF)" stroke="var(--border-subtle, #E3DFD6)" stroke-width="1"></rect>
+<text x="630" y="302" fill="var(--text-primary, #1C1A17)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="16" font-weight="600">11.5</text>
+<text x="630" y="336" fill="var(--text-muted, #726C63)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13">11-5.blog.ddev.site</text>
+<text x="630" y="360" fill="var(--text-muted, #726C63)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13">php 7.4</text>
+<text x="630" y="384" fill="var(--text-muted, #726C63)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13">branchery_11_5</text>
+
+<rect x="869" y="268" width="239" height="140" rx="6" fill="var(--surface-raised, #FFFFFF)" stroke="var(--border-subtle, #E3DFD6)" stroke-width="1"></rect>
+<text x="889" y="302" fill="var(--text-primary, #1C1A17)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="16" font-weight="600">my-fix</text>
+<text x="889" y="336" fill="var(--text-muted, #726C63)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13">my-fix.blog.ddev.site</text>
+<text x="889" y="360" fill="var(--text-muted, #726C63)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13">php 8.3</text>
+<text x="889" y="384" fill="var(--text-muted, #726C63)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13">branchery_my_fix</text>
+
+<path d="M92 452 H1108 M211 452 V422 M470 452 V422 M730 452 V422 M989 452 V422" stroke="var(--accent, #FF8700)" stroke-width="2" fill="none"></path>
+<path d="M206 422 211 412 216 422Z" fill="var(--accent, #FF8700)"></path>
+<path d="M465 422 470 412 475 422Z" fill="var(--accent, #FF8700)"></path>
+<path d="M725 422 730 412 735 422Z" fill="var(--accent, #FF8700)"></path>
+<path d="M984 422 989 412 994 422Z" fill="var(--accent, #FF8700)"></path>
+<text x="600" y="480" text-anchor="middle" fill="var(--accent, #FF8700)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13">built and served by the project's own tools</text>
+
+<rect x="92" y="500" width="1016" height="110" rx="6" fill="none" stroke="var(--border-strong, #C9C3B7)" stroke-width="1.5"></rect>
+<text x="112" y="533" fill="var(--text-muted, #726C63)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13" letter-spacing="0.8">HELD ONCE, FOR ALL OF THEM</text>
+<text x="112" y="561" fill="var(--text-secondary, #4A453D)" font-family="'Source Sans 3',system-ui,sans-serif" font-size="14" font-weight="600">One git object store</text>
+<text x="112" y="585" fill="var(--text-muted, #726C63)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13">every checkout points into it</text>
+<text x="452" y="561" fill="var(--text-secondary, #4A453D)" font-family="'Source Sans 3',system-ui,sans-serif" font-size="14" font-weight="600">One web container</text>
+<text x="452" y="585" fill="var(--text-muted, #726C63)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13">git · composer · node · the db client</text>
+<text x="792" y="561" fill="var(--text-secondary, #4A453D)" font-family="'Source Sans 3',system-ui,sans-serif" font-size="14" font-weight="600">One database server</text>
+<text x="792" y="585" fill="var(--text-muted, #726C63)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13">db, and every branchery_&lt;name&gt;</text>
+
+<line x1="60" y1="680" x2="1140" y2="680" stroke="var(--border-strong, #C9C3B7)" stroke-width="1"></line>
+<text x="60" y="714" fill="var(--text-primary, #1C1A17)" font-family="'Source Sans 3',system-ui,sans-serif" font-size="16" font-weight="600">Removing a worktree takes back what it owned; what is held once stays where it was.</text>
+<text x="60" y="740" fill="var(--text-secondary, #4A453D)" font-family="'Source Sans 3',system-ui,sans-serif" font-size="14">Which is why a branch costs its files and its data here, and never a second copy of the repository or its services.</text>
+</svg>

@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Branchery</title>
+        <link rel="icon" href="/branchery-signet-s.svg" type="image/svg+xml" />
+        <script src="/soul/soul-boot.js" data-key="soul-theme"></script>
+        <link rel="stylesheet" href="/soul/soul.css" />
+        <link rel="stylesheet" href="/app.css" />
+    </head>
+    <body>
+        <div class="sds-shell">
+            <!-- The bar is Soul's own: the lockup, the language list and the
+                 colour mode are what it draws, and it decides from the room it has
+                 which of them keep their words. The signet is linked rather than
+                 inlined, which is what every picture in this system is -- it is
+                 drawn in its file's own colours and does not follow the mode.
+                 The primary action does not stand in here: the bar folds what it
+                 cannot fit, and the one thing this page is for is not a candidate
+                 for folding. It stands over the table, where the page's own
+                 actions are. -->
+            <sds-nav-main
+                id="bar"
+                signet="/branchery-signet-m.svg"
+                product="Branchery"
+                theme-key="soul-theme"
+            ></sds-nav-main>
+
+            <!-- The notices, in a page block of their own.
+
+                 They stand over whatever page is open, so they cannot live inside
+                 one: the manual is not an `sds-page` at all but an `sds-body`, and
+                 a page nested inside another page is inset twice and squeezed. The
+                 two are the system's two kinds of page and they are siblings. -->
+            <div class="sds-page branchery-notices">
+                <!-- What the lockup used to be. The bar's mark is a way home rather
+                     than a heading, so the name of the thing is said here instead --
+                     read aloud, not drawn, because the lockup above already shows it. -->
+                <h1 class="sds-said-only" data-i18n="app.title">Branchery</h1>
+                <!-- What could not be read at all. It stands over whatever page is
+                     open, because it is about the project and not about one page:
+                     a container being restarted is not the worktree list's news. -->
+                <div id="offline" class="branchery-notices__item" role="status" hidden></div>
+                <!-- The port this is on is reachable from the network beside the
+                     developer, which is the one thing this application's safety
+                     rests on not being true. Above everything, because it is not
+                     about a page or a worktree but about where this stands. -->
+                <div id="exposed" class="branchery-notices__item" role="status" hidden></div>
+                <!-- What the project's own recipe got wrong. Here rather than in
+                     an operation's log: the operations refuse anyway, and the file
+                     is fixed with the list in front of you. -->
+                <div id="recipe" class="branchery-notices__item" role="status" hidden></div>
+                <!-- A newer version is installed than the one answering. It stands
+                     with the others, above whatever page is open: it is about the
+                     whole of this, not about one worktree. -->
+                <div id="update" class="branchery-notices__item" role="status" hidden></div>
+                <!-- The project has not said how its worktrees are built, so they
+                     are checkouts and nothing more. Said here rather than in every
+                     operation: it is about the project, and it is fixed with one
+                     command. -->
+                <div id="unconfigured" class="branchery-notices__item" role="status" hidden></div>
+                <!-- Not a live region. It used to be one, which meant every page a
+                     reader was listening to was read out again from the top
+                     whenever anything was drawn -- and the list now looks again by
+                     itself every few seconds. What is worth announcing announces
+                     itself: the notes above say what happened, and an operation
+                     says which step it is on from inside its dialog. -->
+            </div>
+
+            <!-- What each view draws into. It brings no page of its own: a list is
+                 an `sds-page` and the manual is an `sds-body`, and which of them
+                 this is is the view's to say. -->
+            <main id="main" class="branchery-main" tabindex="-1"></main>
+
+            <!-- How this ends: whose it is, and where it is made.
+
+                 The lockup, the sentence about the product and the columns of a
+                 site's other pages are all left unsaid, which is how this footer
+                 is asked for a closing line rather than a directory -- the element
+                 drops every part a page does not state, so what it draws is a
+                 `copyright` and the marks at the far end of the same line. The bar
+                 above already carries the name and the two places there are.
+
+                 The mark is the brand glyph rather than the word "Repository": at
+                 the end of a footer a mark is looked for by position and read as a
+                 picture, and it is named for whoever cannot see it. -->
+            <sds-footer
+                id="footer"
+                copyright="© 2026 Benjamin Kott"
+                marks='[{"label":"GitHub","href":"https://github.com/benjaminkott/ddev-branchery","icon":"actions-brand-github","external":true}]'
+            >
+            </sds-footer>
+
+            <!-- The one dialog every question of this interface is asked on. It
+                 is walked through one step at a time: the bar says how far along
+                 the questions are and which stop this is, the head says what is
+                 being asked, and the two buttons below are the only way on and
+                 back. What a step holds is written into the body from script --
+                 there is no markup for any single step here. -->
+            <!-- Named by its own title, which changes with every stop of the
+                 flow. Without it a reader who is told rather than shown hears
+                 "dialog" and nothing else -- while the answer to what it is has
+                 been sitting inside it all along. -->
+            <dialog id="wizard" class="sds-modal sds-modal--md branchery-modal--flow" aria-labelledby="wizTitle">
+                <form method="dialog" class="branchery-modal-form" id="wizForm">
+                    <header class="sds-modal__head">
+                        <sds-progress
+                            class="branchery-modal-progress"
+                            id="wizProgress"
+                            size="small"
+                            readout="count"
+                            hidden
+                        ></sds-progress>
+                        <h2 class="branchery-modal-title" id="wizTitle"></h2>
+                        <!-- What an operation is doing, and what came of it. The
+                             one thing in here worth hearing without looking, and
+                             small enough that hearing it is not a burden. -->
+                        <p class="branchery-modal-lead" id="wizLead" aria-live="polite" hidden></p>
+                    </header>
+                    <div class="sds-modal__body" id="wizBody"></div>
+                    <!-- Named, because it is not always drawn: a stage with nothing
+                         to press -- and there is one, an operation while it runs --
+                         would otherwise leave a ruled strip of padding under the
+                         body saying nothing. -->
+                    <footer class="sds-modal__foot" id="wizFoot">
+                        <sds-button variant="ghost" type="button" id="wizBack">Back</sds-button>
+                        <sds-button variant="primary" type="button" id="wizNext">Next</sds-button>
+                    </footer>
+                </form>
+            </dialog>
+
+            <!-- The question asked before anything is taken away. The surface, the
+                 opening, the focus and Escape are all the element's: it is the
+                 platform's own <dialog>, which makes the rest of the page inert
+                 and hands the focus back where it came from. What used to stand
+                 here was that markup written out -- the modal, its head, its body
+                 and its foot -- which is the component rebuilt under its own
+                 classes. What it says is set from script, being a question that
+                 changes with what is being removed.
+
+                 One of the system's own sizes rather than a width of its own: the
+                 measure a modal is read at is wide enough for a database name on
+                 one line, and a number here would be this dialog leaving the
+                 family every other surface belongs to. -->
+            <sds-dialog id="confirm" size="md"></sds-dialog>
+
+            <!-- What is uncommitted in a worktree, on a surface of its own. It is
+                 read in one go and then put away again, and it is a list every
+                 line of which can open a diff under itself -- which is more than
+                 the band it used to unfold in could hold without pushing the
+                 history off the bottom of the page.
+
+                 The large size, because what is in it is a path and a diff: both
+                 are read at whatever width there is and neither wraps well at the
+                 measure a question is asked at. What it says is set from script,
+                 being a list that is read when it is asked for. -->
+            <sds-dialog id="changes" size="lg"></sds-dialog>
+        </div>
+
+        <script type="module" src="/soul/soul.js"></script>
+        <script type="module" src="/app.js"></script>
+    </body>
+</html>

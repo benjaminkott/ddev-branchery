@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 476" role="img" aria-labelledby="hero-t hero-d">
+<title id="hero-t">Every branch, ready beside the project</title>
+<desc id="hero-d">The project checkout on the left, and three worktrees standing beside it, each with an address, a PHP version and a database of its own. The newest is marked. Under them, room for the next one.</desc>
+
+<!-- Every node is 102 high: 16 of room over the name and under the chips, the
+     name on the line at 30, the address at 54, the chips from 66 to 88.
+     A chip is 22 high with 8 on either side of its word and 8 to the
+     next. The rows are 12 apart, the project stands level with the middle
+     of the stack, and a connector leaves the trunk at the middle of its row. -->
+
+<!-- The project: the one checkout that is already there and keeps running. -->
+<rect x="20" y="187" width="196" height="102" rx="6" fill="var(--text-primary, #1C1A17)"></rect>
+<text x="40" y="217" fill="var(--surface-canvas, #FBFAF7)" font-family="'Source Sans 3',system-ui,sans-serif" font-size="18" font-weight="700">the project</text>
+<text x="40" y="241" fill="var(--surface-canvas, #FBFAF7)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="14" opacity="0.8">project.ddev.site</text>
+<rect x="40" y="253" width="48" height="22" rx="4" fill="var(--surface-canvas, #FBFAF7)" opacity="0.14"></rect>
+<text x="48" y="268" fill="var(--surface-canvas, #FBFAF7)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13" opacity="0.85">main</text>
+<rect x="96" y="253" width="73" height="22" rx="4" fill="var(--surface-canvas, #FBFAF7)" opacity="0.14"></rect>
+<text x="104" y="268" fill="var(--surface-canvas, #FBFAF7)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13" opacity="0.85">php 8.3</text>
+
+<!-- The trunk: the project's own history, which every worktree leaves from.
+     Solid as far as a worktree stands, dashed where the next one will. -->
+<line x1="216" y1="238" x2="236" y2="238" stroke="var(--text-secondary, #4A453D)" stroke-width="1.5"></line>
+<line x1="236" y1="67" x2="236" y2="295" stroke="var(--text-secondary, #4A453D)" stroke-width="1.5"></line>
+<line x1="236" y1="295" x2="236" y2="409" stroke="var(--text-secondary, #4A453D)" stroke-width="1.5" stroke-dasharray="6 4"></line>
+
+<!-- The one thing the drawing is about, and the one thing in the accent: the
+     worktree that was just made, its fork, its connector and the word on it. -->
+<line x1="236" y1="67" x2="262" y2="67" stroke="var(--accent, #FF8700)" stroke-width="2"></line>
+<path d="M262 61 272 67 262 73Z" fill="var(--accent, #FF8700)"></path>
+<circle cx="236" cy="67" r="5" fill="var(--surface-raised, #FFFFFF)" stroke="var(--accent, #FF8700)" stroke-width="2"></circle>
+
+<rect x="272" y="16" width="308" height="102" rx="6" fill="var(--surface-accent-quiet, #FFF6EC)" stroke="var(--accent, #FF8700)" stroke-width="1.5"></rect>
+<text x="292" y="46" fill="var(--text-primary, #1C1A17)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="18" font-weight="600">feature/cart</text>
+<text x="292" y="70" fill="var(--text-secondary, #4A453D)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="14">feature-cart.project.ddev.site</text>
+<rect x="292" y="82" width="73" height="22" rx="4" fill="var(--surface-inset, #EFEBE3)"></rect>
+<text x="300" y="97" fill="var(--text-secondary, #4A453D)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13">php 8.4</text>
+<rect x="373" y="82" width="81" height="22" rx="4" fill="var(--surface-inset, #EFEBE3)"></rect>
+<text x="381" y="97" fill="var(--text-secondary, #4A453D)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13">database</text>
+<rect x="462" y="82" width="40" height="22" rx="4" fill="var(--accent, #FF8700)"></rect>
+<text x="470" y="97" fill="var(--text-on-accent, #131210)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13" font-weight="600">new</text>
+
+<line x1="236" y1="181" x2="262" y2="181" stroke="var(--text-secondary, #4A453D)" stroke-width="1.5"></line>
+<path d="M262 176 272 181 262 186Z" fill="var(--text-secondary, #4A453D)"></path>
+<circle cx="236" cy="181" r="5" fill="var(--surface-raised, #FFFFFF)" stroke="var(--text-secondary, #4A453D)" stroke-width="1.5"></circle>
+
+<rect x="272" y="130" width="308" height="102" rx="6" fill="var(--surface-raised, #FFFFFF)" stroke="var(--border-strong, #C9C3B7)" stroke-width="1"></rect>
+<text x="292" y="160" fill="var(--text-primary, #1C1A17)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="18" font-weight="600">13.4</text>
+<text x="292" y="184" fill="var(--text-secondary, #4A453D)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="14">13-4.project.ddev.site</text>
+<rect x="292" y="196" width="73" height="22" rx="4" fill="var(--surface-inset, #EFEBE3)"></rect>
+<text x="300" y="211" fill="var(--text-secondary, #4A453D)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13">php 8.3</text>
+<rect x="373" y="196" width="81" height="22" rx="4" fill="var(--surface-inset, #EFEBE3)"></rect>
+<text x="381" y="211" fill="var(--text-secondary, #4A453D)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13">database</text>
+
+<line x1="236" y1="295" x2="262" y2="295" stroke="var(--text-secondary, #4A453D)" stroke-width="1.5"></line>
+<path d="M262 290 272 295 262 300Z" fill="var(--text-secondary, #4A453D)"></path>
+<circle cx="236" cy="295" r="5" fill="var(--surface-raised, #FFFFFF)" stroke="var(--text-secondary, #4A453D)" stroke-width="1.5"></circle>
+
+<rect x="272" y="244" width="308" height="102" rx="6" fill="var(--surface-raised, #FFFFFF)" stroke="var(--border-strong, #C9C3B7)" stroke-width="1"></rect>
+<text x="292" y="274" fill="var(--text-primary, #1C1A17)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="18" font-weight="600">fix/menu</text>
+<text x="292" y="298" fill="var(--text-secondary, #4A453D)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="14">fix-menu.project.ddev.site</text>
+<rect x="292" y="310" width="73" height="22" rx="4" fill="var(--surface-inset, #EFEBE3)"></rect>
+<text x="300" y="325" fill="var(--text-secondary, #4A453D)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13">php 8.2</text>
+<rect x="373" y="310" width="81" height="22" rx="4" fill="var(--surface-inset, #EFEBE3)"></rect>
+<text x="381" y="325" fill="var(--text-secondary, #4A453D)" font-family="'Source Code Pro',ui-monospace,monospace" font-size="13">database</text>
+
+<!-- Dashed is what is not there yet: the next worktree, in the place it will
+     take. No fork on the trunk, because nothing has left it there. -->
+<line x1="236" y1="409" x2="262" y2="409" stroke="var(--text-secondary, #4A453D)" stroke-width="1.5" stroke-dasharray="6 4"></line>
+<path d="M262 404 272 409 262 414Z" fill="var(--text-secondary, #4A453D)"></path>
+<rect x="272" y="358" width="308" height="102" rx="6" fill="none" stroke="var(--text-secondary, #4A453D)" stroke-width="1" stroke-dasharray="6 4"></rect>
+<text x="292" y="414" fill="var(--text-secondary, #4A453D)" font-family="'Source Sans 3',system-ui,sans-serif" font-size="16">your next branch, one command away</text>
+</svg>

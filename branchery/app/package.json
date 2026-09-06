@@ -1,0 +1,38 @@
+{
+    "name": "bk2k-ddev-branchery",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "description": "Reactive frontend of Branchery",
+    "license": "MIT",
+    "scripts": {
+        "dev": "node dev/server.mjs",
+        "build": "npm run build:soul && npm run build:i18n && npm run build:js && npm run build:css",
+        "build:js": "esbuild frontend/app.ts --bundle --format=esm --target=es2022 --minify --sourcemap --outfile=public/app.js",
+        "build:css": "esbuild frontend/app.css --bundle --minify --outfile=public/app.css",
+        "build:soul": "node scripts/sync-soul.mjs",
+        "build:i18n": "node scripts/sync-translations.mjs",
+        "build:tests": "rm -rf .tests && esbuild frontend/tests/*.test.ts --bundle --platform=node --format=esm --outdir=.tests --log-level=warning",
+        "typecheck": "tsc --noEmit",
+        "format": "prettier --write .",
+        "lint": "eslint .",
+        "format:check": "prettier --check .",
+        "test": "npm run build:tests && node --test .tests/*.test.js dev/*.test.mjs",
+        "test:pages": "playwright test",
+        "check": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm run build"
+    },
+    "devDependencies": {
+        "@eslint/js": "10.0.1",
+        "@playwright/test": "^1.50.0",
+        "@types/node": "^26.2.0",
+        "esbuild": "^0.25.0",
+        "eslint": "10.10.0",
+        "prettier": "3.9.6",
+        "typescript": "^5.7.0",
+        "typescript-eslint": "8.69.0"
+    },
+    "dependencies": {
+        "@typo3/soul-frontend": "0.3.1",
+        "lit": "^3.2.0"
+    }
+}

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+    How the manual and the product page are rendered.
+
+    The theme is Soul's own, which is why nothing here styles anything: the
+    pages come out in the same sds- vocabulary the interface is written in, so
+    the site and the application look like one thing without a stylesheet of
+    this repository's in between. What is set below is only what the document
+    tree cannot know by itself.
+
+    No comment in this file may carry a double dash. That is what makes XML
+    malformed, and the renderer then stops on a parse error which says nothing
+    at all about the documentation.
+-->
+<guides xmlns="https://www.phpdoc.org/guides"
+        input-format="rst"
+        links_are_relative="true"
+        theme="soul"
+        default_code_language="text">
+    <!-- The version is the tag a project installs, written out a third time
+         after the compose file and the git tag. tools/check-compose-tag.sh
+         holds all three together, because a release that leaves one behind is
+         a manual claiming to describe a version nobody runs. -->
+    <project title="Branchery" version="v0.1.0" copyright="© 2026 Benjamin Kott"/>
+
+    <!-- The templates of this repository's own. The theme links every
+         picture, and the drawings on the product page are written in the
+         page's tokens: linked, they would keep their light colours in dark
+         and be given a frame. The templates under _templates/ say the rest.
+
+         The path is read from where the renderer is run, which is the root of
+         the repository, as "make docs" runs it. It is this directory and not
+         _templates/ so the template can read the drawing from images/, where
+         the other drawings are. -->
+    <base-template-paths><path>branchery/docs</path></base-template-paths>
+    <template file="_templates/hero.html.twig" node="TYPO3\Soul\GuidesTheme\Nodes\HeroNode"/>
+    <template file="_templates/image.html.twig" node="phpDocumentor\Guides\Nodes\ImageNode"/>
+    <extension class="TYPO3\Soul\GuidesTheme\DependencyInjection\SoulExtension">
+        <!-- The mark, put here by "make docs": the renderer refuses to read
+             outside its own root, and the drawing belongs to the application,
+             which is where it is kept.
+
+             The three files are one drawing at three optical sizes. A media
+             query inside an SVG only sees its own viewport, so the browser has
+             to be given the choice at the link; the one named without a size
+             is what it falls back to. -->
+        <signet>_images/branchery-signet-m.svg</signet>
+        <favicon href="_images/branchery-signet-s.svg" sizes="16x16"/>
+        <favicon href="_images/branchery-signet-m.svg" sizes="32x32"/>
+        <favicon href="_images/branchery-signet-l.svg"/>
+
+        <!-- A manual is read front to back the first time, so the way on from
+             a page is worth the row under it. -->
+        <pager>true</pager>
+        <footer>
+            <group title="Elsewhere">
+                <link href="https://github.com/benjaminkott/ddev-branchery" label="Repository" external="true"/>
+                <link href="https://addons.ddev.com" label="DDEV add-on registry" external="true"/>
+            </group>
+            <social href="https://github.com/benjaminkott/ddev-branchery" label="GitHub"/>
+            <note>A DDEV add-on that gives every branch of a project a worktree of its own.</note>
+        </footer>
+    </extension>
+</guides>
