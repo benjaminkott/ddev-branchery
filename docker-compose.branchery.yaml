@@ -57,7 +57,9 @@ services:
       retries: 20
       start_period: 10s
     # What "ddev describe" prints in this row. The worktrees are written into
-    # this block while the project runs -- see app/src/Service/DescribeInfo.php.
+    # this block while the project runs -- see App\Worktree\Description, named
+    # as a class because this file is read in the project it was copied into,
+    # where a path into this repository reaches nothing.
     x-ddev:
       describe-url-port: "Interface: ddev branchery launch"
 
