@@ -37,7 +37,7 @@ data:
   addresses:
     - typo3conf/sites
 
-carry:
+copy:
   except:
     - var
     - typo3temp
@@ -112,5 +112,7 @@ setup:
 migrate:
   - $BRANCHERY_PHP $BRANCHERY_BIN/typo3 extension:setup
 
-flush:
+# The last step of every operation that touches a worktree: a build, a data
+# sync, a version switch, a bare reconfiguration.
+finish:
   - $BRANCHERY_PHP $BRANCHERY_BIN/typo3 cache:flush

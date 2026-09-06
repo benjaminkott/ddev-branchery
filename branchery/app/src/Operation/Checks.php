@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Operation;
 
 use App\Config\Build;
-use App\Config\LockFile;
 use App\Config\Recipe;
 use App\Config\Recipes;
 use App\Git\Git;
@@ -37,7 +36,7 @@ final readonly class Checks
         private DatabaseServer $database,
         private Databases $databases,
         private Worktrees $worktrees,
-        private CarriedFiles $carried,
+        private CopiedFiles $copied,
         private JobRunner $jobs,
     ) {
     }
@@ -112,7 +111,7 @@ final readonly class Checks
             $sourceDirectory = $from !== null ? $this->project->worktreeDirectory($from) : $this->project->root();
             $file = $sourceDirectory . '/composer.lock';
             $directory = $this->project->worktreeDirectory($name);
-            if (is_file($file) && in_array('composer.lock', $this->carried->of($from, $directory), true)) {
+            if (is_file($file) && in_array('composer.lock', $this->copied->of($from, $directory), true)) {
                 $source = $from !== null ? sprintf('worktree "%s"', $from) : 'the project checkout';
                 $lock = (string) file_get_contents($file);
                 $what = sprintf('The composer.lock carried over from %s', $source);

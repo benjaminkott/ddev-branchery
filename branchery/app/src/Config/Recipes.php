@@ -55,7 +55,7 @@ final class Recipes
     {
         $name = $recipe->profile;
 
-        return new Build($recipe, $name === null ? Recipe::none() : $this->shipped($name), $name);
+        return new Build($recipe->over($name === null ? Recipe::none() : $this->shipped($name)), $name);
     }
 
     /**
@@ -68,7 +68,7 @@ final class Recipes
         try {
             return $this->for($directory);
         } catch (\RuntimeException) {
-            return new Build(Recipe::none(), Recipe::none(), null);
+            return new Build(Recipe::none(), null);
         }
     }
 
@@ -116,7 +116,7 @@ final class Recipes
             // never pointed at, so a name that is not one is answered here rather
             // than by asking the disk about whatever it composes.
             $file = $this->defaultsDirectory . '/' . $name . '.yaml';
-            $this->shipped[$name] = $this->isPlain($name) && is_file($file) ? Recipe::fromFile($file) : null;
+            $this->shipped[$name] = $this->isPlain($name) && is_file($file) ? self::bottom($name, $file) : null;
         }
 
         return $this->shipped[$name] ?? throw new \RuntimeException(sprintf('%s names "%s", which is not one of the shipped configurations. There is %s.', Recipe::FILE, $name, implode(', ', $this->names())));
@@ -128,6 +128,22 @@ final class Recipes
         $this->shipped($name);
 
         return (string) file_get_contents($this->defaultsDirectory . '/' . $name . '.yaml');
+    }
+
+    /**
+     * A shipped configuration is where the stack ends. It may be written in the
+     * whole grammar, "profile" included, so the key is refused here rather than
+     * left to be read and quietly do nothing, as it did while only a test held the
+     * shipped files to it.
+     */
+    private static function bottom(string $name, string $file): Recipe
+    {
+        $recipe = Recipe::fromFile($file);
+        if ($recipe->profile !== null) {
+            throw new \RuntimeException(sprintf('The shipped configuration "%s" names "%s" as its own profile, and a shipped one is built on nothing: a chain of them is one nobody can follow.', $name, $recipe->profile));
+        }
+
+        return $recipe;
     }
 
     /** A name and not a path: nothing outside the shipped directory is read. */

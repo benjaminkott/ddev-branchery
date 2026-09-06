@@ -10,7 +10,10 @@ docroot: public
 data:
   from: source
 
-carry:
+# A fork copies over everything git ignores -- vendor, .env, uploads -- which
+# is what makes it run without a build. Not these: what a run left behind was
+# left behind for the code it ran on.
+copy:
   except:
     - var
     - .vscode
@@ -38,5 +41,7 @@ setup:
 migrate:
   - $BRANCHERY_PHP bin/console doctrine:migrations:migrate --allow-no-migration --no-interaction
 
-flush:
+# The last step of every operation that touches a worktree: a build, a data
+# sync, a version switch, a bare reconfiguration.
+finish:
   - $BRANCHERY_PHP bin/console cache:clear

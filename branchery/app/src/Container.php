@@ -39,10 +39,9 @@ use App\Jobs\JobRunner;
 use App\Jobs\Locks;
 use App\Jobs\Records;
 use App\Operation\BranchMoves;
-use App\Operation\CarriedFiles;
 use App\Operation\Checks;
+use App\Operation\CopiedFiles;
 use App\Operation\DataTransfer;
-use App\Operation\Places;
 use App\Operation\Provisioning;
 use App\Operation\Removal;
 use App\Operation\WorktreeManager;
@@ -58,6 +57,7 @@ use App\Worktree\CommitPages;
 use App\Worktree\Description;
 use App\Worktree\NodeVersions;
 use App\Worktree\PhpVersions;
+use App\Worktree\Places;
 use App\Worktree\Surroundings;
 use App\Worktree\Usage;
 use App\Worktree\VersionMap;
@@ -392,9 +392,9 @@ final class Container
         ));
     }
 
-    public function carried(): CarriedFiles
+    public function copied(): CopiedFiles
     {
-        return $this->share(CarriedFiles::class, fn (): CarriedFiles => new CarriedFiles(
+        return $this->share(CopiedFiles::class, fn (): CopiedFiles => new CopiedFiles(
             $this->project(),
             $this->git(),
             $this->recipes(),
@@ -412,7 +412,7 @@ final class Container
             $this->databaseServer(),
             $this->databases(),
             $this->worktrees(),
-            $this->carried(),
+            $this->copied(),
             $this->jobs(),
         ));
     }
@@ -483,7 +483,7 @@ final class Container
             $this->files(),
             $this->locks(),
             $this->checks(),
-            $this->carried(),
+            $this->copied(),
             $this->provisioning(),
             $this->removal(),
             $this->branchMoves(),

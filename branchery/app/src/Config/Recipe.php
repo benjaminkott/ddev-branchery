@@ -18,13 +18,24 @@ use Symfony\Component\Yaml\Yaml;
  * Anything it does not understand is refused rather than ignored: a typed key
  * that silently does nothing leaves a worktree missing exactly the step the
  * file was written for.
+ *
+ * One rule holds the whole of it together, and `over()` is where it is written
+ * down: null is "the file did not say", and nothing else means that. A list
+ * written empty is an answer -- it is how a project takes away what the
+ * configuration it names would have done.
  */
 final readonly class Recipe
 {
     public const FILE = '.ddev/branchery.yaml';
 
-    /** The moments a recipe may speak about, in the order they happen. */
-    public const MOMENTS = ['install', 'setup', 'migrate', 'configure', 'flush'];
+    /**
+     * The moments a recipe may speak about, in the order a build asks for them.
+     * "setup" and "migrate" are the two halves of one question and never both:
+     * a worktree with no data to inherit is set up, one that has data is fitted
+     * to it. "finish" is asked for at the end of every operation that touches a
+     * worktree, a version switch and a bare reconfiguration included.
+     */
+    public const MOMENTS = ['install', 'configure', 'setup', 'migrate', 'finish'];
 
     /**
      * What never travels into a worktree, whatever a project says: the repository's
@@ -44,12 +55,21 @@ final readonly class Recipe
     /** Where a worktree's data may come from. */
     private const SOURCES = ['source', 'none'];
 
-    /** What a project that says nothing about its data says. */
-    private const NO_DATA = ['from' => null, 'bring' => [], 'addresses' => []];
+    private const NOTHING_SAID = [
+        'links' => ['review' => null, 'issue' => null, 'commit' => null],
+        'data' => ['from' => null, 'bring' => null, 'addresses' => null],
+        'copy' => ['only' => null, 'except' => null],
+    ];
 
     /**
-     * @param array<string, array{before: list<RecipeCommand>, run: ?list<RecipeCommand>, after: list<RecipeCommand>}> $moments
+     * The three mappings are held as they are written, key by key, because that is
+     * how they are laid over one another: a project that only says where its issues
+     * are tracked keeps the review address of what it is built on.
+     *
      * @param array{review: ?string, issue: ?string, commit: ?string}                                                  $links
+     * @param array{from: ?string, bring: ?list<string>, addresses: ?list<string>}                                     $data
+     * @param array{only: ?list<string>, except: ?list<string>}                                                        $copy
+     * @param array<string, array{before: list<RecipeCommand>, run: ?list<RecipeCommand>, after: list<RecipeCommand>}> $moments
      */
     private function __construct(
         /**
@@ -59,48 +79,22 @@ final readonly class Recipe
          */
         public ?string $profile,
         public ?string $docroot,
-        public ?string $php,
-        /**
-         * Where the version is written down in the checkout, for a project whose
-         * branches do not all want the same one.
-         *
-         * @var ?array{read: string, match: string}
-         */
-        public ?array $phpRead,
+        public ?Version $php,
         /**
          * Nothing is served with it -- node is a build tool here -- so this is
          * what `npm` in a recipe line runs under, and no more.
          */
-        public ?string $node,
-        /**
-         * Where that version is written down, for a project that keeps it
-         * somewhere `.nvmrc` is not.
-         *
-         * @var ?array{read: string, match: string}
-         */
-        public ?array $nodeRead,
+        public ?Version $node,
         public ?string $backend,
         /** Where the project's own binaries are -- composer's bin-dir. */
         public ?string $bin,
         public array $links,
-        /**
-         * @var array{from: ?string, bring: list<string>, addresses: list<string>}
-         */
         public array $data,
         /**
-         * Instead of everything git ignores. Null where the project did not
-         * say, which is the ordinary answer: whatever is not in the repository
-         * is what a fork needs in order to run without a build.
-         *
-         * @var ?list<string>
+         * "only" is what travels instead of everything git ignores; "except" is
+         * what is taken out of whichever of the two travels.
          */
-        public ?array $carry,
-        /**
-         * On top of what never does.
-         *
-         * @var list<string>
-         */
-        public array $carryExcept,
+        public array $copy,
         private array $moments,
     ) {
     }
@@ -108,7 +102,18 @@ final readonly class Recipe
     /** A project that says nothing: a worktree is a checkout and no more. */
     public static function none(): self
     {
-        return new self(null, null, null, null, null, null, null, null, ['review' => null, 'issue' => null, 'commit' => null], self::NO_DATA, null, [], []);
+        return new self(
+            profile: null,
+            docroot: null,
+            php: null,
+            node: null,
+            backend: null,
+            bin: null,
+            links: self::NOTHING_SAID['links'],
+            data: self::NOTHING_SAID['data'],
+            copy: self::NOTHING_SAID['copy'],
+            moments: [],
+        );
     }
 
     /** Out of a file that is not on disk here -- a branch's own. */
@@ -147,7 +152,7 @@ final readonly class Recipe
     /** @param array<mixed> $data */
     public static function fromArray(array $data): self
     {
-        $known = [...self::SETTINGS, 'links', 'carry', 'data', ...self::MOMENTS];
+        $known = [...self::SETTINGS, 'links', 'copy', 'data', ...self::MOMENTS];
         foreach (array_keys($data) as $key) {
             if (!in_array($key, $known, true)) {
                 throw new \RuntimeException(sprintf('%s: "%s" is not something this understands. It knows %s.', self::FILE, (string) $key, implode(', ', $known)));
@@ -161,243 +166,75 @@ final readonly class Recipe
             }
         }
 
-        $carry = self::readCarry($data['carry'] ?? null);
-        $php = self::readVersion($data['php'] ?? null, 'php');
-        $node = self::readVersion($data['node'] ?? null, 'node');
-
         return new self(
-            self::readSetting($data, 'profile'),
-            self::readDocroot($data),
-            $php['version'],
-            $php['read'],
-            $node['version'],
-            $node['read'],
-            self::readSetting($data, 'backend'),
-            self::readSetting($data, 'bin'),
-            self::readLinks($data['links'] ?? null),
-            self::readData($data['data'] ?? null),
-            $carry['only'],
-            $carry['except'],
-            $moments,
+            profile: self::readSetting($data, 'profile'),
+            docroot: self::readDocroot($data),
+            php: self::readVersion($data['php'] ?? null, 'php'),
+            node: self::readVersion($data['node'] ?? null, 'node'),
+            backend: self::readSetting($data, 'backend'),
+            bin: self::readSetting($data, 'bin'),
+            links: self::readLinks($data['links'] ?? null),
+            data: self::readData($data['data'] ?? null),
+            copy: self::readCopy($data['copy'] ?? null),
+            moments: $moments,
         );
     }
 
+    /**
+     * This file over the one it is built on. The whole of the arrangement, so
+     * that a key added to the constructor is a key added here and nowhere else.
+     *
+     * A setting stands whole where it was said and is the base's where it was
+     * not. A mapping is laid key by key, because its keys are said one at a time.
+     * A moment is the base's work with what this file put around it, or this
+     * file's alone where it wrote a list.
+     */
+    public function over(self $base): self
+    {
+        return new self(
+            profile: $this->profile ?? $base->profile,
+            docroot: $this->docroot ?? $base->docroot,
+            php: $this->php ?? $base->php,
+            node: $this->node ?? $base->node,
+            backend: $this->backend ?? $base->backend,
+            bin: $this->bin ?? $base->bin,
+            links: [
+                'review' => $this->links['review'] ?? $base->links['review'],
+                'issue' => $this->links['issue'] ?? $base->links['issue'],
+                'commit' => $this->links['commit'] ?? $base->links['commit'],
+            ],
+            data: [
+                'from' => $this->data['from'] ?? $base->data['from'],
+                'bring' => $this->data['bring'] ?? $base->data['bring'],
+                'addresses' => $this->data['addresses'] ?? $base->data['addresses'],
+            ],
+            copy: [
+                'only' => $this->copy['only'] ?? $base->copy['only'],
+                'except' => $this->copy['except'] ?? $base->copy['except'],
+            ],
+            moments: $this->momentsOver($base),
+        );
+    }
+
+    /** Nothing was said at all -- not a setting, not a mapping, not a moment. */
     public function isEmpty(): bool
     {
-        return $this->moments === []
-            && $this->profile === null
-            && $this->docroot === null
-            && $this->php === null
-            && $this->phpRead === null
-            && $this->node === null
-            && $this->nodeRead === null
-            && $this->backend === null
-            && $this->bin === null
-            && $this->carry === null
-            && $this->carryExcept === []
-            && $this->data === self::NO_DATA
-            && $this->links === ['review' => null, 'issue' => null, 'commit' => null];
+        return $this->said() === [];
     }
 
     /**
-     * The one written here, or where in the checkout it is written down. The second
-     * form is what a repository whose branches build against their own versions
-     * needs -- the TYPO3 core says its PHP in the test runner and its Node in
-     * `Build/.nvmrc`.
+     * The lines of a moment as they will run. A recipe laid over another has no
+     * gaps left in it; one standing on its own drops the slot where what it is
+     * built on would have done its work, which is what a shipped file alone means.
      *
-     * @return array{version: ?string, read: ?array{read: string, match: string}}
+     * @return list<RecipeCommand>
      */
-    private static function readVersion(mixed $value, string $key): array
+    public function lines(string $moment): array
     {
-        if ($value === null) {
-            return ['version' => null, 'read' => null];
-        }
-        // A version written without quotes arrives as a number, and 8.30 is not
-        // what anybody meant to write -- but 8.3 is, so it is taken.
-        if (is_string($value) || is_int($value) || is_float($value)) {
-            $version = trim((string) $value);
-            if ($version === '') {
-                throw new \RuntimeException(sprintf('%s: "%s" has to be a value, and not an empty one.', self::FILE, $key));
-            }
-
-            return ['version' => $version, 'read' => null];
-        }
-        if (!is_array($value) || array_is_list($value)) {
-            throw new \RuntimeException(sprintf('%s: "%s" is a version, or "read" and "match" saying where in the checkout it stands.', self::FILE, $key));
-        }
-        foreach (array_keys($value) as $under) {
-            if (!in_array($under, ['read', 'match'], true)) {
-                throw new \RuntimeException(sprintf('%s: "%s" under "%s" is not "read" or "match".', self::FILE, (string) $under, $key));
-            }
-        }
-        foreach (['read', 'match'] as $needed) {
-            if (!isset($value[$needed]) || !is_string($value[$needed]) || trim($value[$needed]) === '') {
-                throw new \RuntimeException(sprintf('%s: "%s.%s" has to be a value, and not an empty one.', self::FILE, $key, $needed));
-            }
-        }
-        if (@preg_match(self::patternOf(trim($value['match'])), '') === false) {
-            // Said now: a pattern that cannot be read would otherwise be a version
-            // nobody finds, in an operation that reports success.
-            throw new \RuntimeException(sprintf('%s: "%s.match" is not a pattern this can read.', self::FILE, $key));
-        }
-
-        return ['version' => null, 'read' => ['read' => trim($value['read']), 'match' => trim($value['match'])]];
-    }
-
-    /**
-     * The first group where the pattern has one, the whole match where it has not.
-     * Null where the pattern matches nothing.
-     */
-    public static function versionIn(string $contents, string $match): ?string
-    {
-        return preg_match(self::patternOf($match), $contents, $hit) === 1 ? ($hit[1] ?? $hit[0]) : null;
-    }
-
-    /** The pattern as written, made into one preg reads -- slashes and all. */
-    private static function patternOf(string $match): string
-    {
-        return '/' . str_replace('/', '\\/', $match) . '/';
-    }
-
-    /**
-     * A database on its own is not readable: a site points at its root page by uid,
-     * and the application reading those uids has to be installed at all -- which is
-     * a settings file, not a schema. Both are paths in the checkout, so the project
-     * names them rather than Branchery knowing them.
-     *
-     * @return array{from: ?string, bring: list<string>, addresses: list<string>}
-     */
-    private static function readData(mixed $value): array
-    {
-        if ($value === null) {
-            return self::NO_DATA;
-        }
-        if (!is_array($value) || array_is_list($value)) {
-            throw new \RuntimeException(sprintf('%s: "data" has to be a mapping of from, bring and addresses.', self::FILE));
-        }
-
-        $from = null;
-        $paths = ['bring' => [], 'addresses' => []];
-        foreach ($value as $key => $said) {
-            switch ($key) {
-                case 'from':
-                    if (!is_string($said) || !in_array($said, self::SOURCES, true)) {
-                        throw new \RuntimeException(sprintf('%s: "data.from" is %s.', self::FILE, implode(' or ', self::SOURCES)));
-                    }
-                    $from = $said;
-                    break;
-                case 'bring':
-                case 'addresses':
-                    if (!is_array($said) || !array_is_list($said)) {
-                        throw new \RuntimeException(sprintf('%s: "data.%s" has to be a list of paths.', self::FILE, (string) $key));
-                    }
-                    $paths[$key] = self::readPaths($said, 'data.' . (string) $key);
-                    break;
-                default:
-                    throw new \RuntimeException(sprintf('%s: "%s" under "data" is not one of from, bring, addresses.', self::FILE, (string) $key));
-            }
-        }
-
-        return ['from' => $from, 'bring' => $paths['bring'], 'addresses' => $paths['addresses']];
-    }
-
-    /**
-     * Written as the whole address with "{change}" or "{issue}" where the number
-     * goes, rather than as a host to append to: every tracker puts it somewhere
-     * else, and a project that says it in full never has to be taught about.
-     *
-     * @return array{review: ?string, issue: ?string, commit: ?string}
-     */
-    private static function readLinks(mixed $value): array
-    {
-        $links = ['review' => null, 'issue' => null, 'commit' => null];
-        if ($value === null) {
-            return $links;
-        }
-        if (!is_array($value)) {
-            throw new \RuntimeException(sprintf('%s: "links" has to be a mapping of %s.', self::FILE, implode(' and ', self::LINKS)));
-        }
-
-        foreach ($value as $kind => $address) {
-            if (!in_array($kind, self::LINKS, true)) {
-                throw new \RuntimeException(sprintf('%s: "%s" under "links" is not one of %s.', self::FILE, (string) $kind, implode(', ', self::LINKS)));
-            }
-            if (!is_string($address) || trim($address) === '') {
-                throw new \RuntimeException(sprintf('%s: "links.%s" has to be an address.', self::FILE, (string) $kind));
-            }
-            $placeholder = self::PLACEHOLDERS[$kind];
-            if (!str_contains($address, $placeholder)) {
-                // Said now rather than as a link to the front page of a tracker: the
-                // number is the whole point of the address.
-                throw new \RuntimeException(sprintf('%s: "links.%s" has to say where the number goes, with %s in it.', self::FILE, (string) $kind, $placeholder));
-            }
-            $links[$kind] = trim($address);
-        }
-
-        return $links;
-    }
-
-    /**
-     * A fork carries over what git ignores, which is what makes it run without a
-     * build -- and also how a cache built for other code gets carried into a
-     * checkout it is wrong for. A list is what travels; a mapping amends what
-     * would have travelled.
-     *
-     * @return array{only: ?list<string>, except: list<string>}
-     */
-    private static function readCarry(mixed $value): array
-    {
-        if ($value === null) {
-            return ['only' => null, 'except' => []];
-        }
-        if (is_array($value) && array_is_list($value)) {
-            return ['only' => self::readPaths($value, 'carry'), 'except' => []];
-        }
-        if (!is_array($value)) {
-            throw new \RuntimeException(sprintf('%s: "carry" has to be a list of what travels, or "except" with a list of what does not.', self::FILE));
-        }
-
-        foreach (array_keys($value) as $key) {
-            if ($key !== 'except') {
-                throw new \RuntimeException(sprintf('%s: "%s" under "carry" is not "except".', self::FILE, (string) $key));
-            }
-        }
-        if (!is_array($value['except']) || !array_is_list($value['except'])) {
-            throw new \RuntimeException(sprintf('%s: "carry.except" has to be a list of what does not travel.', self::FILE));
-        }
-
-        return ['only' => null, 'except' => self::readPaths($value['except'], 'carry.except')];
-    }
-
-    /**
-     * Relative to the checkout, and none of them ours.
-     *
-     * @param list<mixed> $paths
-     *
-     * @return list<string>
-     */
-    private static function readPaths(array $paths, string $where): array
-    {
-        $read = [];
-        foreach ($paths as $path) {
-            if (!is_string($path) || trim($path) === '') {
-                throw new \RuntimeException(sprintf('%s: "%s" holds an entry with nothing in it.', self::FILE, $where));
-            }
-            $path = trim(trim($path), '/');
-            if ($path === '' || in_array('..', explode('/', $path), true)) {
-                throw new \RuntimeException(sprintf('%s: "%s" is a path inside the checkout, and "%s" leads out of it.', self::FILE, $where, $path));
-            }
-            foreach (self::NEVER as $ours) {
-                if ($path === $ours || str_starts_with($path, $ours . '/')) {
-                    // Said rather than dropped: a project that wrote this expects it to
-                    // happen, and it never will.
-                    throw new \RuntimeException(sprintf('%s: "%s" under "%s" is the project\'s own and never travels into a worktree.', self::FILE, $path, $where));
-                }
-            }
-            $read[] = $path;
-        }
-
-        return $read;
+        return array_values(array_filter(
+            $this->plan($moment),
+            static fn (?RecipeCommand $command): bool => $command !== null,
+        ));
     }
 
     /** Whether the profile's own work at that moment is replaced. */
@@ -437,6 +274,275 @@ final readonly class Recipe
         }
 
         return $plan;
+    }
+
+    /**
+     * The first group where the pattern has one, the whole match where it has not.
+     * Null where the pattern matches nothing.
+     */
+    public static function versionIn(string $contents, string $match): ?string
+    {
+        return preg_match(self::patternOf($match), $contents, $hit) === 1 ? ($hit[1] ?? $hit[0]) : null;
+    }
+
+    /**
+     * Every key this file wrote, by name. The one rule read off in one place: a
+     * mapping that said nothing under any of its keys said nothing.
+     *
+     * @return array<string, mixed>
+     */
+    private function said(): array
+    {
+        $said = [
+            'profile' => $this->profile,
+            'docroot' => $this->docroot,
+            'php' => $this->php,
+            'node' => $this->node,
+            'backend' => $this->backend,
+            'bin' => $this->bin,
+            'links' => self::spoken($this->links),
+            'data' => self::spoken($this->data),
+            'copy' => self::spoken($this->copy),
+            'moments' => $this->moments === [] ? null : $this->moments,
+        ];
+
+        return array_filter($said, static fn (mixed $value): bool => $value !== null);
+    }
+
+    /**
+     * @param array<string, mixed> $mapping
+     *
+     * @return ?array<string, mixed>
+     */
+    private static function spoken(array $mapping): ?array
+    {
+        $said = array_filter($mapping, static fn (mixed $value): bool => $value !== null);
+
+        return $said === [] ? null : $said;
+    }
+
+    /**
+     * With the inherited slot filled in. A moment this file wrote about is kept
+     * even where nothing is left to run: "finish: []" is how a project switches one
+     * off, and dropping it would read as a project that never mentioned it.
+     *
+     * @return array<string, array{before: list<RecipeCommand>, run: ?list<RecipeCommand>, after: list<RecipeCommand>}>
+     */
+    private function momentsOver(self $base): array
+    {
+        $moments = [];
+        foreach (self::MOMENTS as $moment) {
+            $lines = [];
+            foreach ($this->plan($moment) as $command) {
+                if ($command !== null) {
+                    $lines[] = $command;
+
+                    continue;
+                }
+                $lines = [...$lines, ...$base->lines($moment)];
+            }
+            if ($lines !== [] || $this->speaksOf($moment) || $base->speaksOf($moment)) {
+                $moments[$moment] = ['before' => [], 'run' => $lines, 'after' => []];
+            }
+        }
+
+        return $moments;
+    }
+
+    private function speaksOf(string $moment): bool
+    {
+        return array_key_exists($moment, $this->moments);
+    }
+
+    /**
+     * The one written here, or where in the checkout it is written down. The second
+     * form is what a repository whose branches build against their own versions
+     * needs -- the TYPO3 core says its PHP in the test runner and its Node in
+     * `Build/.nvmrc`.
+     */
+    private static function readVersion(mixed $value, string $key): ?Version
+    {
+        if ($value === null) {
+            return null;
+        }
+        // A version written without quotes arrives as a number, and 8.30 is not
+        // what anybody meant to write -- but 8.3 is, so it is taken.
+        if (is_string($value) || is_int($value) || is_float($value)) {
+            $version = trim((string) $value);
+            if ($version === '') {
+                throw new \RuntimeException(sprintf('%s: "%s" has to be a value, and not an empty one.', self::FILE, $key));
+            }
+
+            return Version::of($version);
+        }
+        if (!is_array($value) || array_is_list($value)) {
+            throw new \RuntimeException(sprintf('%s: "%s" is a version, or "read" and "match" saying where in the checkout it stands.', self::FILE, $key));
+        }
+        foreach (array_keys($value) as $under) {
+            if (!in_array($under, ['read', 'match'], true)) {
+                throw new \RuntimeException(sprintf('%s: "%s" under "%s" is not "read" or "match".', self::FILE, (string) $under, $key));
+            }
+        }
+        foreach (['read', 'match'] as $needed) {
+            if (!isset($value[$needed]) || !is_string($value[$needed]) || trim($value[$needed]) === '') {
+                throw new \RuntimeException(sprintf('%s: "%s.%s" has to be a value, and not an empty one.', self::FILE, $key, $needed));
+            }
+        }
+        if (@preg_match(self::patternOf(trim($value['match'])), '') === false) {
+            // Said now: a pattern that cannot be read would otherwise be a version
+            // nobody finds, in an operation that reports success.
+            throw new \RuntimeException(sprintf('%s: "%s.match" is not a pattern this can read.', self::FILE, $key));
+        }
+
+        return Version::readFrom(trim($value['read']), trim($value['match']));
+    }
+
+    /** The pattern as written, made into one preg reads -- slashes and all. */
+    private static function patternOf(string $match): string
+    {
+        return '/' . str_replace('/', '\\/', $match) . '/';
+    }
+
+    /**
+     * A database on its own is not readable: a site points at its root page by uid,
+     * and the application reading those uids has to be installed at all -- which is
+     * a settings file, not a schema. Both are paths in the checkout, so the project
+     * names them rather than Branchery knowing them.
+     *
+     * @return array{from: ?string, bring: ?list<string>, addresses: ?list<string>}
+     */
+    private static function readData(mixed $value): array
+    {
+        if ($value === null) {
+            return self::NOTHING_SAID['data'];
+        }
+        if (!is_array($value) || array_is_list($value)) {
+            throw new \RuntimeException(sprintf('%s: "data" has to be a mapping of from, bring and addresses.', self::FILE));
+        }
+
+        $from = null;
+        $paths = ['bring' => null, 'addresses' => null];
+        foreach ($value as $key => $said) {
+            switch ($key) {
+                case 'from':
+                    if (!is_string($said) || !in_array($said, self::SOURCES, true)) {
+                        throw new \RuntimeException(sprintf('%s: "data.from" is %s.', self::FILE, implode(' or ', self::SOURCES)));
+                    }
+                    $from = $said;
+                    break;
+                case 'bring':
+                case 'addresses':
+                    if (!is_array($said) || !array_is_list($said)) {
+                        throw new \RuntimeException(sprintf('%s: "data.%s" has to be a list of paths.', self::FILE, (string) $key));
+                    }
+                    $paths[$key] = self::readPaths($said, 'data.' . (string) $key);
+                    break;
+                default:
+                    throw new \RuntimeException(sprintf('%s: "%s" under "data" is not one of from, bring, addresses.', self::FILE, (string) $key));
+            }
+        }
+
+        return ['from' => $from, 'bring' => $paths['bring'], 'addresses' => $paths['addresses']];
+    }
+
+    /**
+     * Written as the whole address with "{change}" or "{issue}" where the number
+     * goes, rather than as a host to append to: every tracker puts it somewhere
+     * else, and a project that says it in full never has to be taught about.
+     *
+     * @return array{review: ?string, issue: ?string, commit: ?string}
+     */
+    private static function readLinks(mixed $value): array
+    {
+        $links = self::NOTHING_SAID['links'];
+        if ($value === null) {
+            return $links;
+        }
+        if (!is_array($value)) {
+            throw new \RuntimeException(sprintf('%s: "links" has to be a mapping of %s.', self::FILE, implode(' and ', self::LINKS)));
+        }
+
+        foreach ($value as $kind => $address) {
+            if (!in_array($kind, self::LINKS, true)) {
+                throw new \RuntimeException(sprintf('%s: "%s" under "links" is not one of %s.', self::FILE, (string) $kind, implode(', ', self::LINKS)));
+            }
+            if (!is_string($address) || trim($address) === '') {
+                throw new \RuntimeException(sprintf('%s: "links.%s" has to be an address.', self::FILE, (string) $kind));
+            }
+            $placeholder = self::PLACEHOLDERS[$kind];
+            if (!str_contains($address, $placeholder)) {
+                // Said now rather than as a link to the front page of a tracker: the
+                // number is the whole point of the address.
+                throw new \RuntimeException(sprintf('%s: "links.%s" has to say where the number goes, with %s in it.', self::FILE, (string) $kind, $placeholder));
+            }
+            $links[$kind] = trim($address);
+        }
+
+        return $links;
+    }
+
+    /**
+     * A fork copies over what git ignores, which is what makes it run without a
+     * build -- and also how a cache built for other code gets copied into a
+     * checkout it is wrong for. A list is what travels; a mapping amends what
+     * would have travelled, and an empty one takes back what the configuration
+     * this is built on kept out.
+     *
+     * @return array{only: ?list<string>, except: ?list<string>}
+     */
+    private static function readCopy(mixed $value): array
+    {
+        if ($value === null) {
+            return self::NOTHING_SAID['copy'];
+        }
+        if (is_array($value) && array_is_list($value)) {
+            return ['only' => self::readPaths($value, 'copy'), 'except' => null];
+        }
+        if (!is_array($value)) {
+            throw new \RuntimeException(sprintf('%s: "copy" has to be a list of what travels, or "except" with a list of what does not.', self::FILE));
+        }
+
+        foreach (array_keys($value) as $key) {
+            if ($key !== 'except') {
+                throw new \RuntimeException(sprintf('%s: "%s" under "copy" is not "except".', self::FILE, (string) $key));
+            }
+        }
+        if (!is_array($value['except']) || !array_is_list($value['except'])) {
+            throw new \RuntimeException(sprintf('%s: "copy.except" has to be a list of what does not travel.', self::FILE));
+        }
+
+        return ['only' => null, 'except' => self::readPaths($value['except'], 'copy.except')];
+    }
+
+    /**
+     * Relative to the checkout, and none of them ours.
+     *
+     * @param list<mixed> $paths
+     *
+     * @return list<string>
+     */
+    private static function readPaths(array $paths, string $where): array
+    {
+        $read = [];
+        foreach ($paths as $path) {
+            if (!is_string($path) || trim($path) === '') {
+                throw new \RuntimeException(sprintf('%s: "%s" holds an entry with nothing in it.', self::FILE, $where));
+            }
+            $path = trim(trim($path), '/');
+            if ($path === '' || in_array('..', explode('/', $path), true)) {
+                throw new \RuntimeException(sprintf('%s: "%s" is a path inside the checkout, and "%s" leads out of it.', self::FILE, $where, $path));
+            }
+            foreach (self::NEVER as $ours) {
+                if ($path === $ours || str_starts_with($path, $ours . '/')) {
+                    // Said rather than dropped: a project that wrote this expects it to
+                    // happen, and it never will.
+                    throw new \RuntimeException(sprintf('%s: "%s" under "%s" is the project\'s own and never travels into a worktree.', self::FILE, $path, $where));
+                }
+            }
+            $read[] = $path;
+        }
+
+        return $read;
     }
 
     /** @return array{before: list<RecipeCommand>, run: ?list<RecipeCommand>, after: list<RecipeCommand>} */

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\Config;
+namespace App\Tests\Worktree;
 
 use App\CommandResult;
-use App\Config\Place;
+use App\Worktree\Place;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

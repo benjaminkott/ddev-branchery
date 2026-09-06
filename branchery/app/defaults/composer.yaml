@@ -6,7 +6,10 @@
 
 docroot: public
 
-carry:
+# A fork copies over everything git ignores -- vendor, .env, uploads -- which
+# is what makes it run without a build. Not these: what a run left behind was
+# left behind for the code it ran on.
+copy:
   except:
     - var
     - .vscode

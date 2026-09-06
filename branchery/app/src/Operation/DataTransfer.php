@@ -11,6 +11,7 @@ use App\Project;
 use App\Text;
 use App\Web\Databases;
 use App\Web\DatabaseServer;
+use App\Worktree\Places;
 use App\Worktree\Surroundings;
 use App\Worktree\Worktrees;
 
@@ -63,10 +64,10 @@ final readonly class DataTransfer
         // The data was written by another state of the code, and half of it would
         // be read against a shape it does not have.
         $reporter->step('Fitting the data to this code');
-        $build->at('migrate', $place, $reporter);
+        $place->at($build, 'migrate', $reporter);
 
-        $reporter->step('Flushing caches');
-        $build->at('flush', $place, $reporter);
+        $reporter->step('Finishing up');
+        $place->at($build, 'finish', $reporter);
         $reporter->finish();
     }
 

@@ -33,11 +33,11 @@ final class RecipesTest extends TestCase
               from: source
               bring: [config/sites]
               addresses: [config/sites]
-            carry:
+            copy:
               except: [var]
             install:
               - composer install
-            flush:
+            finish:
               - console cache:clear
             YAML);
     }
@@ -69,7 +69,7 @@ final class RecipesTest extends TestCase
         self::assertSame('public', $build->docroot());
         self::assertTrue($build->does('install'));
         self::assertSame(['from' => 'source', 'bring' => ['config/sites'], 'addresses' => ['config/sites']], $build->data());
-        self::assertSame(['var'], $build->carryExcept());
+        self::assertSame(['var'], $build->copyExcept());
     }
 
     /** The one line most projects write: the shipped one, with a change. */
@@ -81,7 +81,7 @@ final class RecipesTest extends TestCase
             install:
               after:
                 - npm ci
-            flush: []
+            finish: []
             YAML);
         $build = $this->recipes()->for($this->project);
 
@@ -90,7 +90,7 @@ final class RecipesTest extends TestCase
         self::assertTrue($build->does('install'));
         // A moment written as an empty list is a moment that does nothing --
         // which is how a project takes something away.
-        self::assertFalse($build->does('flush'));
+        self::assertFalse($build->does('finish'));
     }
 
     /**

@@ -39,7 +39,7 @@ final class GraphTest extends TestCase
         $names = [
             'project', 'web', 'files', 'gitRunner', 'gitFacts', 'git', 'ssh', 'runtimes', 'php', 'node',
             'docs', 'databaseServer', 'databases', 'worktrees', 'usage', 'installation', 'ports',
-            'exposure', 'locks', 'surroundings', 'describe', 'recipes', 'jobs', 'places', 'carried',
+            'exposure', 'locks', 'surroundings', 'describe', 'recipes', 'jobs', 'places', 'copied',
             'checks', 'provisioning', 'removal', 'branchMoves', 'dataTransfer', 'manager', 'state',
             'operations', 'commitPages', 'api', 'router', 'snapshot',
         ];

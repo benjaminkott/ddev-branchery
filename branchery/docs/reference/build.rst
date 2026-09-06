@@ -67,8 +67,8 @@ Checks out a branch that exists locally or on a remote, and builds it.
     source database is never written to. :doc:`/use-branchery/databases` follows all three
     paths.
 
-#.  **Finishing up.** Caches are flushed (**config**) and the ``ddev describe``
-    block is rewritten.
+#.  **Finishing up.** **finish** (**config**) runs -- where a cache flush
+    stands -- and the ``ddev describe`` block is rewritten.
 
 A branch that is already in the repository is checked out as it stands and is
 never moved onto its remote; one that is behind stays behind, and the list says
@@ -101,7 +101,7 @@ another worktree, and builds it.
     except what a run leaves behind: ``var``, ``typo3temp``, ``.vscode``,
     ``.idea``, and always ``.git``, ``.ddev`` and the worktrees themselves. The
     log says how many entries travelled; ``-v`` names each. A project changes
-    the list under ``carry``; see :ref:`carried-files`.
+    the list under ``copy``; see :ref:`copied-files`.
 
 #.  **Building the worktree.** The build phases of ``add``: reading how this
     is built, choosing the versions, installing dependencies, writing the
@@ -153,8 +153,8 @@ config
 
 Writes the generated configuration again without rebuilding dependencies or
 replacing data: the project's ``configure`` moment, the docroot link, the site
-addresses and the editor files, then the caches are flushed and the
-``ddev describe`` section is updated. Without a name it refreshes every
+addresses and the editor files, then the ``finish`` moment and the
+``ddev describe`` section. Without a name it refreshes every
 worktree. Use it after a change to the configuration that needs neither
 dependencies nor a migration; provision the worktree when its build inputs
 changed.
@@ -167,7 +167,7 @@ php
 ``ddev branchery worktree:php <name> [<version>]``
 
 Shows the assigned version, or changes it: the new version's PHP-FPM pool is
-assigned, the web-server configuration updated and the caches flushed. A
+assigned, the web-server configuration updated and ``finish`` run. A
 version below the requirement Composer recorded is refused, because every
 request would fail. :ref:`php-and-node-versions` says how a branch chooses its
 version to begin with.

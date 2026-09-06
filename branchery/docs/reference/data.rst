@@ -78,7 +78,7 @@ says its own once, where DDEV keeps the environment of the web container:
 That is the whole of the setup. Every worktree is then right at its own address
 without a file being touched, and ``git status`` in a fresh worktree is empty.
 The placeholder is resolved when the configuration is read and cached with it --
-which is no trouble here, because every operation ends by flushing the caches.
+which is no trouble here, because every operation ends with ``finish``.
 
 **A step of the project's own.** Where neither fits — a base that is stored
 somewhere else, a second site that has to be renamed, an address in a fixture --

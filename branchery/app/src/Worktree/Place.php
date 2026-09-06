@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\Config;
+namespace App\Worktree;
 
 use App\CommandResult;
+use App\Config\Build;
+use App\Jobs\StepReporter;
 use App\ManagedFiles;
 use App\Web\DatabaseServer;
 use App\Web\WebContainer;
@@ -94,6 +96,39 @@ final readonly class Place
     public static function hostOf(string $url): string
     {
         return (string) (parse_url($url, PHP_URL_HOST) ?: '');
+    }
+
+    /**
+     * What the build says happens at this moment, run here. The build says which
+     * lines those are and this is where they happen, because a line is a process
+     * in a container and a recipe is a file that has been read.
+     *
+     * A line that fails stops the operation: it is in the file because the worktree
+     * is not finished without it. Unless it says "optional: true" -- worth having
+     * and not worth the build, as an asset toolchain is for a branch whose work is
+     * PHP -- and the operation then ends in a warning rather than a tick.
+     *
+     * Without a reporter where the caller reports nothing at all: those moments are
+     * not a build and have no log.
+     */
+    public function at(Build $build, string $moment, ?StepReporter $reporter = null): void
+    {
+        foreach ($build->lines($moment) as $command) {
+            try {
+                if ($command->kind === 'composer') {
+                    $this->composer(...$command->arguments());
+                } else {
+                    $this->shell($command->line);
+                }
+            } catch (\RuntimeException $failure) {
+                if (!$command->optional) {
+                    throw $failure;
+                }
+                // The message names the line already, both for composer and for a shell
+                // line -- see failed() below.
+                $reporter?->warn(sprintf('The recipe calls this line optional, and the build went on without it. %s', $failure->getMessage()));
+            }
+        }
     }
 
     /**

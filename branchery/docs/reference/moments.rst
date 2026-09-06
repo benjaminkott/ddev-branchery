@@ -23,7 +23,7 @@ Lifecycle moments
     ``configure`` the same, and on every ``worktree:config``
     ``setup``     a worktree with no data to inherit: the application is installed
     ``migrate``   data was copied in — ``add``, ``fork``, ``sync`` — or a rebuilt worktree has its own
-    ``flush``     at the end of all of them, and after a PHP switch
+    ``finish``    the last step of every one of them, and of a version switch
     ============= =====================================================================================
 
 A line is a command, or a task written the way DDEV writes a hook task:
@@ -48,7 +48,7 @@ or ``false``; anything else is refused. The shipped ``typo3-core`` marks its
 ``npm ci`` this way, because a branch whose lock file predates the container's
 npm cannot install it and is still usable for work on PHP.
 
-A moment written as an empty list (``flush: []``) is a moment that does nothing,
+A moment written as an empty list (``finish: []``) is a moment that does nothing,
 which is how a project takes something away that the shipped configuration does.
 
 ..  _configuration-environment:

@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\Config;
+namespace App\Tests\Worktree;
 
-use App\Config\Place;
 use App\ManagedFiles;
 use App\Tests\Fake\RecordingContainer;
 use App\Web\DatabaseServer;
+use App\Worktree\Place;
 use PHPUnit\Framework\TestCase;
 
 /**

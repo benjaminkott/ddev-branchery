@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Operation;
 
 use App\Config\Build;
-use App\Config\Place;
 use App\Config\Recipe;
 use App\Config\Recipes;
 use App\Git\Git;
@@ -16,6 +15,8 @@ use App\Web\DatabaseServer;
 use App\Worktree\Description;
 use App\Worktree\NodeVersions;
 use App\Worktree\PhpVersions;
+use App\Worktree\Place;
+use App\Worktree\Places;
 use App\Worktree\Surroundings;
 use App\Worktree\Worktrees;
 
@@ -92,10 +93,10 @@ final readonly class Provisioning
         $place = $this->places->of($name, $branch);
 
         $reporter->step('Installing dependencies');
-        $build->at('install', $place, $reporter);
+        $place->at($build, 'install', $reporter);
 
         $reporter->step('Writing the configuration');
-        $build->at('configure', $place, $reporter);
+        $place->at($build, 'configure', $reporter);
         $this->surroundings->writeEditorConfiguration($name, $place->url);
 
         $reporter->step(sprintf('Preparing the database (%s)', $place->databaseName));
@@ -137,13 +138,13 @@ final readonly class Provisioning
             // rather than installed over -- which the application refuses anyway,
             // making "build this again" an offer only an empty worktree could take up.
             $reporter->note('The database already holds an installation; fitting it to this code.');
-            $build->at('migrate', $place, $reporter);
+            $place->at($build, 'migrate', $reporter);
         } else {
-            $build->at('setup', $place, $reporter);
+            $place->at($build, 'setup', $reporter);
         }
 
         $reporter->step('Finishing up');
-        $build->at('flush', $place, $reporter);
+        $place->at($build, 'finish', $reporter);
         $this->reportEmptyDocroot($directory, $docroot, $reporter);
         // The commit this was built for: a checkout that has moved on since has
         // dependencies and a schema made for other code.
@@ -166,7 +167,7 @@ final readonly class Provisioning
 
         $place = $this->places->of($name, $branch);
         $this->git->repairPaths($name);
-        $build->at('configure', $place);
+        $place->at($build, 'configure');
         // Generated configuration like any other: they carry the address and the
         // path the debugger maps, and both can have moved.
         $this->surroundings->writeEditorConfiguration($name, $place->url);
@@ -176,7 +177,7 @@ final readonly class Provisioning
         $this->worktrees->store($name, ['docroot' => $docroot]);
         $this->surroundings->linkDocroot($name, $docroot);
         $this->surroundings->retargetSites($name, $place->url, $build->data()['addresses']);
-        $build->at('flush', $place);
+        $place->at($build, 'finish');
         $this->describe->refresh();
     }
 
@@ -200,8 +201,8 @@ final readonly class Provisioning
         $this->worktrees->store($name, ['php' => $version]);
 
         // Compiled caches can hold traces of the version it ran on before.
-        $this->recipes->quietly($this->project->worktreeDirectory($name))
-            ->at('flush', $this->places->of($name, $worktree->branch));
+        $this->places->of($name, $worktree->branch)
+            ->at($this->recipes->quietly($this->project->worktreeDirectory($name)), 'finish');
         $this->describe->refresh();
     }
 
@@ -220,7 +221,7 @@ final readonly class Provisioning
         }
 
         try {
-            $build->at('migrate', $place, $reporter);
+            $place->at($build, 'migrate', $reporter);
         } catch (\RuntimeException) {
             // Said and not quoted: what failed wrote its own account into the log a
             // moment ago, and repeating it makes two walls of text.
@@ -228,7 +229,7 @@ final readonly class Provisioning
             $reporter->note('Installing the application instead; the copied data is dropped.');
             $this->databases->drop($place->databaseName);
             $this->databases->create($place->databaseName);
-            $build->at('setup', $place, $reporter);
+            $place->at($build, 'setup', $reporter);
         }
     }
 

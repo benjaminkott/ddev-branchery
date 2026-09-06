@@ -47,7 +47,7 @@ final class RecipeTest extends TestCase
     /** "run" with nothing in it is a moment the project has switched off. */
     public function testAMomentSetToNothingDoesNothing(): void
     {
-        self::assertSame([], Recipe::fromArray(['flush' => []])->plan('flush'));
+        self::assertSame([], Recipe::fromArray(['finish' => []])->plan('finish'));
     }
 
     public function testAProjectThatSaysNothingChangesNothing(): void
@@ -84,8 +84,8 @@ final class RecipeTest extends TestCase
     /** A version written without quotes is a number in YAML, and 8.3 is meant. */
     public function testAVersionThatArrivesAsANumberIsStillAVersion(): void
     {
-        self::assertSame('8.3', Recipe::fromArray(['php' => 8.3])->php);
-        self::assertSame('8', Recipe::fromArray(['php' => 8])->php);
+        self::assertSame('8.3', Recipe::fromArray(['php' => 8.3])->php?->number);
+        self::assertSame('8', Recipe::fromArray(['php' => 8])->php?->number);
     }
 
     /**
@@ -94,13 +94,13 @@ final class RecipeTest extends TestCase
      */
     public function testTheNodeVersionIsAVersionOrWhereItStands(): void
     {
-        self::assertSame('22', Recipe::fromArray(['node' => 22])->node);
-        self::assertSame('20.11.1', Recipe::fromArray(['node' => '20.11.1'])->node);
+        self::assertSame('22', Recipe::fromArray(['node' => 22])->node?->number);
+        self::assertSame('20.11.1', Recipe::fromArray(['node' => '20.11.1'])->node?->number);
 
         $pointed = Recipe::fromArray(['node' => ['read' => 'Build/.nvmrc', 'match' => 'v?(\d+)']]);
 
-        self::assertNull($pointed->node);
-        self::assertSame(['read' => 'Build/.nvmrc', 'match' => 'v?(\d+)'], $pointed->nodeRead);
+        self::assertNull($pointed->node?->number);
+        self::assertSame(['read' => 'Build/.nvmrc', 'match' => 'v?(\d+)'], $pointed->node?->where());
         self::assertFalse($pointed->isEmpty());
     }
 
@@ -136,14 +136,14 @@ final class RecipeTest extends TestCase
     {
         foreach (['../config', '..', 'config/../../x', 'config/sites/..'] as $path) {
             try {
-                Recipe::fromArray(['carry' => ['except' => [$path]]]);
+                Recipe::fromArray(['copy' => ['except' => [$path]]]);
                 self::fail(sprintf('"%s" was taken for a path inside the checkout.', $path));
             } catch (\RuntimeException $refusal) {
                 self::assertStringContainsString('leads out of it', $refusal->getMessage(), $path);
             }
         }
 
-        self::assertSame(['config/sites'], Recipe::fromArray(['carry' => ['except' => ['config/sites/']]])->carryExcept);
+        self::assertSame(['config/sites'], Recipe::fromArray(['copy' => ['except' => ['config/sites/']]])->copy['except']);
     }
 
     /**
@@ -399,18 +399,18 @@ final class RecipeTest extends TestCase
      */
     public function testAListIsWhatTravels(): void
     {
-        $recipe = Recipe::fromArray(['carry' => ['.build', 'config/']]);
+        $recipe = Recipe::fromArray(['copy' => ['.build', 'config/']]);
 
-        self::assertSame(['.build', 'config'], $recipe->carry);
-        self::assertSame([], $recipe->carryExcept);
+        self::assertSame(['.build', 'config'], $recipe->copy['only']);
+        self::assertNull($recipe->copy['except']);
     }
 
     public function testWhatIsExceptedLeavesTheRestTravelling(): void
     {
-        $recipe = Recipe::fromArray(['carry' => ['except' => ['node_modules']]]);
+        $recipe = Recipe::fromArray(['copy' => ['except' => ['node_modules']]]);
 
-        self::assertNull($recipe->carry);
-        self::assertSame(['node_modules'], $recipe->carryExcept);
+        self::assertNull($recipe->copy['only']);
+        self::assertSame(['node_modules'], $recipe->copy['except']);
     }
 
     /** A project that says nothing about it carries what it always carried. */
@@ -418,16 +418,29 @@ final class RecipeTest extends TestCase
     {
         $recipe = Recipe::fromArray(['php' => '8.3']);
 
-        self::assertNull($recipe->carry);
-        self::assertSame([], $recipe->carryExcept);
+        self::assertNull($recipe->copy['only']);
+        self::assertNull($recipe->copy['except']);
     }
 
-    public function testAWordUnderCarryThatIsNotExceptIsRefused(): void
+    /**
+     * Null is "did not say" and an empty list is an answer, which is what lets a
+     * project take back what the configuration it names keeps out. Read as the same
+     * thing, "except: []" would be the one spelling in this file that is accepted
+     * and does nothing.
+     */
+    public function testAnEmptyListIsSaidAndNotUnsaid(): void
+    {
+        self::assertSame([], Recipe::fromArray(['copy' => ['except' => []]])->copy['except']);
+        self::assertSame([], Recipe::fromArray(['data' => ['bring' => []]])->data['bring']);
+        self::assertNull(Recipe::fromArray(['data' => ['from' => 'none']])->data['bring']);
+    }
+
+    public function testAWordUnderCopyThatIsNotExceptIsRefused(): void
     {
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessageMatches('/"only".*except/');
 
-        Recipe::fromArray(['carry' => ['only' => ['.build']]]);
+        Recipe::fromArray(['copy' => ['only' => ['.build']]]);
     }
 
     /**
@@ -439,7 +452,7 @@ final class RecipeTest extends TestCase
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessageMatches('/\.ddev\/branchery.*never travels/');
 
-        Recipe::fromArray(['carry' => ['.build', '.ddev/branchery']]);
+        Recipe::fromArray(['copy' => ['.build', '.ddev/branchery']]);
     }
 
     public function testAPathThatLeadsOutOfTheCheckoutIsRefused(): void
@@ -447,8 +460,88 @@ final class RecipeTest extends TestCase
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessageMatches('/inside the checkout/');
 
-        Recipe::fromArray(['carry' => ['../elsewhere']]);
+        Recipe::fromArray(['copy' => ['../elsewhere']]);
     }
+
+    /**
+     * The guard under the arrangement: a key added to the constructor and
+     * forgotten in `over()` is a key a project may write, which the file accepts
+     * and which then quietly does nothing -- the one failure the whole of this
+     * class is written against. Both directions, because forgetting it drops
+     * either what the project said or what it is built on.
+     */
+    public function testEveryKeyIsCarriedAcrossTheArrangement(): void
+    {
+        $everything = Recipe::fromArray(self::EVERYTHING);
+
+        self::assertEquals($everything, $everything->over(Recipe::none()));
+        self::assertEquals($everything, Recipe::none()->over($everything));
+    }
+
+    /** The other spelling of "copy", which the one above cannot hold at once. */
+    public function testWhatTravelsIsCarriedAcrossToo(): void
+    {
+        $listed = Recipe::fromArray(['copy' => ['.build']]);
+
+        self::assertSame(['.build'], $listed->over(Recipe::none())->copy['only']);
+        self::assertSame(['.build'], Recipe::none()->over($listed)->copy['only']);
+    }
+
+    /**
+     * A setting stands whole and a mapping is laid key by key, because its keys are
+     * written one at a time: a site built with TYPO3 may track its issues in its
+     * own tracker while its patches go to Gerrit.
+     */
+    public function testAMappingIsLaidOverKeyByKeyAndASettingWhole(): void
+    {
+        $own = Recipe::fromArray([
+            'docroot' => 'web',
+            'links' => ['issue' => 'https://tracker.example.org/{issue}'],
+        ]);
+        $laid = $own->over(Recipe::fromArray(self::EVERYTHING));
+
+        self::assertSame('web', $laid->docroot);
+        self::assertSame('https://tracker.example.org/{issue}', $laid->links['issue']);
+        self::assertSame('https://review.example.org/q/{change}', $laid->links['review']);
+        self::assertSame('8.3', $laid->php?->number);
+    }
+
+    /**
+     * The one thing a version may not become: both at once. Written out over a
+     * configuration that points at a file, the pointer goes with it -- or the
+     * interface goes on naming a file nothing is read from.
+     */
+    public function testAVersionWrittenOutLeavesNoPointerBehind(): void
+    {
+        $laid = Recipe::fromArray(['php' => '8.3'])
+            ->over(Recipe::fromArray(['php' => ['read' => 'Build/Scripts/runTests.sh', 'match' => 'PHP="(\d+\.\d+)"']]));
+
+        self::assertNotNull($laid->php);
+        self::assertSame('8.3', $laid->php->number);
+        self::assertNull($laid->php->where());
+    }
+
+    /** Every key this file knows, to be carried across as a whole. */
+    private const EVERYTHING = [
+        'profile' => 'demo',
+        'docroot' => 'web',
+        'php' => '8.3',
+        'node' => '22',
+        'backend' => '/typo3',
+        'bin' => '.build/bin',
+        'links' => [
+            'review' => 'https://review.example.org/q/{change}',
+            'issue' => 'https://forge.example.org/issues/{issue}',
+            'commit' => 'https://github.example.org/commit/{commit}',
+        ],
+        'data' => ['from' => 'source', 'bring' => ['config/system'], 'addresses' => ['config/sites']],
+        'copy' => ['except' => ['var']],
+        'install' => ['composer install'],
+        'setup' => ['./bin/setup.sh'],
+        'migrate' => ['./bin/migrate.sh'],
+        'configure' => ['./bin/configure.sh'],
+        'finish' => ['./bin/finish.sh'],
+    ];
 
     /**
      * @param list<?RecipeCommand> $commands

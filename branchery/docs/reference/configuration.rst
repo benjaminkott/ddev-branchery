@@ -25,18 +25,18 @@ of.
 ..  table:: The keys
     :name: keys
 
-    ============================================================== ================================================= ===========================================
-    Key                                                            What it says                                      Where
-    ============================================================== ================================================= ===========================================
-    ``profile``                                                    the shipped configuration this builds on          :ref:`configuration-profiles`
-    ``docroot``, ``bin``, ``backend``                              what is served, where the binaries and the        :ref:`configuration-basic`
-                                                                   editing interface are
-    ``php``, ``node``                                              the versions, or where they are written down      :ref:`php-and-node-versions`
-    ``install``, ``configure``, ``setup``, ``migrate``, ``flush``  what runs at each moment of a build               :ref:`configuration-moments`
-    ``carry``                                                      what travels from the source into a fork          :ref:`carried-files`
-    ``data``                                                       where the data comes from and what comes with it  :ref:`data-source-and-site-addresses`
-    ``links``                                                      where review, issue and commit lead               :ref:`configuration-links`
-    ============================================================== ================================================= ===========================================
+    ================================================================ ================================================= ===========================================
+    Key                                                              What it says                                      Where
+    ================================================================ ================================================= ===========================================
+    ``profile``                                                      the shipped configuration this builds on          :ref:`configuration-profiles`
+    ``docroot``, ``bin``, ``backend``                                what is served, where the binaries and the        :ref:`configuration-basic`
+                                                                     editing interface are
+    ``php``, ``node``                                                the versions, or where they are written down      :ref:`php-and-node-versions`
+    ``install``, ``configure``, ``setup``, ``migrate``, ``finish``   what runs at each moment of a build               :ref:`configuration-moments`
+    ``copy``                                                         what travels from the source into a fork          :ref:`copied-files`
+    ``data``                                                         where the data comes from and what comes with it  :ref:`data-source-and-site-addresses`
+    ``links``                                                        where review, issue and commit lead               :ref:`configuration-links`
+    ================================================================ ================================================= ===========================================
 
 ..  _configuration-profiles:
 
@@ -83,7 +83,7 @@ Complete example
 
     # What travels from the source into a new worktree. A list is what travels;
     # "except" keeps everything git ignores and takes these out.
-    carry:
+    copy:
       except:
         - node_modules
 
@@ -228,6 +228,14 @@ build is different carries the difference in its own commit, every worktree of
 it is right without anybody remembering a setting — and so is every branch made
 from that one, because the file comes along with the checkout it was cut from.
 
+A file it names under ``profile:`` is the same file in the same grammar, and
+this one is laid over it: a key written here stands, a key left out is the
+shipped one's. ``links``, ``data`` and ``copy`` are laid over key by key, since
+their keys are written one at a time — a project that says where its issues are
+tracked keeps the review address it is built on. A list written empty is an
+answer and not a silence: ``copy: {except: []}`` is how a project takes back
+what the configuration it names keeps out of a fork.
+
 Anything the file says that Branchery does not understand is refused, not
 ignored. Every operation that touches such a worktree stops and says which key
 it did not understand, the list itself keeps working, and where it is the
@@ -238,5 +246,5 @@ page.
     :hidden:
 
     moments
-    carried-files
+    copied-files
     data

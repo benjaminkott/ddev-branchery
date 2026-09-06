@@ -27,7 +27,7 @@ data:
 # container is built for the code it was built from. What is not left behind:
 # the tools' configuration, which is a setting of the project and wanted in
 # every worktree of it, the way .env is.
-carry:
+copy:
   except:
     - var
     - typo3temp
@@ -100,5 +100,7 @@ setup:
 migrate:
   - $BRANCHERY_PHP $BRANCHERY_BIN/typo3 extension:setup
 
-flush:
+# The last step of every operation that touches a worktree: a build, a data
+# sync, a version switch, a bare reconfiguration.
+finish:
   - $BRANCHERY_PHP $BRANCHERY_BIN/typo3 cache:flush

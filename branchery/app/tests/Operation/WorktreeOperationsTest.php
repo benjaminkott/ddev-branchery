@@ -7,8 +7,8 @@ namespace App\Tests\Operation;
 use App\Jobs\Locks;
 use App\Jobs\StepReporter;
 use App\Operation\BranchMoves;
-use App\Operation\CarriedFiles;
 use App\Operation\Checks;
+use App\Operation\CopiedFiles;
 use App\Operation\DataTransfer;
 use App\Operation\Provisioning;
 use App\Operation\Removal;
@@ -33,7 +33,7 @@ use PHPUnit\Framework\TestCase;
  */
 #[CoversClass(WorktreeManager::class)]
 #[CoversClass(Checks::class)]
-#[CoversClass(CarriedFiles::class)]
+#[CoversClass(CopiedFiles::class)]
 #[CoversClass(Provisioning::class)]
 #[CoversClass(Removal::class)]
 #[CoversClass(BranchMoves::class)]

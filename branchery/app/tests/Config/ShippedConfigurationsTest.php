@@ -4,20 +4,19 @@ declare(strict_types=1);
 
 namespace App\Tests\Config;
 
-use App\Config\Place;
 use App\Config\Recipes;
 use App\ManagedFiles;
 use App\Tests\Fake\RecordingContainer;
 use App\Web\DatabaseServer;
+use App\Worktree\Place;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
  * The configurations this image ships. They are files rather than classes so a
- * project can read and copy them, which makes them worth exactly two checks:
- * that every one can be read at all -- a broken one refuses every operation of
- * every project that named it -- and that their lines only reach the worktree
- * through names the environment actually carries.
+ * project can read and copy them: a broken one refuses every operation of every
+ * project that named it, and a line reaching for a name the environment does not
+ * carry writes an installation pointed at nothing.
  */
 final class ShippedConfigurationsTest extends TestCase
 {
@@ -31,12 +30,29 @@ final class ShippedConfigurationsTest extends TestCase
     #[DataProvider('shipped')]
     public function testEveryShippedConfigurationCanBeRead(string $name): void
     {
-        $recipe = $this->recipes()->shipped($name);
+        self::assertFalse($this->recipes()->shipped($name)->isEmpty(), $name . ' says nothing at all');
+    }
 
-        self::assertFalse($recipe->isEmpty(), $name . ' says nothing at all');
-        // What it is built on is nothing: these are the bottom of the stack, and
-        // one that named another would be a chain nobody can follow.
-        self::assertNull($recipe->profile);
+    /**
+     * These are the bottom of the stack, and a chain of them is one nobody can
+     * follow. Asked of the reader rather than of the shipped files as they stand: the
+     * key is in the grammar they are written in, so a file naming one would be read
+     * and would quietly do nothing.
+     */
+    public function testAShippedConfigurationBuiltOnAnotherIsRefused(): void
+    {
+        $directory = sys_get_temp_dir() . '/branchery-shipped-' . bin2hex(random_bytes(4));
+        mkdir($directory);
+        file_put_contents($directory . '/chained.yaml', "profile: typo3-app\ndocroot: web\n");
+
+        try {
+            $this->expectException(\RuntimeException::class);
+            $this->expectExceptionMessageMatches('/"chained".*"typo3-app".*built on nothing/s');
+            (new Recipes(sys_get_temp_dir(), $directory))->shipped('chained');
+        } finally {
+            unlink($directory . '/chained.yaml');
+            rmdir($directory);
+        }
     }
 
     /**

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Worktree;
 
-use App\Config\Place;
 use App\Git\Git;
 use App\Jobs\StepReporter;
 use App\ManagedFiles;

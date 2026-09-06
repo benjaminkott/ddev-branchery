@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Config;
+namespace App\Operation;
 
 /**
  * What a lock file lacks of what the composer.json beside it requires.

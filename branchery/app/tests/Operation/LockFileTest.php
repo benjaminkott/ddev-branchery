@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\Config;
+namespace App\Tests\Operation;
 
-use App\Config\LockFile;
+use App\Operation\LockFile;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

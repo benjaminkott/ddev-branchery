@@ -2,16 +2,13 @@
 
 declare(strict_types=1);
 
-namespace App\Operation;
+namespace App\Worktree;
 
-use App\Config\Place;
 use App\Config\Recipes;
 use App\ManagedFiles;
 use App\Project;
 use App\Web\DatabaseServer;
 use App\Web\WebContainer;
-use App\Worktree\NodeVersions;
-use App\Worktree\PhpVersions;
 
 /**
  * What a recipe line is told about the worktree it runs for.

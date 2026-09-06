@@ -386,8 +386,8 @@ with the worktree.
 | `branchery/app/src/` | the REST API and the console, PHP -- and at the top level what everything is made of, with `Container` wiring it |
 | `branchery/app/src/Operation/` | what an operation is made of -- the order it is put in is `WorktreeManager` |
 | `branchery/app/src/Http/` | what a request becomes: the routes, the controller, the answer |
-| `branchery/app/src/Config/` | what a project says about how its branches are built, and where a recipe's commands run |
-| `branchery/app/src/Worktree/` | what a worktree is and what it is served with |
+| `branchery/app/src/Config/` | what a project says about how its branches are built -- read, and laid over the shipped file it names; it runs nothing |
+| `branchery/app/src/Worktree/` | what a worktree is, what it is served with, and the place a recipe's lines run in it |
 | `branchery/app/src/Git/`, `Web/` | the tools: git, and everything else reached through the docker socket |
 | `branchery/app/src/Jobs/` | a long operation -- how it starts, how it reports, and what keeps two of them off one worktree |
 | `branchery/app/api-answers.json` | what the API answers with, field by field -- both halves are checked against it |

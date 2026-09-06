@@ -19,7 +19,7 @@ use App\Web\WebContainer;
  * cache built for other code arrives in a checkout it is wrong for. So a
  * project may say instead, and what it says is read here.
  */
-final readonly class CarriedFiles
+final readonly class CopiedFiles
 {
     public function __construct(
         private Project $project,
@@ -37,7 +37,7 @@ final readonly class CarriedFiles
         $left = $this->leftBehind($directory);
 
         return array_values(array_filter(
-            $this->recipes->for($directory)->carry() ?? $this->git->ignoredEntries($from),
+            $this->recipes->for($directory)->copy() ?? $this->git->ignoredEntries($from),
             static fn (string $entry): bool => !self::isUnder($entry, $left),
         ));
     }
@@ -55,7 +55,7 @@ final readonly class CarriedFiles
         $build = $this->recipes->for($directory);
         $ours = ['.git', '.ddev', $this->project->worktreesName()];
 
-        return $build->carry() !== null ? $ours : [...$build->carryExcept(), ...$ours];
+        return $build->copy() !== null ? $ours : [...$build->copyExcept(), ...$ours];
     }
 
     /**

@@ -4,23 +4,21 @@ declare(strict_types=1);
 
 namespace App\Config;
 
-use App\Jobs\StepReporter;
-
 /**
- * What builds one worktree: the project's own file, over the shipped one it
- * names.
+ * What builds one worktree: the project's own file over the shipped one it
+ * names, already laid together, with the answers a caller is entitled to when
+ * the file said nothing at all.
  *
- * Two recipes and no inheritance beyond that. The project's is read first and
- * decides everything it speaks about; where a moment says "before" or "after",
- * what the shipped one does runs in between. A project that has written no file
- * at all has none, and a worktree is then a checkout and an empty database.
+ * The arrangement itself is `Recipe::over()` and lives there, so there is one
+ * place where a key is carried across. This is where the defaults are, and
+ * nowhere else: the checkout's own root, composer's usual bin directory, no
+ * editing interface.
  */
 final readonly class Build
 {
     public function __construct(
-        private Recipe $own,
-        /** What it is built on, or a recipe that says nothing. */
-        private Recipe $shipped,
+        private Recipe $recipe,
+        /** What it is built on, by name, where it is built on anything. */
         private ?string $shippedName,
     ) {
     }
@@ -34,7 +32,7 @@ final readonly class Build
     /** Whether anything at all was said about how to build this. */
     public function isEmpty(): bool
     {
-        return $this->shippedName === null && $this->own->isEmpty();
+        return $this->shippedName === null && $this->recipe->isEmpty();
     }
 
     /**
@@ -43,35 +41,37 @@ final readonly class Build
      */
     public function docroot(): string
     {
-        return $this->own->docroot ?? $this->shipped->docroot ?? '';
+        return $this->recipe->docroot ?? '';
     }
 
     /** Where the project's own binaries are. */
     public function bin(): string
     {
-        return $this->own->bin ?? $this->shipped->bin ?? 'vendor/bin';
+        return $this->recipe->bin ?? 'vendor/bin';
     }
 
     /** The version this checkout is to be served with, where one is named. */
     public function php(): ?string
     {
-        return $this->own->php ?? $this->shipped->php;
+        return $this->recipe->php?->number;
     }
 
     /**
-     * For a project whose branches do not all want the same one.
+     * For a project whose branches do not all want the same one. Null where a
+     * version is written out, including where the project wrote one over a
+     * configuration that pointed at a file.
      *
      * @return ?array{read: string, match: string}
      */
     public function phpRead(): ?array
     {
-        return $this->own->phpRead ?? $this->shipped->phpRead;
+        return $this->recipe->php?->where();
     }
 
     /** Nothing is served with it; it is what `npm` in a recipe line runs under. */
     public function node(): ?string
     {
-        return $this->own->node ?? $this->shipped->node;
+        return $this->recipe->node?->number;
     }
 
     /**
@@ -79,7 +79,7 @@ final readonly class Build
      */
     public function nodeRead(): ?array
     {
-        return $this->own->nodeRead ?? $this->shipped->nodeRead;
+        return $this->recipe->node?->where();
     }
 
     /**
@@ -88,53 +88,44 @@ final readonly class Build
      */
     public function backend(): ?string
     {
-        $said = $this->own->backend ?? $this->shipped->backend;
+        $said = $this->recipe->backend;
 
         return $said === null || $said === '/' ? null : $said;
     }
 
     /**
-     * Per key, because one may be said without the other: a site built with TYPO3
-     * may track its issues in its own tracker while its patches go to Gerrit.
-     *
      * @return array{review: ?string, issue: ?string, commit: ?string}
      */
     public function links(): array
     {
-        return [
-            'review' => $this->own->links['review'] ?? $this->shipped->links['review'],
-            'issue' => $this->own->links['issue'] ?? $this->shipped->links['issue'],
-            'commit' => $this->own->links['commit'] ?? $this->shipped->links['commit'],
-        ];
-    }
-
-    /** @return ?list<string> */
-    public function carry(): ?array
-    {
-        return $this->own->carry ?? $this->shipped->carry;
-    }
-
-    /** @return list<string> */
-    public function carryExcept(): array
-    {
-        return $this->own->carryExcept !== [] ? $this->own->carryExcept : $this->shipped->carryExcept;
+        return $this->recipe->links;
     }
 
     /**
-     * Key by key -- a project that only changes where the data comes from keeps the
-     * paths the shipped file names.
+     * What travels instead of everything git ignores, where the file names it.
      *
+     * @return ?list<string>
+     */
+    public function copy(): ?array
+    {
+        return $this->recipe->copy['only'];
+    }
+
+    /** @return list<string> */
+    public function copyExcept(): array
+    {
+        return $this->recipe->copy['except'] ?? [];
+    }
+
+    /**
      * @return array{from: ?string, bring: list<string>, addresses: list<string>}
      */
     public function data(): array
     {
-        $own = $this->own->data;
-        $base = $this->shipped->data;
-
         return [
-            'from' => $own['from'] ?? $base['from'],
-            'bring' => $own['bring'] !== [] ? $own['bring'] : $base['bring'],
-            'addresses' => $own['addresses'] !== [] ? $own['addresses'] : $base['addresses'],
+            'from' => $this->recipe->data['from'],
+            'bring' => $this->recipe->data['bring'] ?? [],
+            'addresses' => $this->recipe->data['addresses'] ?? [],
         ];
     }
 
@@ -142,6 +133,17 @@ final readonly class Build
     public function does(string $moment): bool
     {
         return $this->lines($moment) !== [];
+    }
+
+    /**
+     * What runs at this moment, in order. Handed out rather than run here: this
+     * says what a worktree is built out of, and the worktree is where it happens.
+     *
+     * @return list<RecipeCommand>
+     */
+    public function lines(string $moment): array
+    {
+        return $this->recipe->lines($moment);
     }
 
     /**
@@ -159,59 +161,5 @@ final readonly class Build
         }
 
         return null;
-    }
-
-    /**
-     * A line that fails stops the operation: it is in the file because the worktree
-     * is not finished without it. Unless it says "optional: true" -- worth having
-     * and not worth the build, as an asset toolchain is for a branch whose work is
-     * PHP -- and the operation then ends in a warning rather than a tick.
-     *
-     * Without a reporter where the caller reports nothing at all: those moments are
-     * not a build and have no log.
-     */
-    public function at(string $moment, Place $place, ?StepReporter $reporter = null): void
-    {
-        foreach ($this->lines($moment) as $command) {
-            try {
-                if ($command->kind === 'composer') {
-                    $place->composer(...$command->arguments());
-                } else {
-                    $place->shell($command->line);
-                }
-            } catch (\RuntimeException $failure) {
-                if (!$command->optional) {
-                    throw $failure;
-                }
-                // The message names the line already, both for composer and for a shell
-                // line -- see Place.
-                $reporter?->warn(sprintf('The recipe calls this line optional, and the build went on without it. %s', $failure->getMessage()));
-            }
-        }
-    }
-
-    /**
-     * The project's plan with the inherited slot filled in: `null` is where what
-     * this is built on does its own work.
-     *
-     * @return list<RecipeCommand>
-     */
-    private function lines(string $moment): array
-    {
-        $lines = [];
-        foreach ($this->own->plan($moment) as $command) {
-            if ($command !== null) {
-                $lines[] = $command;
-
-                continue;
-            }
-            foreach ($this->shipped->plan($moment) as $inherited) {
-                if ($inherited !== null) {
-                    $lines[] = $inherited;
-                }
-            }
-        }
-
-        return $lines;
     }
 }

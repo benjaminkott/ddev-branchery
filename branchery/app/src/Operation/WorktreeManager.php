@@ -34,7 +34,7 @@ final readonly class WorktreeManager
         private ManagedFiles $files,
         private Locks $locks,
         private Checks $preflight,
-        private CarriedFiles $carried,
+        private CopiedFiles $copied,
         private Provisioning $provisioning,
         private Removal $removal,
         private BranchMoves $branches,
@@ -160,7 +160,7 @@ final readonly class WorktreeManager
         // What git ignores is what gets carried, so nothing is missing in a
         // project this add-on knows nothing about.
         $reporter->step('Carrying over unversioned files');
-        $this->carried->copy($from, $name, $reporter);
+        $this->copied->copy($from, $name, $reporter);
 
         $this->provisioning->run($name, $newBranch, $from ?? Provisioning::PROJECT_SOURCE, $php, $reporter);
 
