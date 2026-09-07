@@ -14,7 +14,10 @@
         "isolatedModules": true,
         "resolveJsonModule": true,
         "skipLibCheck": true,
-        "noEmit": true
+        "noEmit": true,
+        // TypeScript 6 no longer pulls in every @types package on its own, and the
+        // tests under frontend/ are the ones that read node:test.
+        "types": ["node"]
     },
     "include": ["frontend/**/*.ts"]
 }
