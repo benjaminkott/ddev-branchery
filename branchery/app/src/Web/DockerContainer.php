@@ -67,9 +67,19 @@ final class DockerContainer implements WebContainer
 
         return new CommandResult(
             $process->getExitCode() ?? 1,
-            trim($process->getOutput()),
+            self::whole($process->getOutput()),
             trim($process->getErrorOutput()),
         );
+    }
+
+    /**
+     * Trailing space is noise, leading space is a column: git's status writes its
+     * first one in the first character of a line, so a trim of the front took it
+     * off the first file and left it named a letter short.
+     */
+    public static function whole(string $output): string
+    {
+        return rtrim($output);
     }
 
     /**

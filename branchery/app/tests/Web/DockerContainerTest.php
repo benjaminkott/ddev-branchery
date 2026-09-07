@@ -9,7 +9,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
 /**
- * What of a tool's output reaches the log.
+ * What of a tool's output reaches the log, and what of it reaches a reader.
  *
  * git draws its progress on one line and redraws it with a carriage return
  * at every step. On a terminal that is one line; written into a log as it
@@ -29,5 +29,19 @@ final class DockerContainerTest extends TestCase
     {
         self::assertSame('HEAD is now at 3769aab [RELEASE] v12.0.4', DockerContainer::settled('HEAD is now at 3769aab [RELEASE] v12.0.4  '));
         self::assertSame('', DockerContainer::settled("Updating files:  12% (2507/19539)\r"));
+    }
+
+    /**
+     * A file changed in the working copy alone is written by "git status" with a
+     * blank first column, and cutting the front off the answer took it from the
+     * first file only: its path was read a letter short, and the diff asked for
+     * under that path came back empty.
+     */
+    public function testTheFirstLineKeepsTheColumnItBeginsWith(): void
+    {
+        self::assertSame(
+            " M composer.json\n?? notes.txt",
+            DockerContainer::whole(" M composer.json\n?? notes.txt\n"),
+        );
     }
 }
