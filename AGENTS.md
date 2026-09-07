@@ -141,6 +141,16 @@ which the container serves something other than what was installed.
 baked into the image, because the failure this guards against is an update that
 appears to have worked.
 
+**A release is cut with `git tag -a`, and the message is the release page.**
+`tools/release-notes.sh` reads it and the workflow creates the release from it,
+so a lightweight tag or one with a subject and no body fails the build rather
+than publishing a version nobody described. The release is made *after* the
+image is pushed and never beside it: every project asks what the newest release
+is and tells its developer to fetch it, so a release standing over a build that
+failed sends all of them after an image that is not there. Three places say the
+version and `tools/check-compose-tag.sh` holds them together -- the compose
+file, the manual's footer, and the tag.
+
 What travels as files is what has to: `branchery/scripts/` (they run in the
 *web* container, which reaches them through `/mnt/ddev_config`), the host
 command, the compose file. `install.yaml` removes those before the copy, and

@@ -69,3 +69,38 @@ jobs:
             BRANCHERY_VERSION=${{ steps.meta.outputs.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  # A release is what says a version exists, and every project asks: the update
+  # check reads the latest release and tells the developer to fetch it. So it is
+  # created after the image has been pushed and never beside it -- a release
+  # standing over a build that failed sends every project after an image that is
+  # not there, which is the one failure this whole thing is built to avoid.
+  release:
+    if: github.ref_type == 'tag'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      # The whole history, because what the release says is the message of the
+      # annotated tag and a shallow clone fetches no tag objects.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      # One that is already there is left exactly as it is: re-running this
+      # workflow is what happens after a failure somewhere else, and the only
+      # thing rewriting the notes could achieve is undoing an edit somebody made
+      # on the release page on purpose.
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          if gh release view "${TAG}" >/dev/null 2>&1; then
+            echo "${TAG} is already released."
+            exit 0
+          fi
+          gh release create "${TAG}" \
+            --title "${TAG}" \
+            --notes "$(tools/release-notes.sh "${TAG}")" \
+            --verify-tag

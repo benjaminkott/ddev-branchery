@@ -10,6 +10,7 @@
 setup() {
   export DIR="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." >/dev/null 2>&1 && pwd)"
   export CHECK="${DIR}/tools/check-compose-tag.sh"
+  export NOTES="${DIR}/tools/release-notes.sh"
   export COMPOSE="$(mktemp -t compose-XXXXXX.yaml)"
   export GUIDES="$(mktemp -t guides-XXXXXX.xml)"
   printf 'services:\n  branchery:\n    image: ${BRANCHERY_DOCKER_IMAGE:-ghcr.io/example/add-on:v1.2.3}\n' > "${COMPOSE}"
@@ -93,4 +94,90 @@ teardown() {
       return 1
     fi
   done
+}
+
+# What a release page says, which is the message of the tag that cut it. Read
+# out of a repository this test makes, so that what it holds to is not the
+# wording of whatever version happens to be current here.
+
+# A repository with one commit, for tags to be put on.
+tagged() {
+  local repo
+  repo="$(mktemp -d -t tagrepo-XXXXXX)"
+  git -C "${repo}" init -q
+  git -C "${repo}" config user.email nobody@example.org
+  git -C "${repo}" config user.name Nobody
+  git -C "${repo}" commit -q --allow-empty -m "[TASK] Something"
+  printf '%s' "${repo}"
+}
+
+@test "a release says what its tag says" {
+  local repo; repo="$(tagged)"
+  git -C "${repo}" tag -a v1.0.0 -m "Branchery v1.0.0
+
+Worktrees, and the checkout left where it stands."
+
+  run "${NOTES}" v1.0.0 "${repo}"
+  [ "$status" -eq 0 ]
+  echo "$output" | grep -q "checkout left where it stands"
+  # The subject titles the release, so repeating it as the first line of the
+  # body would read as a mistake.
+  [ "$(echo "$output" | head -1)" != "Branchery v1.0.0" ]
+  rm -rf "${repo}"
+}
+
+# The sign-off belongs to the repository and not to a release page.
+@test "trailers are not part of what a release says" {
+  local repo; repo="$(tagged)"
+  git -C "${repo}" tag -a v1.0.0 -m "Branchery v1.0.0
+
+What it does.
+
+Signed-off-by: Nobody <nobody@example.org>"
+
+  run "${NOTES}" v1.0.0 "${repo}"
+  [ "$status" -eq 0 ]
+  echo "$output" | grep -q "What it does."
+  ! echo "$output" | grep -q "Signed-off-by"
+  rm -rf "${repo}"
+}
+
+# The one shape of this that would fail silently: a release created with an
+# empty body, which reads as a version nobody bothered to describe.
+@test "refuses a lightweight tag, which carries no message" {
+  local repo; repo="$(tagged)"
+  git -C "${repo}" tag v1.0.0
+
+  run "${NOTES}" v1.0.0 "${repo}"
+  [ "$status" -ne 0 ]
+  echo "$output" | grep -q "lightweight"
+  rm -rf "${repo}"
+}
+
+@test "refuses a tag whose message is a subject and nothing else" {
+  local repo; repo="$(tagged)"
+  git -C "${repo}" tag -a v1.0.0 -m "Branchery v1.0.0"
+
+  run "${NOTES}" v1.0.0 "${repo}"
+  [ "$status" -ne 0 ]
+  rm -rf "${repo}"
+}
+
+@test "refuses a tag that is not there" {
+  local repo; repo="$(tagged)"
+  run "${NOTES}" v9.9.9 "${repo}"
+  [ "$status" -ne 0 ]
+  rm -rf "${repo}"
+}
+
+# And the tags this repository actually carries: the script has to read one, or
+# the workflow step passes for the wrong reason.
+@test "reads the tags of this repository" {
+  local latest
+  latest="$(git -C "${DIR}" tag --sort=-v:refname | head -1)"
+  [ -n "${latest}" ]
+
+  run "${NOTES}" "${latest}" "${DIR}"
+  [ "$status" -eq 0 ]
+  [ -n "$output" ]
 }
