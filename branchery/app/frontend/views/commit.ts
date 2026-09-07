@@ -86,7 +86,7 @@ export class CommitView extends View {
             }
             ${commit === null ? this.beforeTheAnswer(of, this.sha) : head(of, commit, this.branch)}
         </section>
-        ${commit === null ? nothing : this.touched(this.name, commit)}
+        ${commit === null ? nothing : this.touched(of, commit)}
       </div>`;
     }
 
@@ -114,7 +114,7 @@ export class CommitView extends View {
      * Said in a sentence rather than left as an empty list, which under a heading
      * reads as an answer that failed to arrive.
      */
-    private touched(name: string, commit: CommitDetail): TemplateResult {
+    private touched(of: string, commit: CommitDetail): TemplateResult {
         return html`
         <section class="sds-band sds-band--quiet">
             ${
@@ -132,7 +132,7 @@ export class CommitView extends View {
                     : fileList({
                           files: commit.files,
                           diffs: this.diffs,
-                          press: (path) => this.toggleDiff(name, commit.sha, path),
+                          press: (path) => this.toggleDiff(of, commit.sha, path),
                           all: this.all,
                           showAll: () => {
                               this.all = true;
@@ -143,26 +143,26 @@ export class CommitView extends View {
         </section>`;
     }
 
-    private toggleDiff(name: string, sha: string, path: string): void {
-        toggleFile(this.diffs, path, () => void this.readDiff(name, sha, path));
+    private toggleDiff(of: string, sha: string, path: string): void {
+        toggleFile(this.diffs, path, () => void this.readDiff(of, sha, path));
         this.requestUpdate();
     }
 
     /** Whether an answer about a commit is still wanted: this one, still on the page. */
-    private stillReading(name: string, sha: string): boolean {
-        return this.read.stillOn(keyOf(name, sha));
+    private stillReading(of: string, sha: string): boolean {
+        return this.read.stillOn(keyOf(of, sha));
     }
 
     private async readCommit(name: string, sha: string): Promise<void> {
         await readInto(this.read, keyOf(name, sha), () => api.commit(name, sha), this.reading);
     }
 
-    private async readDiff(name: string, sha: string, path: string): Promise<void> {
+    private async readDiff(of: string, sha: string, path: string): Promise<void> {
         await this.reading(
-            () => api.commitDiff(name, sha, path),
+            () => api.commitDiff(of, sha, path),
             // The file has to be open still, and not only the commit: what was asked
             // for is the change in one row of a list the reader closed.
-            () => this.stillReading(name, sha) && this.diffs.has(path),
+            () => this.stillReading(of, sha) && this.diffs.has(path),
             (diff, trouble) => keepDiff(this.diffs, path, diff, trouble),
         );
     }
