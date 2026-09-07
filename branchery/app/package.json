@@ -28,7 +28,7 @@
         "esbuild": "^0.28.2",
         "eslint": "10.10.0",
         "prettier": "3.9.6",
-        "typescript": "^7.0.2",
+        "typescript": "^5.7.0",
         "typescript-eslint": "8.69.0"
     },
     "dependencies": {
