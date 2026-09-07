@@ -6,6 +6,11 @@
 # DDEV -- the tag is checked through the script, which is handed files of this
 # test's own so that what it says about a version is not tied to the one in the
 # tree, and the shipped files are read out of install.yaml as it stands.
+#
+# Tagged out of the DDEV suite, which runs the whole directory: the app job runs
+# this already, and the last test reads the tags this repository carries, which
+# that action's checkout does not fetch.
+# bats file_tags=release
 
 setup() {
   export DIR="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." >/dev/null 2>&1 && pwd)"
