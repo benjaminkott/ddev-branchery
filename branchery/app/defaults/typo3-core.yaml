@@ -30,11 +30,16 @@ links:
   issue: https://forge.typo3.org/issues/{issue}
   commit: https://github.com/TYPO3/typo3/commit/{commit}
 
+# The data of the checkout this worktree was cut from, and what has to travel
+# with it in order to be readable. PackageStates.php above all: this repository
+# is a classic installation, and without that file TYPO3 stays in the failsafe
+# container -- where "migrate" dies on the first service it asks for.
 data:
   from: source
   needs:
     - typo3conf/sites
     - typo3conf/system/settings.php
+    - typo3conf/PackageStates.php
   addresses:
     - typo3conf/sites
 
