@@ -12,11 +12,18 @@ namespace App;
  * shape an update can take.
  *
  * Two names, not two copies of the code: the tag is the version now.
+ *
+ * A third name is the newest version there is, which no project can work out
+ * for itself: it is fetched once per container start and left in the state
+ * directory, and read here as a file like any other.
  */
 final class Installation
 {
     /** What a tag may be made of -- everything a registry accepts as one. */
     private const TAG = '#ddev-branchery:(?<tag>[A-Za-z0-9._-]+)#';
+
+    /** Where the startup check leaves what it found. */
+    public const string NOTED = 'latest-release';
 
     private ?bool $behind = null;
 
@@ -45,6 +52,39 @@ final class Installation
         $wanted = $this->wanted();
 
         return $this->behind = $wanted !== null && $this->released() !== null && $wanted !== $this->version;
+    }
+
+    /**
+     * A version newer than the one this project asks for, where one has been
+     * released; null otherwise.
+     *
+     * Compared against what the project wants and not against what runs, so that
+     * a project already updated and waiting for its restart is told that once,
+     * by updateWaiting(), rather than twice in two different words.
+     */
+    public function updateAvailable(): ?string
+    {
+        $wanted = $this->wanted();
+        $latest = $this->noted();
+        if ($wanted === null || $latest === null || $this->released() === null) {
+            return null;
+        }
+
+        // Tags carry a "v" that means nothing to a version comparison, and one
+        // that is not a version at all -- "main" -- must not read as newer.
+        return version_compare(ltrim($latest, 'v'), ltrim($wanted, 'v'), '>') ? $latest : null;
+    }
+
+    /** What the startup check last found, if it has ever run and got an answer. */
+    private function noted(): ?string
+    {
+        $file = $this->project->stateDirectory() . '/' . self::NOTED;
+        if (!is_file($file)) {
+            return null;
+        }
+        $tag = trim((string) file_get_contents($file));
+
+        return $tag === '' ? null : $tag;
     }
 
     /** The version this is, unless it is not a released one. */

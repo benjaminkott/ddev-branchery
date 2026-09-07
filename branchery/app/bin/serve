@@ -11,4 +11,11 @@ set -eu
 
 php /opt/branchery/bin/console ddev:describe >/dev/null 2>&1 || true
 
+# What the newest released version is, which is the one thing no project can
+# work out from its own files. Beside the server and not before it: this is the
+# only step here that speaks to the network, and a machine that is offline or
+# behind a proxy that blackholes would otherwise hold up every start of every
+# project for as long as the request takes to give up.
+php /opt/branchery/bin/console update:check >/dev/null 2>&1 &
+
 exec php -S 0.0.0.0:80 -t /opt/branchery/public /opt/branchery/public/router.php

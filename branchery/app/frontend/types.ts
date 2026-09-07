@@ -352,6 +352,12 @@ export interface ServerState {
      */
     updateWaiting: boolean;
     /**
+     * A version newer than the one this project asks for, where one has been
+     * released. Noted by the check the container runs as it starts, so it is a
+     * file that was read and not a question asked while this page loaded.
+     */
+    updateAvailable: string | null;
+    /**
      * What puts this interface on the network beside the developer, where
      * something does. The API asks nobody who they are, and that is right only
      * because the port is the developer's own machine's -- so the one case where

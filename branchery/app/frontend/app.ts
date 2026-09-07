@@ -94,6 +94,54 @@ function paintUpdateWaiting(): void {
 }
 
 /**
+ * What upgrading is, as one line to paste: the add-on fetched again and the
+ * project restarted. Joined with "&&" and handed to `sds-copy` rather than
+ * written into the sentence, because a command a reader has to pick out of prose
+ * is one they retype and mistype.
+ */
+const UPGRADE = 'ddev add-on get benjaminkott/ddev-branchery && ddev restart';
+
+/**
+ * That a newer version exists at all, which is the one thing a project cannot
+ * see for itself.
+ *
+ * Its own painter and not `paintNote`, because the body is a control and not a
+ * string: `sds-note` takes its children as it connects and renders those very
+ * nodes, so what it says is the identity of the element -- a different version
+ * or a different language is a new note, drawn rather than written into.
+ */
+function paintUpdateAvailable(): void {
+    const version = state.updateAvailable;
+    const box = query('#new-version');
+    box.hidden = version === null;
+    if (version === null) {
+        return;
+    }
+
+    const heading = t('update.available', { version });
+    const lead = t('update.fetch');
+    const said = `${heading}\n${lead}`;
+    if (box.dataset.said === said) {
+        return;
+    }
+    box.dataset.said = said;
+
+    const note = document.createElement('sds-note');
+    note.setAttribute('tone', 'info');
+    note.setAttribute('heading', heading);
+    const body = document.createElement('div');
+    body.className = 'branchery-upgrade';
+    const sentence = document.createElement('p');
+    sentence.textContent = lead;
+    const copy = document.createElement('sds-copy');
+    copy.setAttribute('value', UPGRADE);
+    copy.setAttribute('label', t('update.command'));
+    body.append(sentence, copy);
+    note.append(body);
+    box.replaceChildren(note);
+}
+
+/**
  * The API asks nobody who they are, and that is right for one reason: the port
  * is on the developer's own machine. Where that stopped being true, saying so is
  * the only thing this application can do about it -- and the only thing it
@@ -165,6 +213,7 @@ function render(route: Route = currentRoute()): void {
     paintOffline();
     paintExposed();
     paintUpdateWaiting();
+    paintUpdateAvailable();
     watchTheOthers();
     paintRecipeProblem();
     paintUnconfigured();

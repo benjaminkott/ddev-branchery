@@ -277,6 +277,9 @@
     "tidy.working": "Tidying up",
     "tidy.workingLead": "Removing {count} worktrees, side by side.",
     "tidy.workingLead.one": "Removing 1 worktree.",
+    "update.available": "Branchery {version} released",
+    "update.command": "Upgrade command",
+    "update.fetch": "Please run this to upgrade:",
     "update.how": "The application is an image, and a container keeps the one it was made from. The version this project asks for takes effect once that container is replaced: ddev restart.",
     "update.waiting": "This project has been updated to another version of Branchery than the one running."
 }

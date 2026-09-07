@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App;
 
 use App\Command\AddCommand;
+use App\Command\CheckReleasesCommand;
 use App\Command\ConfigCommand;
 use App\Command\DescribeCommand;
 use App\Command\DiscardCommand;
@@ -289,6 +290,16 @@ final class Container
         ));
     }
 
+    /**
+     * What has been released, which is the one question this application asks of
+     * somewhere that is not this machine. Only the startup check calls it; the
+     * page reads what that left behind.
+     */
+    public function releases(): Releases
+    {
+        return $this->share(Releases::class, fn (): Releases => new GithubReleases());
+    }
+
     public function installation(): Installation
     {
         return $this->share(Installation::class, fn (): Installation => new Installation(
@@ -563,6 +574,7 @@ final class Container
             new ConfigCommand($this->manager(), $this->worktrees(), $this->describe()),
             new ExampleCommand($this->recipes(), $this->project(), $this->files()),
             new DescribeCommand($this->describe()),
+            new CheckReleasesCommand($this->releases(), $this->project(), $this->files()),
             new DocsCommand($this->docs()),
             new ListWorktreesCommand($this->worktrees()),
             new ListJobsCommand($this->jobs()),

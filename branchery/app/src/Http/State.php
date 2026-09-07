@@ -76,6 +76,10 @@ final readonly class State
             // Updated to another version and waiting for a restart. Said here, or a
             // developer who updated sees nothing change and cannot find out why.
             'updateWaiting' => $this->installation->updateWaiting(),
+            // A version newer than the one this project asks for. Noted by the check
+            // that runs as the container starts, so this is a file being read and not
+            // a request going out while somebody waits for the page.
+            'updateAvailable' => $this->installation->updateAvailable(),
             // The one thing this application's safety rests on, asked rather than
             // assumed: null while the port is the developer's own machine's, and
             // otherwise what put it on the network beside them.

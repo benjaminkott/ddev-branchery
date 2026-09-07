@@ -118,6 +118,7 @@ export function createWorld() {
         recipeProblem: null,
         unconfigured: false,
         updateWaiting: false,
+        updateAvailable: null,
         // Null while the port is the developer's own machine's. "router" and
         // "container" are the two ways it stops being -- see Exposure.
         exposed: null,

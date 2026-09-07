@@ -28,6 +28,24 @@ container; until then the old image continues to serve the application. The
 running application notices when the project has been updated past it and says
 so at the top of the page.
 
+..  _update-notice:
+
+Being told there is one
+=======================
+
+A project cannot see from its own files that a newer version exists, so the
+container asks once as it starts: what it finds is kept under
+``.ddev/branchery/var/`` and read from there. When the release is newer than the
+tag the project asks for, the page says so at the top and offers the two
+commands above as one line to copy. Both notices are about the whole
+installation and they mean different things -- one is fixed by a restart, the
+other by fetching the add-on again.
+
+The answer is taken as current for six hours, so restarting a project repeatedly
+does not ask again. Nothing depends on the request succeeding: with no network,
+or once the hourly limit for unauthenticated requests to GitHub is reached, the
+last answer stands and the start is not held up either way.
+
 ..  _architecture-image:
 
 Choose another image

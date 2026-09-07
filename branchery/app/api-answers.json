@@ -170,6 +170,7 @@
             "recipeProblem": "?string",
             "unconfigured": "bool",
             "updateWaiting": "bool",
+            "updateAvailable": "?string",
             "exposed": "?string"
         },
         "worktree": {

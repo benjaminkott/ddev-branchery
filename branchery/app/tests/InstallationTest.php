@@ -113,4 +113,82 @@ final class InstallationTest extends TestCase
 
         self::assertFalse($this->installation('v1.1.0')->updateWaiting());
     }
+
+    /** What the startup check leaves behind, which is all this reads. */
+    private function noted(string $tag): void
+    {
+        (new Filesystem())->dumpFile($this->root . '/.ddev/branchery/var/' . Installation::NOTED, $tag . "\n");
+    }
+
+    public function testANewerReleaseIsAnUpdateAvailable(): void
+    {
+        $this->noted('v1.3.0');
+
+        self::assertSame('v1.3.0', $this->installation('v1.2.0')->updateAvailable());
+    }
+
+    /** The version the project already asks for is not news about a newer one. */
+    public function testTheReleaseTheProjectAlreadyAsksForSaysNothing(): void
+    {
+        $this->noted('v1.2.0');
+
+        self::assertNull($this->installation('v1.2.0')->updateAvailable());
+    }
+
+    /**
+     * Compared against what the project wants, not against what runs: a project
+     * updated and waiting for its restart is told that by updateWaiting(), and
+     * being told the same thing twice in two wordings reads as two problems.
+     */
+    public function testAProjectAlreadyUpdatedAndAwaitingItsRestartIsNotToldTwice(): void
+    {
+        $this->noted('v1.2.0');
+        $waiting = $this->installation('v1.1.0');
+
+        self::assertTrue($waiting->updateWaiting());
+        self::assertNull($waiting->updateAvailable());
+    }
+
+    /** An older note than the project's own version is not an update. */
+    public function testAnOlderReleaseSaysNothing(): void
+    {
+        $this->noted('v1.1.0');
+
+        self::assertNull($this->installation('v1.2.0')->updateAvailable());
+    }
+
+    /** Versions and not strings: v1.10.0 follows v1.9.0, which sorts the other way. */
+    public function testVersionsAreComparedAsVersionsAndNotAsText(): void
+    {
+        $this->compose('ghcr.io/benjaminkott/ddev-branchery:v1.9.0');
+        $this->noted('v1.10.0');
+
+        self::assertSame('v1.10.0', $this->installation('v1.9.0')->updateAvailable());
+    }
+
+    /** A check that has never run, or never got an answer, is not a note. */
+    public function testWithoutANoteItSaysNothing(): void
+    {
+        self::assertNull($this->installation('v1.2.0')->updateAvailable());
+    }
+
+    /**
+     * A tag that is not a version cannot be newer than one. The rolling build is
+     * tagged "main", and reading it as a release would tell every project tracking
+     * it, for good, that an update is waiting.
+     */
+    public function testATagThatIsNotAVersionSaysNothing(): void
+    {
+        $this->noted('main');
+
+        self::assertNull($this->installation('v1.2.0')->updateAvailable());
+    }
+
+    /** An image built from a working copy has no version to be behind. */
+    public function testAWorkingCopySaysNothingAboutReleases(): void
+    {
+        $this->noted('v9.9.9');
+
+        self::assertNull($this->installation('dev')->updateAvailable());
+    }
 }

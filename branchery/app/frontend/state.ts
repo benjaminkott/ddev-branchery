@@ -29,6 +29,7 @@ export const { state, subscribe } = createStore<AppState>({
     recipeProblem: null,
     unconfigured: false,
     updateWaiting: false,
+    updateAvailable: null,
     exposed: null,
 });
 
@@ -118,6 +119,7 @@ async function load(): Promise<RunningJob[]> {
     put('recipeProblem', data.recipeProblem ?? null);
     put('unconfigured', data.unconfigured === true);
     put('updateWaiting', data.updateWaiting ?? false);
+    put('updateAvailable', data.updateAvailable ?? null);
     put('exposed', data.exposed ?? null);
     put('runningJobs', data.runningJobs ?? []);
 

@@ -214,6 +214,24 @@ sds-note + .branchery-project {
     margin-bottom: var(--space-8);
 }
 
+/* The sentence and the command it names are one statement, so they are set as
+   one: the paragraph's own margin is a paragraph's worth of air between them,
+   which reads as the command belonging to whatever comes next instead.
+
+   The step below the smallest, because the copy control is a button's height
+   around a line of text and brings its own few pixels above the command --
+   what is set here is the gap between two boxes, and what is read is the gap
+   between two lines. */
+.branchery-upgrade {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    gap: var(--space-0-5);
+}
+.branchery-upgrade > p {
+    margin-block: 0;
+}
+
 /* A row while something is being done to it: the spinner and what it is doing
    take the place of what was true a moment ago, so the row keeps its height.
    Soul's spinner turns what is inside it and draws nothing itself, so what

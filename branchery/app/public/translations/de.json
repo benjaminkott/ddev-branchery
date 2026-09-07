@@ -277,6 +277,9 @@
     "tidy.working": "Wird aufgeräumt",
     "tidy.workingLead": "{count} Worktrees werden nebeneinander entfernt.",
     "tidy.workingLead.one": "1 Worktree wird entfernt.",
+    "update.available": "Branchery {version} ist erschienen",
+    "update.command": "Aktualisierungsbefehl",
+    "update.fetch": "Zum Aktualisieren bitte ausführen:",
     "update.how": "Die Anwendung ist ein Image, und ein Container behält das, aus dem er entstanden ist. Die Version, die dieses Projekt verlangt, gilt, sobald der Container ersetzt wird: ddev restart.",
     "update.waiting": "Dieses Projekt wurde auf eine andere Branchery-Version aktualisiert als die laufende."
 }
