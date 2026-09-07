@@ -47,7 +47,12 @@ jobs:
       run:
         working-directory: branchery/app
     steps:
+      # The release tests read the tags this repository carries, and a shallow
+      # checkout carries none. "fetch-tags" does not reach them either: at a
+      # depth of one there is no history for git to follow a tag into.
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v7
         with:
           node-version: 24
