@@ -23,7 +23,7 @@ import { t } from '../state.js';
 export function waiting(): TemplateResult {
     return html`
         <p class="sds-loading branchery-waiting" role="status">
-            <sds-icon class="sds-spinner" name="actions-circle-half" aria-hidden="true"></sds-icon>
+            <sds-icon class="sds-spinner" name="spinner-circle" aria-hidden="true"></sds-icon>
             <span class="sds-loading__label branchery-waiting__label">${t('detail.loading')}</span>
         </p>`;
 }

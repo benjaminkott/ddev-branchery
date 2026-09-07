@@ -39,7 +39,7 @@ export function making(job: RunningJob): Row {
 /** What is being done to a checkout, in the three places that say it. */
 function doing(what: string): TemplateResult {
     return html`<span class="branchery-list__meta--busy"><sds-icon
-                    class="sds-spinner" name="actions-circle-half" size="em"
+                    class="sds-spinner" name="spinner-circle"
                     aria-hidden="true"></sds-icon>${what}</span>`;
 }
 
