@@ -21,7 +21,7 @@
          after the compose file and the git tag. tools/check-compose-tag.sh
          holds all three together, because a release that leaves one behind is
          a manual claiming to describe a version nobody runs. -->
-    <project title="Branchery" version="v0.1.1" copyright="© 2026 Benjamin Kott"/>
+    <project title="Branchery" version="v0.1.2" copyright="© 2026 Benjamin Kott"/>
 
     <!-- The templates of this repository's own. The theme links every
          picture, and the drawings on the product page are written in the
