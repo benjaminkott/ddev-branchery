@@ -11,6 +11,7 @@
 
 import { html, nothing, type TemplateResult } from 'lit';
 import { saying } from '../dom.js';
+import { byPath } from '../rules/paths.js';
 import { t } from '../state.js';
 import type { Change, ChangeDiff } from '../types.js';
 import { imagePair } from './images.js';
@@ -42,8 +43,9 @@ interface FileList {
 }
 
 export function fileList(list: FileList): TemplateResult {
-    const rest = list.files.length - FILES_SHOWN;
-    const shown = list.all || rest <= 0 ? list.files : list.files.slice(0, FILES_SHOWN);
+    const files = byPath(list.files);
+    const rest = files.length - FILES_SHOWN;
+    const shown = list.all || rest <= 0 ? files : files.slice(0, FILES_SHOWN);
 
     return html`
         <ul class="branchery-changes">
@@ -88,13 +90,23 @@ export function fileList(list: FileList): TemplateResult {
  * Read from its end: what tells one row from the next is the file name, and in
  * a dozen changes under one directory that is the last thing on the line. The
  * directory stays and is set quietly.
+ *
+ * The two stand in elements of their own because a row too narrow for the path
+ * gives up the front of the directory and nothing else. The whole of it is the
+ * row's title, and the diff that opens under it is headed by it.
+ *
+ * The separator goes with the name: a directory ending in one ends in a
+ * character with no direction of its own, and where the cut is made is decided
+ * by direction.
  */
 function written(path: string): TemplateResult {
     const cut = path.lastIndexOf('/');
+    const directory = cut < 0 ? '' : path.slice(0, cut);
+    const name = cut < 0 ? path : path.slice(cut);
 
-    return html`<code class="sds-mono branchery-changes__path">${
-        cut < 0 ? nothing : html`<span class="branchery-changes__dir">${path.slice(0, cut + 1)}</span>`
-    }${path.slice(cut + 1)}</code>`;
+    return html`<code class="sds-mono branchery-changes__path" title=${path}>${
+        directory === '' ? nothing : html`<span class="branchery-changes__dir">${directory}</span>`
+    }<span class="branchery-changes__name">${name}</span></code>`;
 }
 
 function shownDiff(shown: Shown<ChangeDiff> | undefined): TemplateResult {

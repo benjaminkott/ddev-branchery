@@ -697,13 +697,38 @@ sds-note + .branchery-project {
 .branchery-changes__row:hover {
     background: var(--surface-raised);
 }
+/* A row is a line. Let a path wrap and a deep one breaks in the middle of a
+   word -- `localization.x` over `lf` -- which is the file name, the one thing
+   the row is read by, taken apart; and every row after it starts a line lower
+   than the eye going down the list expects. */
 .branchery-changes__path {
-    overflow-wrap: anywhere;
+    display: flex;
+    min-width: 0;
+    overflow: hidden;
 }
 /* The directory is kept, two files of one name in two places being the
-   ordinary case -- and set quietly, not being what the row is read by. */
+   ordinary case -- and set quietly, not being what the row is read by. It is
+   also what gives way where the row is too narrow, by a factor that only has
+   to beat the name's, and it is cut at its front: a path is least itself where
+   it starts. `rtl` says which end the cut is made at and nothing about the
+   order of what is in it, every character of a path being Latin. */
 .branchery-changes__dir {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
     color: var(--text-muted);
+    direction: rtl;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+/* The one thing on the row that never gives anything up. Let it shrink with
+   the directory and a fraction of a pixel is enough for the browser to write
+   the last letter of the name as a full stop -- and the name is what the row
+   is. Where it is wider than the row on its own the line is cut and the title
+   has it; there is nothing to give it room out of. */
+.branchery-changes__name {
+    flex: 0 0 auto;
+    white-space: nowrap;
 }
 /* Which way the row stands, at the end of it. Quiet: it answers a question the
    reader only asks of the row they are about to press. */
