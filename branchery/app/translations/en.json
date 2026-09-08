@@ -68,6 +68,7 @@
     "detail.noLog": "The log of this operation is gone.",
     "detail.noRemote": "tracks no remote branch",
     "detail.notPushed": "not pushed",
+    "detail.nothingUncommitted": "Everything in this worktree is committed now.",
     "detail.olderCommits": "Older commits",
     "detail.onRemoteOnly": "on the remote, not here yet",
     "detail.ownCommits": "{count} commits of its own",

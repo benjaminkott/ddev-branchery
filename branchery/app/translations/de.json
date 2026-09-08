@@ -68,6 +68,7 @@
     "detail.noLog": "Das Protokoll dieses Vorgangs ist nicht mehr da.",
     "detail.noRemote": "folgt keinem Remote-Branch",
     "detail.notPushed": "nicht gepusht",
+    "detail.nothingUncommitted": "In diesem Worktree ist jetzt alles eingecheckt.",
     "detail.olderCommits": "Ältere Commits",
     "detail.onRemoteOnly": "auf dem Remote, hier noch nicht",
     "detail.ownCommits": "{count} eigene Commits",

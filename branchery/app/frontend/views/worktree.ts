@@ -37,13 +37,19 @@ export type WorktreeHandlers = JobHandlers;
 /** What is read when asked for, and kept until the reader leaves the page. */
 interface Files {
     name: string;
+    /**
+     * How many the poll said there were when this list was asked for. The
+     * checkout goes on changing while the page stands open, and this is what
+     * says the list has stopped being about it.
+     */
+    count: number;
     list: Shown<Change[]>;
     all: boolean;
     diffs: Map<string, Shown<ChangeDiff>>;
 }
 
 function fresh(name: string): Files {
-    return { name, list: { read: null, trouble: '', open: false }, all: false, diffs: new Map() };
+    return { name, count: 0, list: { read: null, trouble: '', open: false }, all: false, diffs: new Map() };
 }
 
 export class WorktreeView extends View {
@@ -132,7 +138,7 @@ export class WorktreeView extends View {
     }
 
     private get worktree(): Worktree | null {
-        return [state.project, ...state.worktrees].find((entry) => entry?.name === this.name) ?? null;
+        return worktreeNamed(this.name);
     }
 
     /**
@@ -157,6 +163,7 @@ export class WorktreeView extends View {
         // would mean never reading it at all.
         if (worktree !== null) {
             this.log.about(name);
+            this.watchChanges(worktree);
         }
         if (worktree !== null && !worktree.isProject && this.usage.about(name)) {
             void this.readUsage(name);
@@ -364,6 +371,11 @@ export class WorktreeView extends View {
         if (list.read === null) {
             return waiting();
         }
+        if (list.read.length === 0) {
+            // The surface empties under the reader -- a commit in a terminal while it
+            // stands open -- and an empty one says nothing about why.
+            return html`<p class="branchery-list__quiet">${t('detail.nothingUncommitted')}</p>`;
+        }
 
         return fileList({
             files: list.read,
@@ -377,7 +389,38 @@ export class WorktreeView extends View {
         });
     }
 
+    /**
+     * A checkout goes on changing while this page stands open -- a file saved in
+     * an editor, a commit from a terminal -- and the list of what is uncommitted
+     * was read once. The count beside it is polled, so it is what says the list
+     * has gone old: read again where it is on the screen, and where it is not,
+     * dropped so the next press asks.
+     *
+     * What stands is left standing until the answer is here. Emptied first, the
+     * surface says the worktree has nothing for as long as the read takes -- and
+     * an open change with it.
+     */
+    private watchChanges(worktree: Worktree): void {
+        if (this.files.name !== worktree.name || this.files.count === worktree.changes) {
+            return;
+        }
+        if (!this.files.list.open) {
+            this.files = fresh('');
+
+            return;
+        }
+        void this.readChanges(worktree.name);
+        for (const [path, shown] of this.files.diffs) {
+            if (shown.open) {
+                void this.readDiff(worktree.name, path);
+            }
+        }
+    }
+
     private async readChanges(name: string): Promise<void> {
+        // Said before the asking and not after it: the answer arrives a moment
+        // later, and until it does every draw in between would read it again.
+        this.files.count = worktreeNamed(name)?.changes ?? 0;
         await this.reading(
             async () => (await api.changes(name)).changes,
             () => this.files.name === name,
@@ -535,6 +578,11 @@ export class WorktreeView extends View {
 }
 
 customElements.define('branchery-worktree', WorktreeView);
+
+/** The project is a worktree here as everywhere else, and it is not in the list. */
+function worktreeNamed(name: string): Worktree | null {
+    return [state.project, ...state.worktrees].find((entry) => entry?.name === name) ?? null;
+}
 
 /**
  * Not there, or not read yet. A page opened straight at a worktree is drawn
