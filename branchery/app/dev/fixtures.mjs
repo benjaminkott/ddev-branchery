@@ -118,6 +118,10 @@ export function createWorld() {
         // Put a sentence here to see the shell's note about a broken
         // .ddev/branchery.yaml.
         recipeProblem: null,
+        // Which image is answering. Change it while a tab is open and restart
+        // the mock: the page should fetch itself again rather than go on running
+        // the interface the version before served.
+        version: 'dev',
         unconfigured: false,
         updateWaiting: false,
         updateAvailable: null,

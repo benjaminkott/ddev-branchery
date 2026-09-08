@@ -275,7 +275,39 @@ function land(): void {
     query('#main').focus({ preventScroll: true });
 }
 
-subscribe(() => render());
+/**
+ * Which image served this page, learned from the first answer it got.
+ */
+let served: string | null = null;
+
+/**
+ * A restart replaces the container under an open tab, and what is on screen goes
+ * on running out of the image that is gone -- an interface a version behind the
+ * one answering it, looking exactly like the one that is not. So the page fetches
+ * itself again the moment the version stops being the one it was served by.
+ *
+ * Nothing is lost that was not already the old interface's: an operation runs in
+ * the container and outlives the page it was started from.
+ */
+function reloadWhenReplaced(): void {
+    const answering = state.version;
+    if (answering === '') {
+        return;
+    }
+    if (served === null) {
+        served = answering;
+
+        return;
+    }
+    if (served !== answering) {
+        location.reload();
+    }
+}
+
+subscribe(() => {
+    reloadWhenReplaced();
+    render();
+});
 onRoute((route) => {
     // What went wrong went wrong on the page it was said on: carried over, it
     // stands over something the reader is no longer looking at.

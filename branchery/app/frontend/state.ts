@@ -28,6 +28,7 @@ export const { state, subscribe } = createStore<AppState>({
     unreachable: false,
     recipeProblem: null,
     unconfigured: false,
+    version: '',
     updateWaiting: false,
     updateAvailable: null,
     exposed: null,
@@ -118,6 +119,7 @@ async function load(): Promise<RunningJob[]> {
     put('projectName', data.projectName ?? '');
     put('recipeProblem', data.recipeProblem ?? null);
     put('unconfigured', data.unconfigured === true);
+    put('version', data.version ?? '');
     put('updateWaiting', data.updateWaiting ?? false);
     put('updateAvailable', data.updateAvailable ?? null);
     put('exposed', data.exposed ?? null);

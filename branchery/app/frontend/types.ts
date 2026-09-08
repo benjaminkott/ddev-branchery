@@ -364,6 +364,12 @@ export interface ServerState {
     /** Whether the project has said anything at all about how it is built. */
     unconfigured: boolean;
     /**
+     * Which image answered. A restart replaces the container under an open tab
+     * and the page goes on running the interface the old one served, which looks
+     * exactly like the new one -- so a version that has changed is a reload.
+     */
+    version: string;
+    /**
      * The project asks for another version than the one answering: a container
      * keeps the image it was made from, and an update that appears to have
      * worked is the worst shape one can take.

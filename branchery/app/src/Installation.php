@@ -37,6 +37,12 @@ final class Installation
     ) {
     }
 
+    /** What this image is, so a page can tell it was served by another one. */
+    public function version(): string
+    {
+        return $this->version;
+    }
+
     /**
      * False wherever it cannot be told: an image built from a working copy has
      * nothing to compare against, and a project whose compose file says nothing is

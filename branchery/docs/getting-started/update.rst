@@ -26,7 +26,9 @@ An update is the add-on fetched again and the project restarted:
 project. The update writes the new tag, and the restart replaces the running
 container; until then the old image continues to serve the application. The
 running application notices when the project has been updated past it and says
-so at the top of the page.
+so at the top of the page. A page left open fetches itself again as soon as the
+new container answers, so what is on screen is never the interface of a version
+that is gone.
 
 ..  _update-notice:
 

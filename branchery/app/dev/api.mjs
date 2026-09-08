@@ -169,6 +169,9 @@ export function createApi() {
             // A project that has said nothing about how its worktrees are built: set
             // it in the fixtures to see the note that says so.
             unconfigured: world.unconfigured ?? false,
+            // Which image is answering. Change it in the fixtures while the page is
+            // open to see what a restart under an open tab does.
+            version: world.version ?? 'dev',
             // A version installed but not yet built into the image: set it in the
             // fixtures to see what the shell says about it.
             updateWaiting: world.updateWaiting ?? false,

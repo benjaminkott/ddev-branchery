@@ -73,6 +73,10 @@ final readonly class State
             // A project that has said nothing at all: its worktrees are a checkout and
             // an address, which is worth saying once at the top of the page.
             'unconfigured' => $this->recipes->saysNothing(),
+            // Which image is answering. The page reloads itself where this stops
+            // being the one it was served by: a restart replaces the container under
+            // an open tab, and nothing about the interface would look any different.
+            'version' => $this->installation->version(),
             // Updated to another version and waiting for a restart. Said here, or a
             // developer who updated sees nothing change and cannot find out why.
             'updateWaiting' => $this->installation->updateWaiting(),
