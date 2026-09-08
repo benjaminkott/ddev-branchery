@@ -82,6 +82,7 @@ final readonly class Router
             ['GET', "#^/api/worktrees/{$name}/commits/{$sha}/diff$#", fn (array $v): Response => $api->commitDiff($v['name'], $v['sha'], $query)],
             ['GET', "#^/api/worktrees/{$name}/changes$#", fn (array $v): Response => $api->changes($v['name'])],
             ['GET', "#^/api/worktrees/{$name}/changes/diff$#", fn (array $v): Response => $api->changeDiff($v['name'], $query)],
+            ['GET', "#^/api/worktrees/{$name}/file$#", fn (array $v): Response => $api->file($v['name'], $query)],
             ['GET', "#^/api/worktrees/{$name}/usage$#", fn (array $v): Response => $api->usage($v['name'])],
             ['GET', "#^/api/worktrees/{$name}/jobs$#", fn (array $v): Response => $api->worktreeJobs($v['name'])],
             ['DELETE', "#^/api/worktrees/{$name}$#", fn (array $v): Response => $api->remove($v['name'])],

@@ -46,7 +46,11 @@ final class ApiAnswersTest extends TestCase
         // never walked by a project that names none -- and an unwalked shape is
         // one the contract holds nobody to.
         $this->wiring->recipe("entrypoints:\n  - Backend: /typo3\n");
-        $this->wiring->worktree(self::NAME);
+        $directory = $this->wiring->worktree(self::NAME);
+        // An image the worktree carries uncommitted, because the change in one is
+        // the two images and not a diff -- and a shape nothing answers with is a
+        // shape this holds nobody to.
+        file_put_contents($directory . '/logo.png', str_repeat('.', 96));
         $this->tell();
         $this->finished = $this->ran();
         // And one still going, which is what the list marks a row with.
@@ -141,7 +145,7 @@ final class ApiAnswersTest extends TestCase
             'GET /api/worktrees/{name}/commits/{sha}' => $api->commit(self::NAME, self::SHA),
             'GET /api/worktrees/{name}/commits/{sha}/diff' => $api->commitDiff(self::NAME, self::SHA, ['path' => 'a.php']),
             'GET /api/worktrees/{name}/changes' => $api->changes(self::NAME),
-            'GET /api/worktrees/{name}/changes/diff' => $api->changeDiff(self::NAME, ['path' => 'a.php']),
+            'GET /api/worktrees/{name}/changes/diff' => $api->changeDiff(self::NAME, ['path' => 'logo.png']),
             'GET /api/worktrees/{name}/usage' => $api->usage(self::NAME),
             'GET /api/worktrees/{name}/jobs' => $api->worktreeJobs(self::NAME),
             'GET /api/branches' => $api->branches(),
@@ -246,11 +250,16 @@ final class ApiAnswersTest extends TestCase
             "4f2a1c9c0e2b2e6e4f5a6b7c8d9e0f1a2b3c4d5e\x1f4f2a1c9\x1fThe one before it\x1f1749000000\x1fA Developer",
         ]));
 
+        // What git holds at each side of a change in an image: the object and its
+        // length. The side that is not committed is read off the disk.
+        $web->answer('cat-file -s', 'd0b9e0f1a2b3c4d5e6f708192a3b4c5d6e7f8091 2048');
+
         // What is uncommitted, and what one commit touched.
         $web->answer('status --porcelain', " M a.php\n?? b.php");
         $web->answer('--name-status', "M\ta.php");
-        // The change in one file. Read as a diff either way, so one answer does both.
-        $web->answer('diff', implode("\n", [
+        // The change in one file, as the commit door reads it. The one beside it
+        // is asked about an image, which is answered with the images themselves.
+        $web->answer('show --format=', implode("\n", [
             'diff --git a/a.php b/a.php',
             '--- a/a.php',
             '+++ b/a.php',

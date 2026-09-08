@@ -282,5 +282,10 @@
     "update.command": "Aktualisierungsbefehl",
     "update.fetch": "Zum Aktualisieren bitte ausführen:",
     "update.how": "Die Anwendung ist ein Image, und ein Container behält das, aus dem er entstanden ist. Die Version, die dieses Projekt verlangt, gilt, sobald der Container ersetzt wird: ddev restart.",
-    "update.waiting": "Dieses Projekt wurde auf eine andere Branchery-Version aktualisiert als die laufende."
+    "update.waiting": "Dieses Projekt wurde auf eine andere Branchery-Version aktualisiert als die laufende.",
+    "detail.imageBefore": "Vorher",
+    "detail.imageAfter": "Nachher",
+    "detail.imageBeforeAlt": "{path}, wie es war",
+    "detail.imageAfterAlt": "{path}, wie es jetzt ist",
+    "detail.imageNothing": "Nichts hier"
 }

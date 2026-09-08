@@ -26,6 +26,7 @@ The principal resources are:
     ``/api/worktrees/<name>/<operation>``   provision, sync, pull, restore or discard
     ``/api/worktrees/<name>/commits``       browse the worktree's commits and diffs
     ``/api/worktrees/<name>/changes``       browse uncommitted changes and diffs
+    ``/api/worktrees/<name>/file``          one file of the checkout, as itself
     ``/api/worktrees/<name>/usage``         disk usage of its checkout and database
     ``/api/worktrees/<name>/jobs``          operation history for a worktree
     ``/api/branches``                       branches available for a worktree
@@ -44,6 +45,16 @@ base's. ``?skip=<n>`` is the page behind that one,
 ``/commits/<sha>`` one commit in full with the files it touched, and
 ``/commits/<sha>/diff?path=<path>`` one of those files. It is what the
 interface shows before a discard.
+
+The change in an image is not a diff. Where the path names one -- ``.png``,
+``.jpg``, ``.gif``, ``.webp``, ``.avif``, ``.bmp``, ``.ico`` -- both diff doors
+answer with no ``lines`` and an ``image`` instead: a ``before`` and an ``after``,
+either of which is ``null`` where the change added the file or deleted it. Each
+side says how many bytes it is and where to fetch it,
+``/api/worktrees/<name>/file?path=<path>&blob=<object>``, which answers with the
+bytes themselves under the media type the name of the file gives them. Without a
+``blob`` that door hands over the file as it stands in the checkout, which is the
+side of an uncommitted change git holds nothing of.
 
 An operation is read a piece at a time. ``GET /api/jobs/<id>`` answers with its
 steps and its log, and with ``size``: how much of the log that answer accounts

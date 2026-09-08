@@ -27,6 +27,7 @@ use App\Config\Recipes;
 use App\Git\Facts;
 use App\Git\Git;
 use App\Git\History;
+use App\Git\Images;
 use App\Git\Repository;
 use App\Git\Runner;
 use App\Git\SshAgent;
@@ -202,6 +203,7 @@ final class Container
             new History($this->gitRunner()),
             new WorkingCopy($this->gitRunner()),
             new Repository($this->project(), $this->gitRunner(), $this->locks()),
+            new Images($this->gitRunner(), $this->project()),
         ));
     }
 

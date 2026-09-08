@@ -6,6 +6,7 @@ namespace App\Tests\Fake;
 
 use App\Container;
 use App\Git\Git;
+use App\Git\Runner;
 use App\Http\ApiController;
 use App\Jobs\JobRunner;
 use App\ManagedFiles;
@@ -29,6 +30,7 @@ final class Wiring
     public readonly Project $project;
     public readonly RecordingContainer $web;
     public readonly Git $git;
+    public readonly Runner $runner;
     public readonly Worktrees $worktrees;
     public readonly WorktreeManager $manager;
     public readonly JobRunner $jobs;
@@ -56,6 +58,7 @@ final class Wiring
         ]);
 
         $this->git = $container->git();
+        $this->runner = $container->gitRunner();
         $this->worktrees = $container->worktrees();
         $this->manager = $container->manager();
         $this->jobs = $container->jobs();

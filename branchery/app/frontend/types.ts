@@ -210,6 +210,24 @@ export interface ChangeDiff {
     path: string;
     lines: DiffLine[];
     truncated: boolean;
+    /** The two images, where the file is one -- and then there are no lines. */
+    image: ImageChange | null;
+}
+
+/**
+ * A change a diff says nothing about: git answers "Binary files ... differ" and
+ * stops there, so both sides are named and shown as themselves. A side that is
+ * not there is the image this change added, or the one it deleted.
+ */
+export interface ImageChange {
+    before: ImageSide | null;
+    after: ImageSide | null;
+}
+
+/** Where one side of it is fetched from, and how much of it there is. */
+export interface ImageSide {
+    source: string;
+    bytes: number;
 }
 
 /**

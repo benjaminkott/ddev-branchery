@@ -30,6 +30,7 @@ final readonly class Git
         private History $history,
         private WorkingCopy $workingCopy,
         private Repository $repository,
+        private Images $images,
     ) {
     }
 
@@ -183,6 +184,17 @@ final readonly class Git
         return $this->history->hasCommit($name, $sha);
     }
 
+    /**
+     * The two sides of a change in an image, a diff of one saying only that it
+     * changed.
+     *
+     * @return array{before: ?array{blob: ?string, bytes: int}, after: ?array{blob: ?string, bytes: int}}
+     */
+    public function commitImage(?string $name, string $sha, string $path): array
+    {
+        return $this->images->inCommit($name, $sha, $path);
+    }
+
     /** @return list<array{sha: string, subject: string, when: int, author: string}> */
     public function unpushed(string $name): array
     {
@@ -206,6 +218,20 @@ final readonly class Git
     public function diff(?string $name, string $path): array
     {
         return $this->workingCopy->diff($name, $path);
+    }
+
+    /**
+     * @return array{before: ?array{blob: ?string, bytes: int}, after: ?array{blob: ?string, bytes: int}}
+     */
+    public function image(?string $name, string $path): array
+    {
+        return $this->images->uncommitted($name, $path);
+    }
+
+    /** One side of such a change, as itself -- what the door beside the diff hands out. */
+    public function imageBytes(?string $name, ?string $blob, string $path): ?string
+    {
+        return $this->images->bytes($name, $blob, $path);
     }
 
     public function changeCount(string $name): int

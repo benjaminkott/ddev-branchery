@@ -13,6 +13,7 @@ import { html, nothing, type TemplateResult } from 'lit';
 import { saying } from '../dom.js';
 import { t } from '../state.js';
 import type { Change, ChangeDiff } from '../types.js';
+import { imagePair } from './images.js';
 import { waiting } from './waiting.js';
 
 /** Something fetched when asked for: the answer, why there is none, and whether it is open. */
@@ -102,6 +103,11 @@ function shownDiff(shown: Shown<ChangeDiff> | undefined): TemplateResult {
     }
     if (shown.read === null) {
         return html`<sds-note tone="warn" body=${`${t('detail.changeFailed')} ${shown.trouble}`}></sds-note>`;
+    }
+
+    // An image is shown as itself: a diff of one says only that it changed.
+    if (shown.read.image !== null) {
+        return imagePair(shown.read.path, shown.read.image);
     }
 
     return html`

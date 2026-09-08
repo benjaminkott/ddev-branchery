@@ -6,6 +6,7 @@ namespace App\Http;
 
 use App\Git\Git;
 use App\Git\GitOutput;
+use App\Git\Images;
 use App\Jobs\JobRunner;
 use App\Operation\WorktreeManager;
 use App\Project;
@@ -259,7 +260,12 @@ final class ApiController
             throw new MissingException('This branch has no such commit.');
         }
 
-        return Response::json(['path' => $path, ...$this->git->commitDiff($of, $revision, $path)]);
+        return Response::json([
+            'path' => $path,
+            ...(Images::mediaType($path) !== null
+                ? $this->image($name, $path, $this->git->commitImage($of, $revision, $path))
+                : ['image' => null, ...$this->git->commitDiff($of, $revision, $path)]),
+        ]);
     }
 
     /**
@@ -284,7 +290,85 @@ final class ApiController
             return $this->error('The path has to name a file inside the checkout.');
         }
 
-        return Response::json(['path' => $path, ...$this->git->diff($of, $path)]);
+        return Response::json([
+            'path' => $path,
+            ...(Images::mediaType($path) !== null
+                ? $this->image($name, $path, $this->git->image($of, $path))
+                : ['image' => null, ...$this->git->diff($of, $path)]),
+        ]);
+    }
+
+    /**
+     * One side of a change in an image, as itself. Its own door because that is
+     * what a browser fetches an image through -- the diff beside it says which
+     * two to ask for.
+     *
+     * @param array<string, mixed> $query
+     */
+    public function file(string $name, array $query): Response
+    {
+        $of = $this->checkoutOf($name);
+        $asked = Parameters::of($query);
+        $path = GitOutput::insideCheckout($asked->text('path'));
+        if ($path === null) {
+            return $this->error('The path has to name a file inside the checkout.');
+        }
+        $type = Images::mediaType($path);
+        if ($type === null) {
+            return $this->error('That is not a file this hands out.');
+        }
+        $named = $asked->text('blob');
+        $blob = $named === '' ? null : GitOutput::asSha($named);
+        if ($named !== '' && $blob === null) {
+            return $this->error('That is not an object of the repository.');
+        }
+        // Nothing here is asked for by a reader: the diff wrote both addresses a
+        // moment ago, so what is not there is a change that has moved on since.
+        $bytes = $this->git->imageBytes($of, $blob, $path);
+        if ($bytes === null) {
+            throw new MissingException('There is no such file here.');
+        }
+
+        return Response::file($bytes, $type, $blob !== null);
+    }
+
+    /**
+     * What a change in an image answers with: a door for each side and no lines,
+     * git having nothing to say about the bytes of a JPEG. A side that is not
+     * there is the file added in this change, or deleted by it.
+     *
+     * @param array{before: ?array{blob: ?string, bytes: int}, after: ?array{blob: ?string, bytes: int}} $sides
+     *
+     * @return array{lines: list<array{kind: string, text: string}>, truncated: bool, image: array{before: ?array{source: string, bytes: int}, after: ?array{source: string, bytes: int}}}
+     */
+    private function image(string $name, string $path, array $sides): array
+    {
+        return [
+            'lines' => [],
+            'truncated' => false,
+            'image' => [
+                'before' => $this->side($name, $path, $sides['before']),
+                'after' => $this->side($name, $path, $sides['after']),
+            ],
+        ];
+    }
+
+    /**
+     * @param ?array{blob: ?string, bytes: int} $side
+     *
+     * @return ?array{source: string, bytes: int}
+     */
+    private function side(string $name, string $path, ?array $side): ?array
+    {
+        if ($side === null) {
+            return null;
+        }
+        $query = ['path' => $path] + ($side['blob'] === null ? [] : ['blob' => $side['blob']]);
+
+        return [
+            'source' => sprintf('/api/worktrees/%s/file?%s', rawurlencode($name), http_build_query($query)),
+            'bytes' => $side['bytes'],
+        ];
     }
 
     /**

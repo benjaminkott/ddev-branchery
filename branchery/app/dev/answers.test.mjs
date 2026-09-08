@@ -37,7 +37,10 @@ function addresses(api) {
     const sha = commits.commits[0].sha;
     const detail = call(api, 'GET', `/api/worktrees/${worktree}/commits/${sha}`).body;
     const touched = detail.files[0].path;
-    const changed = call(api, 'GET', `/api/worktrees/${worktree}/changes`).body.changes[0].path;
+    const changes = call(api, 'GET', `/api/worktrees/${worktree}/changes`).body.changes;
+    // The image among them, a change in one being the two images and not a diff:
+    // the door beside this one is asked about a file that has one.
+    const changed = (changes.find((entry) => entry.path.endsWith('.png')) ?? changes[0]).path;
     const branch = call(api, 'GET', '/api/branches').body[0].name;
     // An operation of its own, because a job is only there once one was started.
     const job = call(api, 'POST', `/api/worktrees/${worktree}/pull`).body.job;
@@ -179,6 +182,8 @@ describe('the shapes the interface is written against', () => {
         running: 'RunningJob',
         stepDetail: 'JobStepAnswer',
         diffLine: 'DiffLine',
+        imageChange: 'ImageChange',
+        imageSide: 'ImageSide',
     };
 
     const types = readFileSync(resolve(here, '../frontend/types.ts'), 'utf8');

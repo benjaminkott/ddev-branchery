@@ -7,6 +7,8 @@
  * and with the same totals.
  */
 
+import { deflateSync } from 'node:zlib';
+
 export const TLD = 'branchery.ddev.site';
 
 /** Same rule as Project::slug(): hostnames only take [a-z0-9-]. */
@@ -584,6 +586,7 @@ function bodyOf(subject) {
 function filesOf(sha) {
     const pool = [
         ['modified', 'packages/site/Classes/Controller/PageController.php'],
+        ['modified', 'packages/site/Resources/Public/Images/logo.png'],
         ['modified', 'packages/site/Configuration/Services.yaml'],
         ['added', 'packages/site/Tests/Functional/PageControllerTest.php'],
         ['modified', 'packages/site/Resources/Private/Templates/Page/Default.html'],
@@ -813,8 +816,11 @@ export const plans = {
 export function changesOf(worktree) {
     const pool = [
         ['modified', 'composer.json'],
+        ['modified', 'packages/site/Resources/Public/Images/logo.png'],
         ['modified', 'config/sites/main/config.yaml'],
+        ['added', 'packages/site/Resources/Public/Images/hero.jpg'],
         ['untracked', 'notes.md'],
+        ['deleted', 'public/fileadmin/legacy-banner.gif'],
         ['added', 'packages/site/Classes/Middleware/RedirectCache.php'],
         ['deleted', 'packages/site/Configuration/TypoScript/Legacy.typoscript'],
         ['renamed', 'packages/site/Classes/Service/Redirects.php'],
@@ -848,4 +854,98 @@ export function diffOf(path) {
     ];
 
     return { lines, truncated: path.endsWith('composer.lock') };
+}
+
+/**
+ * Which files the interface shows as images rather than as a diff. The same
+ * list App\Git\Images keeps, minus the media types: what the mock hands out is
+ * always a PNG, whatever the file is called.
+ */
+const IMAGE_TYPES = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'avif', 'bmp', 'ico'];
+
+export function isImage(path) {
+    return IMAGE_TYPES.includes((path.split('.').pop() ?? '').toLowerCase());
+}
+
+/**
+ * An image the mock hands out, drawn here rather than kept as a file: what a
+ * fixture has to be is two of them that differ, and a pair of base64 blocks in
+ * a source file is two things nobody can read or change.
+ *
+ * The path and the side decide what it looks like, so the same file is the same
+ * image every time it is asked for and no two of them are alike.
+ */
+export function drawingOf(path, side) {
+    const seed = [...`${path}:${side}`].reduce((sum, letter) => (sum * 31 + letter.codePointAt(0)) % 9973, 7);
+    const wide = side === 'before' ? 320 : 384;
+
+    return png(wide, 240, (x, y) => {
+        const band = Math.floor((y / 240) * 6);
+        const inside = x > wide / 6 && x < (wide * 5) / 6 && y > 60 && y < 180;
+        const shade = (seed + band * 23) % 200;
+
+        return inside
+            ? [255 - shade, 40 + ((seed * 3) % 120), 90 + shade / 2]
+            : [30 + shade / 3, 40 + band * 12, 90 + ((seed + band * 40) % 140)];
+    });
+}
+
+/**
+ * A PNG of one colour per pixel: the header, one deflated block of scanlines
+ * and the end. Written out because an image is what this fixture is about --
+ * every other way to have one is a binary file in the repository.
+ */
+function png(width, height, colour) {
+    const raw = Buffer.alloc((width * 3 + 1) * height);
+    for (let y = 0; y < height; y += 1) {
+        // The first byte of every scanline says how it is filtered; none of them is.
+        const start = y * (width * 3 + 1);
+        for (let x = 0; x < width; x += 1) {
+            const [red, green, blue] = colour(x, y);
+            raw[start + 1 + x * 3] = red & 0xff;
+            raw[start + 2 + x * 3] = green & 0xff;
+            raw[start + 3 + x * 3] = blue & 0xff;
+        }
+    }
+
+    const header = Buffer.alloc(13);
+    header.writeUInt32BE(width, 0);
+    header.writeUInt32BE(height, 4);
+    // Eight bits a channel, three channels, and none of the optional machinery.
+    header.set([8, 2, 0, 0, 0], 8);
+
+    return Buffer.concat([
+        Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+        chunk('IHDR', header),
+        chunk('IDAT', deflateSync(raw)),
+        chunk('IEND', Buffer.alloc(0)),
+    ]);
+}
+
+function chunk(type, data) {
+    const head = Buffer.alloc(8);
+    head.writeUInt32BE(data.length, 0);
+    head.write(type, 4, 'ascii');
+    const tail = Buffer.alloc(4);
+    tail.writeUInt32BE(crc(Buffer.concat([head.subarray(4), data])), 0);
+
+    return Buffer.concat([head, data, tail]);
+}
+
+const CRC_TABLE = Array.from({ length: 256 }, (_, index) => {
+    let value = index;
+    for (let bit = 0; bit < 8; bit += 1) {
+        value = value & 1 ? 0xedb88320 ^ (value >>> 1) : value >>> 1;
+    }
+
+    return value >>> 0;
+});
+
+function crc(bytes) {
+    let value = 0xffffffff;
+    for (const byte of bytes) {
+        value = CRC_TABLE[(value ^ byte) & 0xff] ^ (value >>> 8);
+    }
+
+    return (value ^ 0xffffffff) >>> 0;
 }

@@ -33,6 +33,22 @@ final readonly class Response
         return new self(200, $body, ['Content-Type' => 'application/json']);
     }
 
+    /**
+     * A file handed over as itself -- an image beside the change in it. What git
+     * holds at an object cannot change and is kept for good; the file in a
+     * checkout is whatever it is this second.
+     */
+    public static function file(string $bytes, string $mediaType, bool $unchanging): self
+    {
+        return new self(200, $bytes, [
+            'Content-Type' => $mediaType,
+            'Cache-Control' => $unchanging ? 'private, max-age=31536000, immutable' : 'no-store',
+            // The bytes are whatever a repository holds, and the type is read off
+            // the name of the file: the browser is told not to decide otherwise.
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
+    }
+
     public static function html(string $markup, int $status = 200): self
     {
         return new self($status, $markup, ['Content-Type' => 'text/html; charset=utf-8']);

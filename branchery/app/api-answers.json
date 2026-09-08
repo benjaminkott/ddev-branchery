@@ -60,6 +60,11 @@
             "says": "Unknown worktree."
         },
         {
+            "ask": "GET /api/worktrees/nowhere/file?path=a.png",
+            "status": 404,
+            "says": "Unknown worktree."
+        },
+        {
             "ask": "PATCH /api/worktrees/nowhere",
             "status": 404,
             "says": "Unknown worktree."
@@ -273,11 +278,20 @@
         "diff": {
             "path": "string",
             "lines": "[@diffLine]",
-            "truncated": "bool"
+            "truncated": "bool",
+            "image": "?@imageChange"
         },
         "diffLine": {
             "kind": "string",
             "text": "string"
+        },
+        "imageChange": {
+            "before": "?@imageSide",
+            "after": "?@imageSide"
+        },
+        "imageSide": {
+            "source": "string",
+            "bytes": "int"
         },
         "usage": {
             "files": "int",

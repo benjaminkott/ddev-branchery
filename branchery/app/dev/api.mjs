@@ -15,6 +15,8 @@ import {
     commitsOf,
     createWorld,
     diffOf,
+    drawingOf,
+    isImage,
     newBranch,
     newWorktree,
     plans,
@@ -85,6 +87,11 @@ export function createApi() {
             'GET',
             /^\/api\/worktrees\/(?<name>[A-Za-z0-9][A-Za-z0-9.-]*)\/changes\/diff$/,
             (v, _payload, query) => changeDiff(v.name, query),
+        ],
+        [
+            'GET',
+            /^\/api\/worktrees\/(?<name>[A-Za-z0-9][A-Za-z0-9.-]*)\/file$/,
+            (v, _payload, query) => file(v.name, query),
         ],
         ['GET', /^\/api\/worktrees\/(?<name>[A-Za-z0-9][A-Za-z0-9.-]*)\/usage$/, (v) => usage(v.name)],
         ['DELETE', /^\/api\/worktrees\/(?<name>[A-Za-z0-9][A-Za-z0-9.-]*)$/, (v) => remove(v.name)],
@@ -482,17 +489,77 @@ export function createApi() {
 
     /** The change in one of them; a path outside the checkout is refused. */
     function changeDiff(name, query) {
-        mustCheckout(name);
-        const path = String(query.path ?? '').trim();
-        if (
-            path === '' ||
-            path.startsWith('/') ||
-            path.split('/').some((segment) => segment === '' || segment === '.' || segment === '..')
-        ) {
+        const worktree = mustCheckout(name);
+        const path = insideCheckout(query);
+        if (path === null) {
             return error('The path has to name a file inside the checkout.');
         }
+        const change = changesOf(worktree).find((entry) => entry.path === path);
 
-        return json({ path, ...diffOf(path) });
+        return json({ path, ...changeIn(name, path, change?.status ?? 'modified', false) });
+    }
+
+    /**
+     * One image, as itself. Always a PNG whatever the file is called: what the
+     * mock has to be right about is the door and the bytes behind it.
+     */
+    function file(name, query) {
+        mustCheckout(name);
+        const path = insideCheckout(query);
+        if (path === null) {
+            return error('The path has to name a file inside the checkout.');
+        }
+        if (!isImage(path)) {
+            return error('That is not a file this hands out.');
+        }
+        const blob = String(query.blob ?? '').trim();
+        if (blob !== '' && !/^[0-9a-f]{4,40}$/.test(blob)) {
+            return error('That is not an object of the repository.');
+        }
+
+        return {
+            status: 200,
+            headers: {
+                'Content-Type': 'image/png',
+                'Cache-Control': blob === '' ? 'no-store' : 'private, max-age=31536000, immutable',
+                'X-Content-Type-Options': 'nosniff',
+            },
+            body: drawingOf(path, blob === blobOf(path, 'before') ? 'before' : 'after'),
+        };
+    }
+
+    /**
+     * The change in one file: the two images where the file is one, and a diff
+     * otherwise. Which sides there are follows the status -- what the change
+     * added has nothing before it, what it deleted nothing after.
+     */
+    function changeIn(name, path, status, committed) {
+        if (!isImage(path)) {
+            return { image: null, ...diffOf(path) };
+        }
+
+        return {
+            lines: [],
+            truncated: false,
+            image: {
+                before: ['added', 'untracked'].includes(status) ? null : sideOf(name, path, 'before', true),
+                after: status === 'deleted' ? null : sideOf(name, path, 'after', committed),
+            },
+        };
+    }
+
+    /**
+     * Where the browser fetches one side from. What is committed is an object of
+     * the repository and named by it; the working copy's own file is not, and is
+     * asked for by its path alone.
+     */
+    function sideOf(name, path, side, held) {
+        const asked = `path=${encodeURIComponent(path)}` + (held ? `&blob=${blobOf(path, side)}` : '');
+
+        return {
+            source: `/api/worktrees/${encodeURIComponent(name)}/file?${asked}`,
+            bytes: drawingOf(path, side).length,
+        };
     }
 
     /** How many commits a page of the log is, as the container pages it. */
@@ -539,16 +606,13 @@ export function createApi() {
         if (!commitOf(name, sha)) {
             throw new MissingError('This branch has no such commit.');
         }
-        const path = String(query.path ?? '').trim();
-        if (
-            path === '' ||
-            path.startsWith('/') ||
-            path.split('/').some((segment) => segment === '' || segment === '.' || segment === '..')
-        ) {
+        const path = insideCheckout(query);
+        if (path === null) {
             return error('The path has to name a file inside the checkout.');
         }
+        const touched = commitOf(name, sha)?.files.find((entry) => entry.path === path);
 
-        return json({ path, ...diffOf(path) });
+        return json({ path, ...changeIn(name, path, touched?.status ?? 'modified', true) });
     }
 
     /** The one answer here that ends with something gone. */
@@ -966,6 +1030,31 @@ function olderThan(version, than) {
     }
 
     return false;
+}
+
+/**
+ * The path a door was asked about, or null where it leads out of the checkout
+ * -- the rule GitOutput::insideCheckout() holds the container to.
+ */
+function insideCheckout(query) {
+    const path = String(query.path ?? '').trim();
+    const outside =
+        path === '' ||
+        path.startsWith('/') ||
+        path.split('/').some((segment) => segment === '' || segment === '.' || segment === '..');
+
+    return outside ? null : path;
+}
+
+/**
+ * What git would call one side of a change in an image. Invented from the path,
+ * so the door that hands the image out can tell from it which side it is being
+ * asked for -- a repository is what knows that, and the mock has none.
+ */
+function blobOf(path, side) {
+    const seed = [...`${path}:${side}`].reduce((sum, letter) => (sum * 33 + letter.codePointAt(0)) % 0xfffffff, 17);
+
+    return seed.toString(16).padStart(8, '0').repeat(5).slice(0, 40);
 }
 
 function json(data, status = 200, headers = {}) {

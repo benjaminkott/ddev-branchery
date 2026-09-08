@@ -7,6 +7,7 @@ namespace App\Tests\Fake;
 use App\Git\Facts;
 use App\Git\Git;
 use App\Git\History;
+use App\Git\Images;
 use App\Git\Repository;
 use App\Git\Runner;
 use App\Git\WorkingCopy;
@@ -33,6 +34,7 @@ final class Assembled
             new History($runner),
             new WorkingCopy($runner),
             new Repository($project, $runner, $locks),
+            new Images($runner, $project),
         );
     }
 }

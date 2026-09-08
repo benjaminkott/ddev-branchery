@@ -713,6 +713,63 @@ sds-note + .branchery-project {
 .branchery-changes__file sds-diff {
     margin: var(--space-2) var(--space-2) var(--space-3);
 }
+/* The change in an image, which is the two images. Each is drawn at the size it
+   has and never stretched to its neighbour's: a logo that grew is drawn bigger
+   before any number says so. Beside one another where there is room for it and
+   above one another where there is not. */
+.branchery-image {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    margin: var(--space-2) var(--space-2) var(--space-3);
+}
+/* The frames are one height and the captions therefore one line, whatever the
+   two images measure -- what says they differ is the images, not the boxes. */
+.branchery-image__side {
+    display: flex;
+    flex: 1 1 14rem;
+    flex-direction: column;
+    min-width: 0;
+    margin: 0;
+}
+/* The board behind it is what says which part of an image is transparent, and a
+   logo is drawn on nothing more often than not. Out of two surfaces of the
+   system, so it is the same board in both themes. The frame keeps its height
+   while the browser is still fetching: a list that shifts under the hand that
+   opened a row is the reader's place in it lost. */
+.branchery-image__frame {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    min-height: 6rem;
+    padding: var(--space-2);
+    border: var(--border-hairline) solid var(--border-subtle);
+    border-radius: var(--radius-control);
+    background-color: var(--surface-inset);
+    background-image: repeating-conic-gradient(var(--surface-raised) 0% 25%, var(--surface-inset) 0% 50%);
+    background-size: var(--space-4) var(--space-4);
+}
+.branchery-image__of {
+    max-width: 100%;
+    height: auto;
+}
+/* An empty frame is a side that has nothing: the image this change added had
+   nothing before it, and the one it deleted has nothing after. */
+.branchery-image__nothing {
+    color: var(--text-muted);
+    font-size: var(--font-size-small);
+}
+.branchery-image__caption {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-2);
+    margin-top: var(--space-1);
+    font-size: var(--font-size-small);
+}
+.branchery-image__bytes {
+    color: var(--text-muted);
+}
 .branchery-changes__more {
     margin: 0;
     color: var(--text-muted);
