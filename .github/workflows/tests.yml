@@ -111,6 +111,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Which tests the action runs it takes from the event name, and on
+      # anything but a push or a pull request that is the whole directory --
+      # the release tests included, which read tags this checkout never fetches.
       - uses: ddev/github-action-add-on-test@v2
         with:
           ddev_version: ${{ matrix.ddev_version }}
@@ -118,6 +121,7 @@ jobs:
           debug_enabled: ${{ github.event.inputs.debug_enabled }}
           addon_repository: ${{ env.GITHUB_REPOSITORY }}
           addon_ref: ${{ env.GITHUB_REF }}
+          test_command: bats tests --filter-tags !release
 
   # The same suite over the two project shapes it has never been run against.
   # DatabaseOperations speaks a second dialect, and every statement in it drops
@@ -151,6 +155,9 @@ jobs:
       BRANCHERY_TEST_WEBSERVER: ${{ matrix.webserver }}
 
     steps:
+      # Which tests the action runs it takes from the event name, and on
+      # anything but a push or a pull request that is the whole directory --
+      # the release tests included, which read tags this checkout never fetches.
       - uses: ddev/github-action-add-on-test@v2
         with:
           ddev_version: stable
@@ -158,3 +165,4 @@ jobs:
           debug_enabled: ${{ github.event.inputs.debug_enabled }}
           addon_repository: ${{ env.GITHUB_REPOSITORY }}
           addon_ref: ${{ env.GITHUB_REF }}
+          test_command: bats tests --filter-tags !release
