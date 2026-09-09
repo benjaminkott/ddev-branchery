@@ -142,6 +142,26 @@ final class StepReporter
     }
 
     /**
+     * The line a recipe asked for, before it runs. What a tool writes tells the
+     * story wherever it writes anything at all -- and a line that says nothing
+     * leaves a step that reads as though nothing happened in it: a client given a
+     * statement is silent, and so is a console command that prints on failure
+     * only.
+     *
+     * The first line of it, because a moment that writes a configuration file
+     * carries the whole file as one command, and a log is not where that is read.
+     */
+    public function command(string $line): void
+    {
+        $lines = preg_split('/\r?\n/', trim($line)) ?: [];
+        // Without the backslash a continued line ends in, which says "and the next
+        // line too" to a shell and nothing at all to a reader.
+        $first = rtrim(trim((string) ($lines[0] ?? '')), '\\ ');
+        $said = count($lines) > 1 ? $first . ' …' : $first;
+        ($this->writer)('$ ' . self::text($said), sprintf('<fg=gray>$</> %s', self::text($said)));
+    }
+
+    /**
      * A line one of the tools wrote, as it wrote it: what sets these apart is that
      * they carry no mark and no colour.
      */

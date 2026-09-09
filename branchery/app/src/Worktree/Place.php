@@ -118,6 +118,11 @@ final readonly class Place
     public function at(Build $build, string $moment, ?StepReporter $reporter = null): void
     {
         foreach ($build->lines($moment) as $command) {
+            $reporter?->command(
+                $command->kind === 'composer'
+                    ? 'composer ' . implode(' ', $command->arguments())
+                    : $command->line,
+            );
             try {
                 if ($command->kind === 'composer') {
                     $this->composer(...$command->arguments());
