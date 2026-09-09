@@ -12,6 +12,7 @@ use App\Tests\Fake\Assembled;
 use App\Tests\Fake\RecordingContainer;
 use App\Web\DatabaseServer;
 use App\Web\Runtimes;
+use App\Worktree\Editors;
 use App\Worktree\NodeVersions;
 use App\Worktree\PhpVersions;
 use App\Worktree\VersionMap;
@@ -58,6 +59,7 @@ final class WorktreeNamesTest extends TestCase
             Assembled::git($project, $web, $locks),
             new DatabaseServer($web),
             new Recipes($this->root, \dirname(__DIR__, 2) . '/defaults'),
+            new Editors($project, ''),
         );
     }
 

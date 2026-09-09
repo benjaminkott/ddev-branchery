@@ -23,6 +23,16 @@ export interface Entrypoint {
 }
 
 /**
+ * What opens a checkout on the machine reading this page, under the editor's
+ * own name. The same two fields as an entrypoint and a different thing: that
+ * one leads into the running site, this one out of the browser altogether.
+ */
+export interface Editor {
+    name: string;
+    url: string;
+}
+
+/**
  * The login of a worktree. The name is the worktree's own and the password is
  * the same everywhere -- a development login, written down in the manual, and
  * not a secret.
@@ -71,6 +81,11 @@ export interface Worktree {
     entrypoints: Entrypoint[];
     /** Where it lies on the machine, as the terminal would have to be told. */
     path: string;
+    /**
+     * What opens that directory on the machine reading this, in the order they
+     * are offered. Empty where nothing does.
+     */
+    editors: Editor[];
     /** Letting the worktree go loses nothing that is not kept elsewhere. */
     merged: boolean;
     /**

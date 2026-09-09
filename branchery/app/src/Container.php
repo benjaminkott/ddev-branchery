@@ -58,6 +58,7 @@ use App\Web\Runtimes;
 use App\Web\WebContainer;
 use App\Worktree\CommitPages;
 use App\Worktree\Description;
+use App\Worktree\Editors;
 use App\Worktree\NodeVersions;
 use App\Worktree\PhpVersions;
 use App\Worktree\Places;
@@ -280,6 +281,19 @@ final class Container
             $this->git(),
             $this->databaseServer(),
             $this->recipes(),
+            $this->editors(),
+        ));
+    }
+
+    /**
+     * Which distribution the project lies in, where it lies in one at all: the
+     * host is the only one that can say, and it says so through the compose file.
+     */
+    public function editors(): Editors
+    {
+        return $this->share(Editors::class, fn (): Editors => new Editors(
+            $this->project(),
+            distribution: $this->string('WSL_DISTRO_NAME', ''),
         ));
     }
 

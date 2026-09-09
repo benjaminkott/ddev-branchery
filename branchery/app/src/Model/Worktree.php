@@ -42,6 +42,13 @@ final readonly class Worktree implements \JsonSerializable
          * container's own view -- /var/www/html/... -- would be wrong for that.
          */
         public string $path,
+        /**
+         * What opens that directory on the machine the page is read on, in the
+         * order they are offered. Empty where nothing does -- see App\Worktree\Editors.
+         *
+         * @var list<array{name: string, url: string}>
+         */
+        public array $editors = [],
         public int $changes = 0,
         /**
          * Null where the branch tracks nothing -- then it is not "in step" but
@@ -132,6 +139,7 @@ final readonly class Worktree implements \JsonSerializable
             'url' => $this->url,
             'entrypoints' => $this->entrypoints,
             'path' => $this->path,
+            'editors' => $this->editors,
             'changes' => $this->changes,
             'ahead' => $this->ahead,
             'behind' => $this->behind,

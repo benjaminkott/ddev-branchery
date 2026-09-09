@@ -235,6 +235,43 @@ export function buildWayOut(url: string, label: string): SdsButton {
 }
 
 /**
+ * The same control, for an address the machine answers rather than a page: an
+ * editor, and whatever a project puts beside one.
+ *
+ * The press is caught and the browser is not allowed to lead: a navigation to a
+ * scheme it does not serve itself is one it cannot finish, so it hands the
+ * address to the machine and leaves the document with nowhere to go -- which,
+ * in the window this page was opened in for the purpose, is the window closing
+ * under the reader. Handed over through a frame of its own instead, nothing
+ * about the document moves.
+ *
+ * The `href` stands all the same, so the address can be copied and the status
+ * line says where the button leads.
+ */
+export function buildHandOver(url: string, label: string): SdsButton {
+    const button = buildWayOut(url, label);
+    button.addEventListener('click', (event: Event) => {
+        event.preventDefault();
+        handOver(url);
+    });
+
+    return button;
+}
+
+/**
+ * Beside the document rather than in it: no template renders here, so nothing
+ * of the interface is written into. The frame is taken away again because a
+ * page that keeps one per press keeps every one of them.
+ */
+function handOver(url: string): void {
+    const frame = document.createElement('iframe');
+    frame.style.display = 'none';
+    document.body.append(frame);
+    frame.src = url;
+    window.setTimeout(() => frame.remove(), 2000);
+}
+
+/**
  * Soul's own select rather than the browser's: a native one opens a list the
  * page has no reach into, so a dark page opens a light window.
  *

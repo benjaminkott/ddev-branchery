@@ -17,6 +17,19 @@ docroot: web
 # Where the project's binaries are, and what $BRANCHERY_BIN points at.
 bin: .build/bin
 
+# What opens a worktree on the machine the page is read on, in the order they
+# are offered. "{path}" is where the worktree's own directory goes, "{distribution}"
+# the WSL distribution and "{windows}" the same directory under the name Windows
+# knows it by; an address whose placeholders this machine cannot fill is not
+# offered. Written at all, these stand instead of the ones Branchery looks for.
+editors:
+  - VS Code: 'vscode://vscode-remote/wsl+{distribution}{path}'
+  - Zed: 'zed://file{path}'
+
+# What the account of a worktree is made with, where the shipped one will not do
+# -- an application whose policy asks for more characters, or fewer.
+password: 'a-development-password'
+
 # A version, or the file in the checkout it stands in. Never both: a version
 # written out over a configuration that points at a file leaves no pointer.
 #
@@ -95,9 +108,6 @@ install:
 configure:
   - inherit: profile
   - ./bin/extra-config.sh
-
-# What a worktree's account is made with, where the shipped one will not do.
-password: '#Password1'
 
 # No "inherit" line: this moment is what stands here, and what it is built on
 # does nothing at this one.

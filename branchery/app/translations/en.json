@@ -54,6 +54,7 @@
     "detail.commitsFailed": "What is on this branch could not be read.",
     "detail.commitsHeading": "Commits",
     "detail.discardBlocked": "Not while the worktree has uncommitted changes: putting the branch back would write over them. Commit or stash them first.",
+    "detail.editor": "Open in {name}",
     "detail.gone": "There is no worktree named \"{name}\".",
     "detail.history": "History",
     "detail.historyFailed": "The history could not be read.",

@@ -44,6 +44,7 @@ function worktree(values: Partial<Worktree> & { name: string }): Worktree {
         isProject: false,
         url: `https://${name}.blog.ddev.site/`,
         path: `/home/dev/projects/blog/.worktrees/${name}`,
+        editors: [],
         entrypoints: [{ name: 'Backend', url: `https://${name}.blog.ddev.site/typo3` }],
         ...values,
     };

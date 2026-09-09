@@ -13,6 +13,7 @@ use App\Tests\Fake\RecordingContainer;
 use App\Web\DatabaseServer;
 use App\Web\Runtimes;
 use App\Worktree\Description;
+use App\Worktree\Editors;
 use App\Worktree\NodeVersions;
 use App\Worktree\PhpVersions;
 use App\Worktree\VersionMap;
@@ -157,6 +158,7 @@ final class DescriptionTest extends TestCase
                 Assembled::git($project, $web, $locks),
                 $database,
                 new Recipes($this->root, $this->root . '/defaults'),
+                new Editors($project, ''),
             ),
             $database,
             $files,

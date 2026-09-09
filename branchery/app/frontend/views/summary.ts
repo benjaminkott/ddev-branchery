@@ -115,7 +115,17 @@ export function summaryFacts(worktree: Worktree, usage: Usage, account: Element 
             // says nothing about accounts.
             press: worktree.account === null ? null : account,
             facts: [
-                { label: t('table.directory'), value: worktree.path, copy: true },
+                {
+                    label: t('table.directory'),
+                    value: worktree.path,
+                    copy: true,
+                    // Where the reader is taking that path anyway. Empty on a machine
+                    // nothing was found on, and then the row is the path alone.
+                    opens: worktree.editors.map((editor) => ({
+                        href: editor.url,
+                        label: t('detail.editor', { name: editor.name }),
+                    })),
+                },
                 { label: t('table.database'), value: worktree.database, copy: true },
                 // Only a login this worktree has. One it would have if somebody asked
                 // for it is not a login, and stating it was the difference between

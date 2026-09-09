@@ -54,6 +54,7 @@
     "detail.commitsFailed": "Was auf diesem Branch liegt, konnte nicht gelesen werden.",
     "detail.commitsHeading": "Commits",
     "detail.discardBlocked": "Nicht, solange der Worktree nicht eingecheckte Änderungen hat: Das Zurücksetzen würde sie überschreiben. Erst einchecken oder stashen.",
+    "detail.editor": "In {name} öffnen",
     "detail.gone": "Es gibt keinen Worktree namens „{name}“.",
     "detail.history": "Verlauf",
     "detail.historyFailed": "Der Verlauf konnte nicht gelesen werden.",

@@ -88,6 +88,18 @@ final readonly class Build
     }
 
     /**
+     * What the project says opens a worktree, where it says anything: null is
+     * "nothing said", which is what leaves the known editors standing, and an
+     * empty list is a project that offers none.
+     *
+     * @return ?list<array{name: string, open: string}>
+     */
+    public function editors(): ?array
+    {
+        return $this->recipe->editors;
+    }
+
+    /**
      * @return array{review: ?string, issue: ?string, commit: ?string}
      */
     public function links(): array

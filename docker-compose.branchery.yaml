@@ -33,6 +33,11 @@ services:
       # The addresses of the worktrees hang under the project's domain, which is
       # the machine's to choose.
       - DDEV_TLD=${DDEV_TLD}
+      # Which distribution the project lies in, where the developer works in WSL:
+      # an editor outside it reaches the checkout by a name that carries this and
+      # by no other, and nothing inside a container can read it. Empty everywhere
+      # else, and the addresses that need it are then not offered.
+      - WSL_DISTRO_NAME=${WSL_DISTRO_NAME:-}
       # Files that are created should belong to the user on the host.
       - BRANCHERY_UID=${DDEV_UID:-1000}
       - BRANCHERY_GID=${DDEV_GID:-1000}

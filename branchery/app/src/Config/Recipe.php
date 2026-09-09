@@ -108,9 +108,22 @@ final readonly class Recipe
          * configuration it is built on has.
          */
         public ?array $entrypoints,
+        /**
+         * What opens a checkout on the machine reading the page, by name and by
+         * the address that opens it -- "{path}" where the worktree's own goes.
+         * Written, these stand instead of the ones Branchery knows; an empty list
+         * says this project offers none at all.
+         *
+         * @var ?list<array{name: string, open: string}>
+         */
+        public ?array $editors,
         /** Where the project's own binaries are -- composer's bin-dir. */
         public ?string $bin,
-        /** What a worktree's account is made with, where the shipped one will not do. */
+        /**
+         * What the account of a worktree is made with. A project whose application
+         * refuses the shipped one -- a policy asking for more characters, or fewer
+         * -- says its own here rather than writing the whole moment again.
+         */
         public ?string $password,
         public array $links,
         public array $data,
@@ -132,6 +145,7 @@ final readonly class Recipe
             php: null,
             node: null,
             entrypoints: null,
+            editors: null,
             bin: null,
             password: null,
             links: self::NOTHING_SAID['links'],
@@ -183,7 +197,7 @@ final readonly class Recipe
      */
     public static function keys(): array
     {
-        return [...self::SETTINGS, 'entrypoints', 'links', 'copy', 'data', ...self::MOMENTS];
+        return [...self::SETTINGS, 'entrypoints', 'editors', 'links', 'copy', 'data', ...self::MOMENTS];
     }
 
     /** @param array<mixed> $data */
@@ -209,6 +223,7 @@ final readonly class Recipe
             php: self::readVersion($data['php'] ?? null, 'php'),
             node: self::readVersion($data['node'] ?? null, 'node'),
             entrypoints: self::readEntrypoints($data['entrypoints'] ?? null),
+            editors: self::readEditors($data['editors'] ?? null),
             bin: self::readSetting($data, 'bin'),
             password: self::readSetting($data, 'password'),
             links: self::readLinks($data['links'] ?? null),
@@ -235,6 +250,7 @@ final readonly class Recipe
             php: $this->php ?? $base->php,
             node: $this->node ?? $base->node,
             entrypoints: $this->entrypoints ?? $base->entrypoints,
+            editors: $this->editors ?? $base->editors,
             bin: $this->bin ?? $base->bin,
             password: $this->password ?? $base->password,
             links: [
@@ -498,6 +514,45 @@ final readonly class Recipe
             }
             $path = '/' . trim(trim($path), '/');
             $read[] = ['name' => $name, 'path' => $path === '/' ? '' : $path];
+        }
+
+        return $read;
+    }
+
+    /**
+     * The same grammar as the entrypoints above, because it is the same kind of
+     * thing: a name and somewhere it leads. The address is written whole, with
+     * "{path}" where the worktree's own directory goes -- see App\Worktree\Editors
+     * for what else may stand in one.
+     *
+     * A project that writes this at all has said which editors it offers, so
+     * nothing is looked for in the checkout any more: saying so is the evidence.
+     *
+     * @return ?list<array{name: string, open: string}>
+     */
+    private static function readEditors(mixed $value): ?array
+    {
+        if ($value === null) {
+            return null;
+        }
+        if (!is_array($value) || !array_is_list($value)) {
+            throw new \RuntimeException(sprintf('%s: "editors" has to be a list of what opens a worktree, each written as "Name: address".', self::FILE));
+        }
+
+        $read = [];
+        foreach ($value as $entry) {
+            if (!is_array($entry) || count($entry) !== 1) {
+                throw new \RuntimeException(sprintf('%s: every entry under "editors" is one name and one address, written as "Name: address".', self::FILE));
+            }
+            $name = trim((string) array_key_first($entry));
+            $open = reset($entry);
+            if ($name === '') {
+                throw new \RuntimeException(sprintf('%s: an entry under "editors" has no name to offer it under.', self::FILE));
+            }
+            if (!is_string($open) || trim($open) === '') {
+                throw new \RuntimeException(sprintf('%s: "%s" under "editors" needs an address that opens it.', self::FILE, $name));
+            }
+            $read[] = ['name' => $name, 'open' => trim($open)];
         }
 
         return $read;

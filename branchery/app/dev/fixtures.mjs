@@ -35,6 +35,8 @@ export function databaseName(name) {
 }
 
 function worktree(values) {
+    const path = values.isProject ? HOST_ROOT : `${HOST_ROOT}/.worktrees/${values.name ?? ''}`;
+
     return {
         name: '',
         branch: '',
@@ -89,7 +91,16 @@ function worktree(values) {
         entrypoints: (values.profile ?? 'typo3-app').startsWith('typo3')
             ? [{ name: 'Backend', url: `${url(values.name ?? null)}typo3` }]
             : [],
-        path: values.isProject ? HOST_ROOT : `${HOST_ROOT}/.worktrees/${values.name ?? ''}`,
+        // Null where the configuration says nothing about accounts, and "made" is
+        // the state a fork is in: it inherited the project's data and with it every
+        path,
+        // What the container works out from the marks in the project and the
+        // machine it stands on -- written out here, because the mock has neither.
+        // Empty is a machine nothing was found on, which is a state worth seeing.
+        editors: [
+            { name: 'VS Code', url: `vscode://vscode-remote/wsl+Ubuntu${path}` },
+            { name: 'PhpStorm', url: `phpstorm://open?file=\\\\wsl$\\Ubuntu${path.replace(/\//g, '\\')}` },
+        ],
         ...values,
     };
 }

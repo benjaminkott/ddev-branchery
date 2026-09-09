@@ -26,6 +26,7 @@ function worktree(values: Partial<Worktree> & { name: string }): Worktree {
         url: `https://${values.name}.example.ddev.site/`,
         entrypoints: [],
         path: `/home/dev/project/.worktrees/${values.name}`,
+        editors: [],
         changes: 0,
         ahead: 0,
         behind: 0,

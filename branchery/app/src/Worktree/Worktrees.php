@@ -27,6 +27,7 @@ final readonly class Worktrees
         private Git $git,
         private DatabaseServer $database,
         private Recipes $recipes,
+        private Editors $editors,
     ) {
     }
 
@@ -184,6 +185,7 @@ final readonly class Worktrees
             url: $url,
             entrypoints: self::entrypointsUnder($url, $build->entrypoints()),
             path: $this->project->hostWorktreeDirectory($name),
+            editors: $this->editors->of($this->project->hostWorktreeDirectory($name), $build),
             changes: $state->changes,
             ahead: $state->ahead,
             behind: $state->behind,
@@ -265,6 +267,7 @@ final readonly class Worktrees
             url: $url,
             entrypoints: self::entrypointsUnder($url, $build->entrypoints()),
             path: $this->project->hostRoot(),
+            editors: $this->editors->of($this->project->hostRoot(), $build),
             changes: $state->changes,
             ahead: $state->ahead,
             behind: $state->behind,

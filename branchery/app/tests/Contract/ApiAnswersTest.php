@@ -48,7 +48,10 @@ final class ApiAnswersTest extends TestCase
         // And a way to make an account, because a worktree whose configuration says
         // nothing about one answers null there -- and a shape only reached through
         // a value that is null is a shape this holds nobody to.
-        $this->wiring->recipe("entrypoints:\n  - Backend: /typo3\naccount:\n  - ./bin/account.sh\n");
+        // And an editor, because what a machine has none of is answered as an empty
+        // list -- and a shape only reached through an empty one is a shape this
+        // holds nobody to.
+        $this->wiring->recipe("entrypoints:\n  - Backend: /typo3\neditors:\n  - VS Code: 'vscode://file{path}'\naccount:\n  - ./bin/account.sh\n");
         $directory = $this->wiring->worktree(self::NAME);
         // An image the worktree carries uncommitted, because the change in one is
         // the two images and not a diff -- and a shape nothing answers with is a

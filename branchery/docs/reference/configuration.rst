@@ -72,11 +72,23 @@ Complete example
     bin: .build/bin        # where this project's binaries are
     php: "8.3"             # the version this is served with
 
+    # What the login of a worktree is made with, where the shipped
+    # "#Password1" will not do -- an application whose policy asks for more
+    # characters, or fewer. A development login and never a secret.
+    password: "#Password1"
+
     # The pages worth opening, in the order they are offered. Written empty,
     # the list says this project has none although its profile has.
     entrypoints:
       - Backend: /typo3
       - Storybook: /storybook
+
+    # What opens a worktree on the machine reading the page, in the order they
+    # are offered. Written at all, these stand instead of the ones Branchery
+    # looks for; written empty, this project offers none.
+    editors:
+      - VS Code: vscode://vscode-remote/wsl+{distribution}{path}
+      - Zed: zed://file{path}
 
     # Where the work in a checkout is talked about. The number comes out of the
     # last commit's own trailers -- "Change-Id" and "Resolves: #12345" -- and is
@@ -115,6 +127,38 @@ Complete example
     setup:
       - ./bin/install-fresh.sh
 
+..  _configuration-editors:
+
+Editors
+=======
+
+Nothing is configured for this in most projects. Branchery looks for the mark an
+editor leaves in the checkout it has been opened in — ``.vscode`` for VS Code,
+``.idea`` for PhpStorm — and offers the ones it finds, at the address that
+opens a directory in them.
+
+An address is a template, and one whose placeholders this machine cannot fill is
+not an address here:
+
+``{path}``
+    the worktree's own directory, as the host sees it
+
+``{distribution}``
+    the WSL distribution the project lies in, and empty on every other host
+
+``{windows}``
+    the same directory under the name Windows knows it by,
+    ``\\wsl$\<distribution>\...``, and empty where there is no distribution
+
+That is what makes ``vscode://vscode-remote/wsl+{distribution}{path}`` fall away
+on a Linux host without anything being asked about which host it is — and it is
+also all the detection there is. Whether the editor is installed at all is not
+something a page in a browser or a process in a container can see; an address
+with no program behind it does nothing when it is pressed.
+
+Write ``editors:`` to say it yourself. A project that writes the key has said
+what it offers, and nothing is looked for any more.
+
 Every key is optional, and every one of them is refused if it is spelled wrong
 -- a key that silently did nothing would leave a worktree missing exactly the
 step the file was written for.
@@ -140,9 +184,9 @@ contains project commands and is exposed to configuration tasks as
 ``BRANCHERY_BIN``.
 
 ``entrypoints`` are the pages a worktree is worth opening at, each written as
-the word it is offered under and the path it stands at. They are drawn beside
-the site link, in the order they are written. A path and not a whole address:
-the worktree's own is put in front of it. ``php`` and ``node`` select runtimes
+the word it is offered under and the path it stands at. Each is drawn in the row
+that states its address, in the order they are written. A path and not a whole
+address: the worktree's own is put in front of it. ``php`` and ``node`` select runtimes
 and are described under :ref:`php-and-node-versions`.
 
 ..  _php-and-node-versions:

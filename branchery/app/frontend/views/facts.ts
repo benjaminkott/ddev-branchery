@@ -5,6 +5,7 @@
  */
 
 import { html, nothing, type TemplateResult } from 'lit';
+import { buildHandOver, buildWayOut, saying } from '../dom.js';
 import { t } from '../state.js';
 import type { Cut } from '../types.js';
 import { bar } from './waiting.js';
@@ -27,6 +28,24 @@ export interface Fact {
      * that became a group of four, moving every label on the page.
      */
     waiting?: boolean;
+    /**
+     * Where the value leads and what going there is called, for a row that
+     * states an address. The way there stands in the row that names it: a press
+     * at the top of the page and the address at the bottom are two things the
+     * reader has to match up, and with three addresses nothing says which press
+     * opens which.
+     */
+    link?: { href: string; label: string };
+    /**
+     * What opens the value on the reader's own machine, where anything does --
+     * a directory and the editors it can be opened in. Beside `link` and not
+     * one of them: those are pages the browser leads to, and these are
+     * addresses it hands to the machine instead, which is a different press
+     * entirely -- see buildHandOver.
+     *
+     * A list, because a checkout is opened in whatever the machine has.
+     */
+    opens?: { href: string; label: string }[];
 }
 
 /** Facts of one kind, under the name of what they have in common. */
@@ -63,9 +82,24 @@ export function shownGroup(group: FactGroup): TemplateResult | typeof nothing {
  * times names none of them.
  */
 function shownFact(fact: Fact, at: number): TemplateResult {
+    const ways = [
+        // The same control the head of the page used to carry, and not a bare
+        // link: a line of text in the link colour is a fourth loud thing on a
+        // page whose facts are all set in its own ink.
+        //
+        // The word carries the project's own name for the entry point, so it is
+        // drawn anew for a new one rather than written into the one standing.
+        ...(fact.link === undefined
+            ? []
+            : [saying(fact.link.label, html`${buildWayOut(fact.link.href, fact.link.label)}`)]),
+        // And the same again for the addresses the machine answers rather than the
+        // browser -- one press per editor, in the words the editors are called by.
+        ...(fact.opens ?? []).map((opens) => saying(opens.label, html`${buildHandOver(opens.href, opens.label)}`)),
+    ];
+
     return html`
         <dt>${fact.label}</dt>
-        <dd>${
+        <dd class=${ways.length === 0 ? nothing : 'branchery-fact'}>${
             fact.waiting === true
                 ? bar(at)
                 : fact.copy === true
