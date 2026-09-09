@@ -15,12 +15,9 @@ pre_install_actions:
     #ddev-description: Clear the way for the new version
     #
     # What an older Branchery installed and this one no longer does: the
-    # application, its dependencies, the manual and the Dockerfile. They are in the
-    # image now, and left here they would sit in the project for good.
-    #
-    # And the scripts, which are copied again right after: DDEV replaces a file
-    # carrying its "#ddev-generated" line, but a script a release stops shipping is
-    # one it never finds, and the entry point would go on calling it.
+    # application, its dependencies, the manual, the Dockerfile and the three
+    # scripts the entry point is now one file with. They are in the image or in
+    # that one file, and left here they would sit in the project for good.
     #
     # Nothing else is touched. What this add-on still installs carries DDEV's own
     # line, and the state lives in var/ -- it is the project's, and it is what the
@@ -40,18 +37,29 @@ pre_install_actions:
       fi
     fi
 
+    # Two files the install used to write. The entry point is a shipped file now,
+    # and a written one carries no "#ddev-generated" -- DDEV refuses to replace a
+    # file without it and says so; the Apache module is enabled by that same
+    # script. Taken only while they are still the ones this add-on wrote.
+    for written in "${DDEV_APPROOT}/.ddev/web-entrypoint.d/branchery.sh" \
+                   "${DDEV_APPROOT}/.ddev/web-build/Dockerfile.branchery"; do
+      if [ -f "${written}" ] && grep -q 'Written by Branchery' "${written}"; then
+        rm -f "${written}"
+      fi
+    done
+
 # What lands in the project's .ddev, and nothing besides. The application is
 # not in this list -- it is the image the compose file names. What is left is
-# what has to be a file in the project: what DDEV itself reads, and the scripts
-# that run in the web container, which reaches them through /mnt/ddev_config.
+# what has to be a file in the project: what DDEV itself reads, and the entry
+# point the web container runs, which it reaches through /mnt/ddev_config.
 #
 # Everything listed here carries DDEV's "#ddev-generated" line, which is what
 # lets a later "ddev add-on get" replace it and a removal take it away. A new
 # shipped file without that line is one no update can reach.
 project_files:
-  - branchery/scripts/
   - commands/host/branchery
   - docker-compose.branchery.yaml
+  - web-entrypoint.d/branchery.sh
 
 post_install_actions:
   - |
@@ -64,52 +72,28 @@ post_install_actions:
     # somebody's repository that does nothing is a file they have to wonder about.
     # Removed again for a project that gained the router back.
     #
+    # Neither of the two files this add-on writes into DDEV's own configuration
+    # directories carries "#ddev-generated": that marker means DDEV wrote the file,
+    # and "ddev utility check-custom-config" reports every foreign file bearing it
+    # as unexpected. An earlier version put it in this one, so a file carrying it
+    # is still ours to take away.
+    #
     # Both ports the compose file exposes, so the command and the note below open
     # the same address either way.
     norouter="${DDEV_APPROOT}/.ddev/docker-compose.branchery_norouter.yaml"
     if ( {{ contains "ddev-router" (list .DdevGlobalConfig.omit_containers | toString) }} ) \
       || ( {{ contains "ddev-router" (list .DdevProjectConfig.omit_containers | toString) }} ); then
-      printf '#ddev-generated\nservices:\n  branchery:\n    ports:\n      - 8040:80\n      - 8041:80\n' > "${norouter}"
-    elif [ -f "${norouter}" ] && grep -q 'ddev-generated' "${norouter}"; then
+      printf '%s\n' \
+        '# Written by Branchery. Rewritten on every install; edits do not survive.' \
+        'services:' \
+        '  branchery:' \
+        '    ports:' \
+        '      - 8040:80' \
+        '      - 8041:80' \
+        > "${norouter}"
+    elif [ -f "${norouter}" ] && grep -qE 'Written by Branchery|ddev-generated' "${norouter}"; then
       rm -f "${norouter}"
     fi
-  - |
-    #ddev-description: Prepare the web server
-    # Apache maps the addresses through VirtualDocumentRoot, which needs
-    # mod_vhost_alias; under nginx a server block with a regex is enough.
-    #
-    # None of the three files this add-on writes into DDEV's own configuration
-    # directories carries "#ddev-generated": that marker means DDEV wrote the file,
-    # and it reports every foreign file bearing it as unexpected, in a block
-    # printed on every command. They are removed by name when the add-on is.
-    if [ "${DDEV_WEBSERVER_TYPE}" = "apache-fpm" ]; then
-      mkdir -p "${DDEV_APPROOT}/.ddev/web-build"
-      cat > "${DDEV_APPROOT}/.ddev/web-build/Dockerfile.branchery" <<'DOCKERFILE'
-    # Written by Branchery. Rewritten on every install; edits do not survive.
-    RUN a2enmod vhost_alias
-    DOCKERFILE
-    fi
-  - |
-    #ddev-description: Set Branchery up on container start
-    mkdir -p "${DDEV_APPROOT}/.ddev/web-entrypoint.d"
-    # A call and nothing else. This file is committed with the project, and logic
-    # written into it would be a copy in every repository that installs Branchery.
-    # What it calls is shipped beside the other scripts and travels with an update.
-    cat > "${DDEV_APPROOT}/.ddev/web-entrypoint.d/branchery.sh" <<'ENTRYPOINT'
-    #!/usr/bin/env bash
-    # Written by Branchery. Rewritten on every install; edits do not survive.
-    #
-    # Sourced into DDEV's own start script, which stops the container at the first
-    # command that fails -- so nothing here may fail and nothing may exit. A script
-    # that is not there is a clone that has not installed the add-on yet.
-    if [ -f /mnt/ddev_config/branchery/scripts/entrypoint.sh ]; then
-        bash /mnt/ddev_config/branchery/scripts/entrypoint.sh \
-            || echo "[branchery] The entry point failed; the worktrees may not be served. See above."
-    else
-        echo "[branchery] .ddev/branchery/scripts is missing. Run 'ddev add-on get benjaminkott/ddev-branchery' and 'ddev restart'."
-    fi
-    ENTRYPOINT
-    chmod +x "${DDEV_APPROOT}/.ddev/web-entrypoint.d/branchery.sh"
   - |
     #ddev-description: Register the addresses
     # The one thing that cannot be shipped: DDEV substitutes nothing in a
@@ -136,22 +120,15 @@ post_install_actions:
       fi
     done
 
-    # The add-on's own directory. The scripts in it are add-on files like the
-    # command and the compose file, and the entry point committed with the project
-    # calls them by name -- so they are committed with it, or a clone starts
-    # without them. What stays out of the history is the state, and this rule.
-    #
-    # Rewritten while it is still the one this add-on wrote: an earlier version
-    # kept the scripts out as well.
+    # The add-on's own directory holds nothing but that state now, and the rule
+    # written just above covers it. What used to stand here said the same thing a
+    # directory higher; taken away while it is still the one this add-on wrote.
     ignore="${DDEV_APPROOT}/.ddev/branchery/.gitignore"
-    if [ ! -f "${ignore}" ] || grep -q 'Created by Branchery' "${ignore}"; then
-      printf '%s\n' \
-        '# Created by Branchery. Working state, not source.' \
-        '/var/' \
-        '/.gitignore' \
-        > "${ignore}"
+    if [ -f "${ignore}" ] && grep -q 'Created by Branchery' "${ignore}"; then
+      rm -f "${ignore}"
     fi
-    chmod +x "${DDEV_APPROOT}/.ddev/commands/host/branchery" 2>/dev/null || true
+    chmod +x "${DDEV_APPROOT}/.ddev/commands/host/branchery" \
+             "${DDEV_APPROOT}/.ddev/web-entrypoint.d/branchery.sh" 2>/dev/null || true
 
     # An earlier version brought database servers of its own along. The worktrees
     # live on the project's own server now -- the one phpMyAdmin and "ddev
@@ -215,15 +192,16 @@ post_install_actions:
 removal_actions:
   - |
     #ddev-description: Remove the generated files
-    rm -f "${DDEV_APPROOT}/.ddev/web-build/Dockerfile.branchery" \
-          "${DDEV_APPROOT}/.ddev/web-entrypoint.d/branchery.sh" \
-          "${DDEV_APPROOT}/.ddev/config.branchery.yaml" \
+    rm -f "${DDEV_APPROOT}/.ddev/config.branchery.yaml" \
           "${DDEV_APPROOT}/.ddev/docker-compose.branchery_norouter.yaml"
-    # The scripts are taken by DDEV itself: they carry its line and are listed as
-    # project files. What is named here is what an older Branchery installed beside
-    # them. The state underneath is kept on purpose, and so is the image.
-    rm -rf "${DDEV_APPROOT}/.ddev/branchery/app" \
+    # The entry point is taken by DDEV itself: it carries its line and is listed as
+    # a project file. What is named here is what the install wrote beside it, and
+    # what an older Branchery installed. The state underneath is kept on purpose,
+    # and so is the image.
+    rm -rf "${DDEV_APPROOT}/.ddev/web-build/Dockerfile.branchery" \
+           "${DDEV_APPROOT}/.ddev/branchery/app" \
            "${DDEV_APPROOT}/.ddev/branchery/docs" \
+           "${DDEV_APPROOT}/.ddev/branchery/scripts" \
            "${DDEV_APPROOT}/.ddev/branchery/Dockerfile" \
            "${DDEV_APPROOT}/.ddev/branchery/.dockerignore"
     echo "The worktrees under ${DDEV_APPROOT}/.worktrees and their databases are kept."

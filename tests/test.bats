@@ -188,7 +188,7 @@ health_check() {
   install_addon
   ddev restart -y >/dev/null
 
-  local entrypoint="/mnt/ddev_config/branchery/scripts/entrypoint.sh"
+  local entrypoint="/mnt/ddev_config/web-entrypoint.d/branchery.sh"
 
   # A project outside /home: the directory above it is root's, and the link
   # used to be made without asking for root -- which killed every macOS.
@@ -202,14 +202,12 @@ health_check() {
   [ "$status" -eq 0 ]
   echo "$output" | grep -q "not an absolute POSIX path"
 
-  # A clone that has not installed the add-on has the committed wrapper and not
-  # the scripts it calls. DDEV sources the wrapper into a script that stops at
-  # the first failure, so it has to survive that -- and say what to run.
-  mv "${TESTDIR}/.ddev/branchery/scripts" "${TESTDIR}/.ddev/branchery/scripts.away"
-  run ddev exec --raw -- bash -c 'set -eu -o pipefail; source /mnt/ddev_config/web-entrypoint.d/branchery.sh; echo still-starting'
-  mv "${TESTDIR}/.ddev/branchery/scripts.away" "${TESTDIR}/.ddev/branchery/scripts"
+  # DDEV sources this file into a script that stops at the first command that
+  # fails, and its arguments there are DDEV's own. Neither may cost the
+  # container: what the file does is decided by itself, not by the shell it
+  # lands in.
+  run ddev exec --raw -- bash -c 'set -eu -o pipefail; source '"${entrypoint}"' --a-flag-of-ddevs; echo still-starting'
   [ "$status" -eq 0 ]
-  echo "$output" | grep -q "ddev add-on get"
   echo "$output" | grep -q "still-starting"
 }
 
@@ -468,9 +466,10 @@ health_check() {
   local before
   before="$(cat "${TESTDIR}/.ddev/branchery/var/metadata/demo.json")"
 
-  # An edited script stands in for one that changed between two versions: it
-  # has no #ddev-generated line, which is exactly why DDEV would leave it alone.
-  echo '# from the version before' >> "${TESTDIR}/.ddev/branchery/scripts/apply-vhosts.sh"
+  # An edited entry point stands in for the version before. It carries the
+  # #ddev-generated line, which is the whole of what lets an update replace it:
+  # a shipped file that lost the line is one DDEV leaves alone and says so.
+  echo '# from the version before' >> "${TESTDIR}/.ddev/web-entrypoint.d/branchery.sh"
 
   # And an application beside the project stands in for what an older Branchery
   # put there. It travels in the image now, and a copy left behind is a version
@@ -483,7 +482,7 @@ health_check() {
   echo "$output" | grep -vq "NOT overwriting"
 
   # What is installed is the new one again...
-  run grep -c 'from the version before' "${TESTDIR}/.ddev/branchery/scripts/apply-vhosts.sh"
+  run grep -c 'from the version before' "${TESTDIR}/.ddev/web-entrypoint.d/branchery.sh"
   [ "$output" -eq 0 ]
   # ...what an older version installed is gone...
   [ ! -d "${TESTDIR}/.ddev/branchery/app" ]
@@ -517,9 +516,8 @@ health_check() {
 }
 
 # What the install leaves in the repository, and what it keeps out. The
-# installed files are committed with the project -- the scripts included,
-# because the committed entry point calls them by name. What stays out is the
-# working state.
+# installed files are committed with the project, which is what DDEV's own
+# convention says of an add-on. What stays out is the working state.
 @test "installs what a clone needs and ignores the rest" {
   set -eu -o pipefail
   cd "${TESTDIR}"
@@ -538,9 +536,7 @@ health_check() {
   run bash -c "git status --porcelain | grep -v '^??' | wc -l"
   [ "$output" -eq 0 ]
 
-  # The scripts are for the history, the state is not.
-  run git check-ignore -q .ddev/branchery/scripts/entrypoint.sh
-  [ "$status" -ne 0 ]
+  # The entry point is for the history, the state is not.
   run git check-ignore -q .ddev/web-entrypoint.d/branchery.sh
   [ "$status" -ne 0 ]
   run git check-ignore -q .ddev/branchery/var/docroots
@@ -548,13 +544,23 @@ health_check() {
   run git check-ignore -q .worktrees/anything
   [ "$status" -eq 0 ]
 
-  # And a project that had the rule of an earlier version, which kept the
-  # scripts out, is put right by installing again.
-  printf '%s\n' '# Created by Branchery. Installed with "ddev add-on get", not committed.' '/scripts/' '/var/' '/.gitignore' \
+  # And a project that had the rule of an earlier version, which named the
+  # state a directory higher, is put right by installing again: the add-on's own
+  # directory holds nothing but that state, so nothing of it reaches git.
+  printf '%s\n' '# Created by Branchery. Working state, not source.' '/var/' '/.gitignore' \
     > "${TESTDIR}/.ddev/branchery/.gitignore"
   ddev add-on get "${DIR}" >/dev/null
-  run git check-ignore -q .ddev/branchery/scripts/entrypoint.sh
-  [ "$status" -ne 0 ]
+  [ ! -f "${TESTDIR}/.ddev/branchery/.gitignore" ]
+  run bash -c "git status --porcelain .ddev/branchery"
+  [ -z "$output" ]
+
+  # "#ddev-generated" says DDEV wrote the file, and DDEV reports a file bearing
+  # it that it does not know as unexpected -- to the developer, about their own
+  # repository. Every file this add-on writes rather than ships has to do
+  # without it, and one that gained it would read as a warning about nothing.
+  run ddev utility check-custom-config
+  [ "$status" -eq 0 ]
+  echo "$output" | grep -vq "unexpected"
 }
 
 # The domain is the machine's, and nothing may spell out DDEV's default: a
@@ -564,7 +570,7 @@ health_check() {
   set -eu -o pipefail
   cd "${TESTDIR}"
 
-  run bash -c "grep -rn 'ddev\.site' '${DIR}/branchery/scripts' | grep -v 'DDEV_TLD:-ddev.site'"
+  run bash -c "grep -rn 'ddev\.site' '${DIR}/web-entrypoint.d' | grep -v 'DDEV_TLD:-ddev.site'"
   [ "$status" -ne 0 ]
 
   # What the install says and writes, on a project that chose another domain.
@@ -579,7 +585,7 @@ health_check() {
   # And what the scripts write, told the domain the way the container is. The
   # entry goes to whichever server is in charge, and asking the other one for it
   # is how this test passed for years while saying nothing about Apache.
-  ddev exec --raw -- sudo env "DDEV_SITENAME=${PROJNAME}" DDEV_TLD=example.test bash /mnt/ddev_config/branchery/scripts/apply-vhosts.sh
+  ddev exec --raw -- sudo env "DDEV_SITENAME=${PROJNAME}" DDEV_TLD=example.test bash /mnt/ddev_config/web-entrypoint.d/branchery.sh vhosts
   run ddev exec --raw -- cat "$(vhost_file)"
   [ "$status" -eq 0 ]
   echo "$output" | grep -qF "$(vhost_hostname "${PROJNAME}.example.test")"
@@ -592,4 +598,5 @@ health_check() {
   ddev add-on remove branchery
   [ ! -f "${TESTDIR}/.ddev/docker-compose.branchery.yaml" ]
   [ ! -f "${TESTDIR}/.ddev/config.branchery.yaml" ]
+  [ ! -f "${TESTDIR}/.ddev/web-entrypoint.d/branchery.sh" ]
 }

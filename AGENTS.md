@@ -65,8 +65,8 @@ composer stan                # static analysis, level 8
 composer cs                  # coding style
 ```
 
-and, from the root, `bats tests/scripts.bats` -- what the two scripts in the web
-container write.
+and, from the root, `bats tests/scripts.bats` -- what the entry point in the web
+container writes.
 
 `composer stan` is not optional politeness. Every operation ends in a container,
 so the paths that only run against a real project -- a database that already
@@ -117,15 +117,15 @@ analyser and the API contract all passed. This suite forks a worktree and asks
 for the manual, so it would have said so at once -- and it runs on every pull
 request, so what failed was reaching for it here.
 
-`bats tests/scripts.bats` needs no container at all: the two scripts in the web
-container write what they write in functions that take what they need and print
+`bats tests/scripts.bats` needs no container at all: the entry point in the web
+container writes what it writes in functions that take what they need and print
 what they make, and that half is read here. Applying it -- the pools, the
 reloads -- is the half that still needs a project.
 
 The same suite walks two more project shapes, because the paths that only exist
 in them are the destructive ones: `DatabaseOperations` speaks a second dialect
-and every statement in it drops or copies something, and `install.yaml` writes
-Apache a module of its own. `BRANCHERY_TEST_DATABASE` and
+and every statement in it drops or copies something, and under Apache the entry
+point enables a module the image does not have on. `BRANCHERY_TEST_DATABASE` and
 `BRANCHERY_TEST_WEBSERVER` say which shape the project is configured as, and the
 `shapes` job in the workflow runs both -- nightly and on `main`, not on every
 pull request, each being a DDEV project built from nothing. Locally:
@@ -151,12 +151,21 @@ failed sends all of them after an image that is not there. Three places say the
 version and `tools/check-compose-tag.sh` holds them together -- the compose
 file, the manual's footer, and the tag.
 
-What travels as files is what has to: `branchery/scripts/` (they run in the
-*web* container, which reaches them through `/mnt/ddev_config`), the host
-command, the compose file. `install.yaml` removes those before the copy, and
-with them what an older, file-based Branchery left behind -- `var/` is the
-project's state and is never touched. A new shipped directory has to be added to
-both lists or it will quietly never update.
+What travels as files is what has to: `web-entrypoint.d/branchery.sh` (it runs
+in the *web* container, which reaches it through `/mnt/ddev_config`), the host
+command, the compose file. `install.yaml` removes what an older, file-based
+Branchery left behind before the copy -- `var/` is the project's state and is
+never touched. A new shipped file has to stand in `project_files` and carry the
+`#ddev-generated` line, or no update will ever reach it.
+
+**Every one of those is committed with the project**, which is DDEV's own
+convention for an add-on, so the fewer of them there are the better. What has to
+be written rather than shipped -- the wildcard hostname, which needs the
+project's name in it -- carries no `#ddev-generated`: that marker says DDEV
+wrote the file, and DDEV reports one bearing it that it does not know as
+unexpected, to the developer, about their own repository. Shipped files carry
+it, and must: it is what lets `ddev add-on get` replace them and a removal take
+them away.
 
 Working on the add-on itself is the one case with no tag to pull:
 `tools/deploy.sh <project>` builds the image from the working copy and points
@@ -408,7 +417,7 @@ with the worktree.
 | `branchery/app/defaults/` | the shipped configurations -- what `profile: typo3-app` means, as files |
 | `branchery/app/tests/` | what is worth testing without a project: the parsing, the naming, the generated configuration |
 | `branchery/docs/` | the documentation and the product page, reStructuredText -- a directory per section of the manual, as the toctrees have it |
-| `install.yaml`, `commands/`, `docker-compose.*` | what DDEV installs |
+| `install.yaml`, `commands/`, `web-entrypoint.d/`, `docker-compose.*` | what DDEV installs -- and what a project commits |
 | `tools/` | what is run by hand or by a workflow and ships with neither |
 
 [branchery/docs/reference/operations.rst](branchery/docs/reference/operations.rst)

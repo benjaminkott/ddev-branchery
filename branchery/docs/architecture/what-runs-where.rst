@@ -10,9 +10,8 @@ The containers, the addresses and the files: where each part of a worktree lives
 
 ..  code-block:: text
 
-    .ddev/branchery/                    files and state installed in the project
-    ├── scripts/                        web-server and PHP-pool helpers
-    └── var/                            metadata, docroot links and operation logs
+    .ddev/branchery/var/                metadata, docroot links and operation logs
+    .ddev/web-entrypoint.d/branchery.sh web-server and PHP-pool setup
     .ddev/docker-compose.branchery.yaml the management container and image tag
     .worktrees/<worktree>/              parallel git working copies
 

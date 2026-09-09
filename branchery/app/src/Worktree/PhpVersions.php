@@ -117,7 +117,7 @@ final class PhpVersions
     /** Start pools and reload Apache -- only the web container can do that. */
     private function apply(): void
     {
-        $result = $this->web->run(['sudo', 'bash', $this->project->scriptsDirectory() . '/apply-php-versions.sh']);
+        $result = $this->web->run(['sudo', 'bash', $this->project->webEntrypointScript(), 'php-versions']);
         // Said rather than passed over: a pool that did not start leaves the
         // worktree served by the wrong version while the list says otherwise.
         if (!$result->isSuccessful()) {

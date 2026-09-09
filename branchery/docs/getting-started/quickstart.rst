@@ -45,6 +45,27 @@ The management interface is now available at
 
 The project checkout keeps answering at ``https://<project>.ddev.site``.
 
+..  _getting-started-commit:
+
+Commit what was installed
+=========================
+
+The add-on leaves a handful of files in ``.ddev/``. They are committed with the
+project, which is DDEV's convention for an add-on: a clone then has Branchery
+without installing it, and on the version the project chose.
+
+..  code-block:: text
+
+    .ddev/addon-metadata/branchery/      which version is installed
+    .ddev/commands/host/branchery        the "ddev branchery" command
+    .ddev/config.branchery.yaml          the wildcard hostname of the worktrees
+    .ddev/docker-compose.branchery.yaml  the service and the image tag it runs
+    .ddev/web-entrypoint.d/branchery.sh  what the web container runs on start
+
+What stays out is the working state. ``.ddev/branchery/var/`` and
+``.worktrees/`` each carry a rule of their own, and the project's own
+``.gitignore`` is never written to.
+
 ..  _getting-started-configure:
 
 Describe how the project is built

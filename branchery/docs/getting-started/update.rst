@@ -30,6 +30,11 @@ so at the top of the page. A page left open fetches itself again as soon as the
 new container answers, so what is on screen is never the interface of a version
 that is gone.
 
+An update also replaces the installed files, and a file a release stops
+shipping is taken away with it. Read ``git status`` afterwards and commit what
+changed, the removals included; the worktrees and their state under
+``.ddev/branchery/var/`` are never touched.
+
 ..  _update-notice:
 
 Being told there is one

@@ -139,12 +139,13 @@ final class Project
 
     /**
      * Not through this container at all: DDEV mounts .ddev into the web container
-     * at a path of its own, and that is the only place those scripts exist for the
-     * process that runs them.
+     * at a path of its own, and that is the only place this script exists for the
+     * process that runs it. DDEV sources it on every container start; a part of it
+     * is asked for by name.
      */
-    public function scriptsDirectory(): string
+    public function webEntrypointScript(): string
     {
-        return '/mnt/ddev_config/branchery/scripts';
+        return '/mnt/ddev_config/web-entrypoint.d/branchery.sh';
     }
 
     /**
