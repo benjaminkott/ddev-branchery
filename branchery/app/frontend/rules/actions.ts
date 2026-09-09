@@ -16,7 +16,7 @@
 import type { Worktree } from '../types.js';
 
 /** Everything a reader can set going from the page about one worktree. */
-export type Action = 'restore' | 'pull' | 'account' | 'edit' | 'sync' | 'provision' | 'discard' | 'remove';
+export type Action = 'restore' | 'pull' | 'account' | 'edit' | 'rebuild' | 'discard' | 'remove';
 
 /** One of them as the page offers it: which, and why it cannot be pressed. */
 export interface Offer {
@@ -61,11 +61,14 @@ function account(worktree: Worktree): Offer[] {
     return worktree.account === null ? [] : [{ action: 'account', held: null }];
 }
 
-/** The three that are true of every worktree, whatever state it is in. */
+/**
+ * The two that are true of every worktree, whatever state it is in. Putting one
+ * back in shape is a single offer: which of the ways does it is the question the
+ * press asks, and a reader who knew that already knew which button to press.
+ */
 const always: Offer[] = [
     { action: 'edit', held: null },
-    { action: 'sync', held: null },
-    { action: 'provision', held: null },
+    { action: 'rebuild', held: null },
 ];
 
 /**

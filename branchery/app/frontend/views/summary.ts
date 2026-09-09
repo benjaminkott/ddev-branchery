@@ -71,15 +71,23 @@ export function summaryFacts(worktree: Worktree, usage: Usage, account: Element 
             ],
         },
         {
-            // Every address it answers on, written out: the presses at the top open
-            // them, and this is where one is taken from.
+            // Every address it answers on, written out -- each with the way there in
+            // the row that names it. Kept at the top of the page instead, three
+            // presses stood over three addresses with nothing saying which opened
+            // which.
             title: t('table.address'),
             facts: [
-                { label: t('detail.site'), value: host(worktree.url), copy: true },
+                {
+                    label: t('detail.site'),
+                    value: host(worktree.url),
+                    copy: true,
+                    link: { href: worktree.url, label: t('table.openSite') },
+                },
                 ...worktree.entrypoints.map((entry) => ({
                     label: entry.name,
                     value: host(entry.url),
                     copy: true,
+                    link: { href: entry.url, label: t('detail.openAt', { name: entry.name }) },
                 })),
             ],
         },

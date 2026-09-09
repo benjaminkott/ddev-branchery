@@ -1,357 +1,357 @@
 {
-  "about": [
-    "What the API answers with, field by field, as one source both halves are held to.",
-    "The container is the truth here: these shapes are read off src/Controller/ApiController.php",
-    "and the models under src/Model/. dev/api.mjs is checked against them, and so is the",
-    "container itself -- see tests/Contract/ApiAnswersTest.php and dev/answers.test.mjs.",
-    "A type is 'string', 'int', 'bool' or 'mixed'; '?T' is that or null; '[T]' is a list of T;",
-    "'@name' is one of the shapes below. Extra fields are a mismatch too: a mock that answers",
-    "with more than the container does is a mock the interface is written against wrongly.",
-    "'refusals' is the other half: what a door answers when it will not answer. The status is",
-    "what the interface reads and acts on -- a 409 puts 'come back' on the page, a 404 says the",
-    "thing is gone -- and both sides used to decide it apart from one another."
-  ],
-  "answers": {
-    "GET /api/state": "@state",
-    "GET /api/worktrees": "[@worktree]",
-    "GET /api/worktrees/preview": "@preview",
-    "GET /api/worktrees/{name}/commits": "@commits",
-    "GET /api/worktrees/{name}/commits/{sha}": "@commitDetail",
-    "GET /api/worktrees/{name}/commits/{sha}/diff": "@diff",
-    "GET /api/worktrees/{name}/changes": "@changes",
-    "GET /api/worktrees/{name}/changes/diff": "@diff",
-    "GET /api/worktrees/{name}/usage": "@usage",
-    "GET /api/worktrees/{name}/jobs": "[@jobSummary]",
-    "GET /api/branches": "[@branch]",
-    "GET /api/branch": "@branchDetail",
-    "GET /api/branch/commits": "@commits",
-    "GET /api/php-versions": "[string]",
-    "GET /api/jobs/{id}": "@job"
-  },
-  "refusals": [
-    {
-      "ask": "GET /api/worktrees/nowhere/usage",
-      "status": 404,
-      "says": "Unknown worktree."
+    "about": [
+        "What the API answers with, field by field, as one source both halves are held to.",
+        "The container is the truth here: these shapes are read off src/Controller/ApiController.php",
+        "and the models under src/Model/. dev/api.mjs is checked against them, and so is the",
+        "container itself -- see tests/Contract/ApiAnswersTest.php and dev/answers.test.mjs.",
+        "A type is 'string', 'int', 'bool' or 'mixed'; '?T' is that or null; '[T]' is a list of T;",
+        "'@name' is one of the shapes below. Extra fields are a mismatch too: a mock that answers",
+        "with more than the container does is a mock the interface is written against wrongly.",
+        "'refusals' is the other half: what a door answers when it will not answer. The status is",
+        "what the interface reads and acts on -- a 409 puts 'come back' on the page, a 404 says the",
+        "thing is gone -- and both sides used to decide it apart from one another."
+    ],
+    "answers": {
+        "GET /api/state": "@state",
+        "GET /api/worktrees": "[@worktree]",
+        "GET /api/worktrees/preview": "@preview",
+        "GET /api/worktrees/{name}/commits": "@commits",
+        "GET /api/worktrees/{name}/commits/{sha}": "@commitDetail",
+        "GET /api/worktrees/{name}/commits/{sha}/diff": "@diff",
+        "GET /api/worktrees/{name}/changes": "@changes",
+        "GET /api/worktrees/{name}/changes/diff": "@diff",
+        "GET /api/worktrees/{name}/usage": "@usage",
+        "GET /api/worktrees/{name}/jobs": "[@jobSummary]",
+        "GET /api/branches": "[@branch]",
+        "GET /api/branch": "@branchDetail",
+        "GET /api/branch/commits": "@commits",
+        "GET /api/php-versions": "[string]",
+        "GET /api/jobs/{id}": "@job"
     },
-    {
-      "ask": "GET /api/worktrees/nowhere/commits",
-      "status": 404,
-      "says": "Unknown worktree."
-    },
-    {
-      "ask": "GET /api/worktrees/nowhere/commits/9b31d02",
-      "status": 404,
-      "says": "Unknown worktree."
-    },
-    {
-      "ask": "GET /api/worktrees/nowhere/commits/9b31d02/diff?path=a.php",
-      "status": 404,
-      "says": "Unknown worktree."
-    },
-    {
-      "ask": "GET /api/worktrees/nowhere/changes",
-      "status": 404,
-      "says": "Unknown worktree."
-    },
-    {
-      "ask": "GET /api/worktrees/nowhere/changes/diff?path=a.php",
-      "status": 404,
-      "says": "Unknown worktree."
-    },
-    {
-      "ask": "GET /api/worktrees/nowhere/file?path=a.png",
-      "status": 404,
-      "says": "Unknown worktree."
-    },
-    {
-      "ask": "PATCH /api/worktrees/nowhere",
-      "status": 404,
-      "says": "Unknown worktree."
-    },
-    {
-      "ask": "DELETE /api/worktrees/nowhere",
-      "status": 404,
-      "says": "Unknown worktree."
-    },
-    {
-      "ask": "POST /api/worktrees/nowhere/provision",
-      "status": 404,
-      "says": "Unknown worktree."
-    },
-    {
-      "ask": "POST /api/worktrees/nowhere/sync",
-      "status": 404,
-      "says": "Unknown worktree."
-    },
-    {
-      "ask": "POST /api/worktrees/nowhere/pull",
-      "status": 404,
-      "says": "Unknown worktree."
-    },
-    {
-      "ask": "POST /api/worktrees/nowhere/restore",
-      "status": 404,
-      "says": "Unknown worktree."
-    },
-    {
-      "ask": "POST /api/worktrees/nowhere/discard",
-      "status": 404,
-      "says": "Unknown worktree."
-    },
-    {
-      "ask": "GET /api/worktrees/nowhere/jobs",
-      "status": 200,
-      "says": null
-    },
-    {
-      "ask": "POST /api/worktrees",
-      "status": 400,
-      "says": "lowercase letters",
-      "body": {
-        "mode": "fork",
-        "branch": "feature/x",
-        "name": "Not A Name"
-      }
-    },
-    {
-      "ask": "GET /api/branch?branch=--%20--upload-pack%3Dtouch",
-      "status": 400,
-      "says": "Invalid branch name."
-    },
-    {
-      "ask": "GET /api/branch/commits?branch=--%20--upload-pack%3Dtouch",
-      "status": 400,
-      "says": "Invalid branch name."
-    },
-    {
-      "ask": "GET /api/worktrees/preview?branch=--%20--upload-pack%3Dtouch",
-      "status": 400,
-      "says": "Invalid branch name."
-    },
-    {
-      "ask": "DELETE /api/state",
-      "status": 405,
-      "says": "Method not allowed."
-    },
-    {
-      "ask": "GET /api/nothing-here",
-      "status": 404,
-      "says": "Unknown endpoint."
-    },
-    {
-      "ask": "GET /api/worktrees/../changes",
-      "status": 404,
-      "says": "Unknown endpoint."
-    },
-    {
-      "ask": "GET /api/worktrees/.hidden/changes",
-      "status": 404,
-      "says": "Unknown endpoint."
-    },
-    {
-      "ask": "GET /api/worktrees/demo/commits/HEAD",
-      "status": 404,
-      "says": "Unknown endpoint."
-    },
-    {
-      "ask": "GET /api/worktrees/demo/commits/--all",
-      "status": 404,
-      "says": "Unknown endpoint."
+    "refusals": [
+        {
+            "ask": "GET /api/worktrees/nowhere/usage",
+            "status": 404,
+            "says": "Unknown worktree."
+        },
+        {
+            "ask": "GET /api/worktrees/nowhere/commits",
+            "status": 404,
+            "says": "Unknown worktree."
+        },
+        {
+            "ask": "GET /api/worktrees/nowhere/commits/9b31d02",
+            "status": 404,
+            "says": "Unknown worktree."
+        },
+        {
+            "ask": "GET /api/worktrees/nowhere/commits/9b31d02/diff?path=a.php",
+            "status": 404,
+            "says": "Unknown worktree."
+        },
+        {
+            "ask": "GET /api/worktrees/nowhere/changes",
+            "status": 404,
+            "says": "Unknown worktree."
+        },
+        {
+            "ask": "GET /api/worktrees/nowhere/changes/diff?path=a.php",
+            "status": 404,
+            "says": "Unknown worktree."
+        },
+        {
+            "ask": "GET /api/worktrees/nowhere/file?path=a.png",
+            "status": 404,
+            "says": "Unknown worktree."
+        },
+        {
+            "ask": "PATCH /api/worktrees/nowhere",
+            "status": 404,
+            "says": "Unknown worktree."
+        },
+        {
+            "ask": "DELETE /api/worktrees/nowhere",
+            "status": 404,
+            "says": "Unknown worktree."
+        },
+        {
+            "ask": "POST /api/worktrees/nowhere/provision",
+            "status": 404,
+            "says": "Unknown worktree."
+        },
+        {
+            "ask": "POST /api/worktrees/nowhere/sync",
+            "status": 404,
+            "says": "Unknown worktree."
+        },
+        {
+            "ask": "POST /api/worktrees/nowhere/pull",
+            "status": 404,
+            "says": "Unknown worktree."
+        },
+        {
+            "ask": "POST /api/worktrees/nowhere/restore",
+            "status": 404,
+            "says": "Unknown worktree."
+        },
+        {
+            "ask": "POST /api/worktrees/nowhere/discard",
+            "status": 404,
+            "says": "Unknown worktree."
+        },
+        {
+            "ask": "GET /api/worktrees/nowhere/jobs",
+            "status": 200,
+            "says": null
+        },
+        {
+            "ask": "POST /api/worktrees",
+            "status": 400,
+            "says": "lowercase letters",
+            "body": {
+                "mode": "fork",
+                "branch": "feature/x",
+                "name": "Not A Name"
+            }
+        },
+        {
+            "ask": "GET /api/branch?branch=--%20--upload-pack%3Dtouch",
+            "status": 400,
+            "says": "Invalid branch name."
+        },
+        {
+            "ask": "GET /api/branch/commits?branch=--%20--upload-pack%3Dtouch",
+            "status": 400,
+            "says": "Invalid branch name."
+        },
+        {
+            "ask": "GET /api/worktrees/preview?branch=--%20--upload-pack%3Dtouch",
+            "status": 400,
+            "says": "Invalid branch name."
+        },
+        {
+            "ask": "DELETE /api/state",
+            "status": 405,
+            "says": "Method not allowed."
+        },
+        {
+            "ask": "GET /api/nothing-here",
+            "status": 404,
+            "says": "Unknown endpoint."
+        },
+        {
+            "ask": "GET /api/worktrees/../changes",
+            "status": 404,
+            "says": "Unknown endpoint."
+        },
+        {
+            "ask": "GET /api/worktrees/.hidden/changes",
+            "status": 404,
+            "says": "Unknown endpoint."
+        },
+        {
+            "ask": "GET /api/worktrees/demo/commits/HEAD",
+            "status": 404,
+            "says": "Unknown endpoint."
+        },
+        {
+            "ask": "GET /api/worktrees/demo/commits/--all",
+            "status": 404,
+            "says": "Unknown endpoint."
+        }
+    ],
+    "shapes": {
+        "state": {
+            "tld": "string",
+            "projectName": "string",
+            "branch": "string",
+            "project": "?@worktree",
+            "worktrees": "[@worktree]",
+            "branches": "[@branch]",
+            "remotes": "[string]",
+            "repository": "?string",
+            "phpVersions": "[string]",
+            "runningJobs": "[@running]",
+            "recipeProblem": "?string",
+            "unconfigured": "bool",
+            "version": "string",
+            "updateWaiting": "bool",
+            "updateAvailable": "?string",
+            "exposed": "?string"
+        },
+        "worktree": {
+            "name": "string",
+            "branch": "string",
+            "madeFor": "?string",
+            "php": "string",
+            "minPhp": "?string",
+            "node": "?string",
+            "database": "string",
+            "profile": "?string",
+            "docroot": "string",
+            "url": "string",
+            "entrypoints": "[@entrypoint]",
+            "path": "string",
+            "editors": "[@editor]",
+            "changes": "int",
+            "ahead": "?int",
+            "behind": "?int",
+            "ready": "bool",
+            "isProject": "bool",
+            "merged": "bool",
+            "gone": "bool",
+            "builtAt": "?int",
+            "stale": "bool",
+            "incomplete": "bool",
+            "review": "?string",
+            "issue": "?string",
+            "issueId": "?string",
+            "forkedFrom": "?string",
+            "forkedAt": "?string",
+            "base": "?@cut",
+            "tip": "?@tip",
+            "account": "?@account"
+        },
+        "entrypoint": {
+            "name": "string",
+            "url": "string"
+        },
+        "editor": {
+            "name": "string",
+            "url": "string"
+        },
+        "account": {
+            "user": "string",
+            "password": "string",
+            "made": "bool"
+        },
+        "cut": {
+            "branch": "string",
+            "own": "int",
+            "moved": "int"
+        },
+        "tip": {
+            "sha": "string",
+            "subject": "string"
+        },
+        "branch": {
+            "name": "string",
+            "when": "int",
+            "tip": "?@tip",
+            "onRemote": "bool"
+        },
+        "branchDetail": {
+            "name": "string",
+            "when": "int",
+            "tip": "?@tip",
+            "onRemote": "bool",
+            "base": "?@cut",
+            "upstream": "?string",
+            "ahead": "?int",
+            "behind": "?int",
+            "merged": "bool",
+            "gone": "bool",
+            "worktree": "?string"
+        },
+        "commits": {
+            "upstream": "?string",
+            "base": "?string",
+            "more": "bool",
+            "commits": "[@commit]"
+        },
+        "commit": {
+            "sha": "string",
+            "subject": "string",
+            "when": "int",
+            "author": "string",
+            "pushed": "bool",
+            "own": "bool",
+            "url": "?string"
+        },
+        "commitDetail": {
+            "sha": "string",
+            "id": "string",
+            "subject": "string",
+            "body": "string",
+            "when": "int",
+            "author": "string",
+            "parents": "[string]",
+            "pushed": "bool",
+            "files": "[@change]",
+            "url": "?string"
+        },
+        "change": {
+            "status": "string",
+            "path": "string"
+        },
+        "changes": {
+            "changes": "[@change]"
+        },
+        "diff": {
+            "path": "string",
+            "lines": "[@diffLine]",
+            "truncated": "bool",
+            "image": "?@imageChange"
+        },
+        "diffLine": {
+            "kind": "string",
+            "text": "string"
+        },
+        "imageChange": {
+            "before": "?@imageSide",
+            "after": "?@imageSide"
+        },
+        "imageSide": {
+            "source": "string",
+            "bytes": "int"
+        },
+        "usage": {
+            "files": "int",
+            "database": "int",
+            "total": "int"
+        },
+        "preview": {
+            "php": "?string",
+            "readFrom": "?string",
+            "warnings": "[string]"
+        },
+        "job": {
+            "id": "string",
+            "status": "string",
+            "subject": "string",
+            "command": "string",
+            "step": "?@step",
+            "steps": "[@stepDetail]",
+            "elapsed": "int",
+            "log": "string",
+            "size": "int",
+            "partial": "bool",
+            "interrupted": "bool"
+        },
+        "step": {
+            "no": "int",
+            "total": "int",
+            "label": "string"
+        },
+        "stepDetail": {
+            "no": "int",
+            "label": "string",
+            "output": "?string",
+            "state": "string",
+            "seconds": "int"
+        },
+        "jobSummary": {
+            "id": "string",
+            "command": "string",
+            "status": "string",
+            "elapsed": "int",
+            "started": "int"
+        },
+        "running": {
+            "id": "string",
+            "subject": "string",
+            "command": "string",
+            "step": "?@step"
+        }
     }
-  ],
-  "shapes": {
-    "state": {
-      "tld": "string",
-      "projectName": "string",
-      "branch": "string",
-      "project": "?@worktree",
-      "worktrees": "[@worktree]",
-      "branches": "[@branch]",
-      "remotes": "[string]",
-      "repository": "?string",
-      "phpVersions": "[string]",
-      "runningJobs": "[@running]",
-      "recipeProblem": "?string",
-      "unconfigured": "bool",
-      "version": "string",
-      "updateWaiting": "bool",
-      "updateAvailable": "?string",
-      "exposed": "?string"
-    },
-    "worktree": {
-      "name": "string",
-      "branch": "string",
-      "madeFor": "?string",
-      "php": "string",
-      "minPhp": "?string",
-      "node": "?string",
-      "database": "string",
-      "profile": "?string",
-      "docroot": "string",
-      "url": "string",
-      "entrypoints": "[@entrypoint]",
-      "path": "string",
-      "editors": "[@editor]",
-      "changes": "int",
-      "ahead": "?int",
-      "behind": "?int",
-      "ready": "bool",
-      "isProject": "bool",
-      "merged": "bool",
-      "gone": "bool",
-      "builtAt": "?int",
-      "stale": "bool",
-      "incomplete": "bool",
-      "review": "?string",
-      "issue": "?string",
-      "issueId": "?string",
-      "forkedFrom": "?string",
-      "forkedAt": "?string",
-      "base": "?@cut",
-      "tip": "?@tip",
-      "account": "?@account"
-    },
-    "entrypoint": {
-      "name": "string",
-      "url": "string"
-    },
-    "editor": {
-      "name": "string",
-      "url": "string"
-    },
-    "account": {
-      "user": "string",
-      "password": "string",
-      "made": "bool"
-    },
-    "cut": {
-      "branch": "string",
-      "own": "int",
-      "moved": "int"
-    },
-    "tip": {
-      "sha": "string",
-      "subject": "string"
-    },
-    "branch": {
-      "name": "string",
-      "when": "int",
-      "tip": "?@tip",
-      "onRemote": "bool"
-    },
-    "branchDetail": {
-      "name": "string",
-      "when": "int",
-      "tip": "?@tip",
-      "onRemote": "bool",
-      "base": "?@cut",
-      "upstream": "?string",
-      "ahead": "?int",
-      "behind": "?int",
-      "merged": "bool",
-      "gone": "bool",
-      "worktree": "?string"
-    },
-    "commits": {
-      "upstream": "?string",
-      "base": "?string",
-      "more": "bool",
-      "commits": "[@commit]"
-    },
-    "commit": {
-      "sha": "string",
-      "subject": "string",
-      "when": "int",
-      "author": "string",
-      "pushed": "bool",
-      "own": "bool",
-      "url": "?string"
-    },
-    "commitDetail": {
-      "sha": "string",
-      "id": "string",
-      "subject": "string",
-      "body": "string",
-      "when": "int",
-      "author": "string",
-      "parents": "[string]",
-      "pushed": "bool",
-      "files": "[@change]",
-      "url": "?string"
-    },
-    "change": {
-      "status": "string",
-      "path": "string"
-    },
-    "changes": {
-      "changes": "[@change]"
-    },
-    "diff": {
-      "path": "string",
-      "lines": "[@diffLine]",
-      "truncated": "bool",
-      "image": "?@imageChange"
-    },
-    "diffLine": {
-      "kind": "string",
-      "text": "string"
-    },
-    "imageChange": {
-      "before": "?@imageSide",
-      "after": "?@imageSide"
-    },
-    "imageSide": {
-      "source": "string",
-      "bytes": "int"
-    },
-    "usage": {
-      "files": "int",
-      "database": "int",
-      "total": "int"
-    },
-    "preview": {
-      "php": "?string",
-      "readFrom": "?string",
-      "warnings": "[string]"
-    },
-    "job": {
-      "id": "string",
-      "status": "string",
-      "subject": "string",
-      "command": "string",
-      "step": "?@step",
-      "steps": "[@stepDetail]",
-      "elapsed": "int",
-      "log": "string",
-      "size": "int",
-      "partial": "bool",
-      "interrupted": "bool"
-    },
-    "step": {
-      "no": "int",
-      "total": "int",
-      "label": "string"
-    },
-    "stepDetail": {
-      "no": "int",
-      "label": "string",
-      "output": "?string",
-      "state": "string",
-      "seconds": "int"
-    },
-    "jobSummary": {
-      "id": "string",
-      "command": "string",
-      "status": "string",
-      "elapsed": "int",
-      "started": "int"
-    },
-    "running": {
-      "id": "string",
-      "subject": "string",
-      "command": "string",
-      "step": "?@step"
-    }
-  }
 }

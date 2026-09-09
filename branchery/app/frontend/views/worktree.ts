@@ -27,7 +27,7 @@ import { summaryFacts } from './summary.js';
 import { closeChanges, onChangesClose, showChanges, shownChanges } from './changes.js';
 import { account, discard, provision, pull, remove, restore, sync } from './operations.js';
 import { fileList, keepDiff, type Shown, toggleFile } from './files.js';
-import { openProvision } from './provision.js';
+import { openRebuild, type Rebuild } from './rebuild.js';
 import { waiting } from './waiting.js';
 import { pastOf } from './history.js';
 import { View } from './view.js';
@@ -222,11 +222,12 @@ export class WorktreeView extends View {
                     }
                 </h1>
                 <span class="sds-row sds-row__end">
-                    ${away(worktree.url, t('table.openSite'))}
                     ${
-                        /* The project's own words, so each is drawn rather than
-                          written into the button it was first given. */
-                        worktree.entrypoints.map((entry) => saying(entry.name, html`${away(entry.url, entry.name)}`))
+                        /* The site and its entry points are not here: each of them
+                          stands in the row of facts that states its address, which is
+                          where a reader looking for one of three addresses looks. What
+                          is left are the places that have no address of their own on
+                          this page. */ ''
                     }
                     ${
                         /* On the project and not on every worktree: the remote is the same
@@ -466,8 +467,7 @@ export class WorktreeView extends View {
             heading=${t('detail.staleHeading')}
             body=${t('detail.stale')}
             action=${t('table.provision')}
-            @sds-note-action=${() =>
-                openProvision(worktree, (fresh) => provision(worktree.name, fresh, this.handlers))}></sds-note>`;
+            @sds-note-action=${() => openRebuild(worktree, (chosen) => this.rebuild(worktree, chosen))}></sds-note>`;
     }
 
     /**
@@ -489,8 +489,7 @@ export class WorktreeView extends View {
                     : t('detail.unfinishedAt', { no: stopped.no, step: stopped.step, reason: stopped.reason })
             }
             action=${t('table.provision')}
-            @sds-note-action=${() =>
-                openProvision(worktree, (fresh) => provision(worktree.name, fresh, this.handlers))}></sds-note>`;
+            @sds-note-action=${() => openRebuild(worktree, (chosen) => this.rebuild(worktree, chosen))}></sds-note>`;
     }
 
     /**
@@ -580,11 +579,9 @@ export class WorktreeView extends View {
                 return buildButton(t('table.account'), 'secondary', () => void account(worktree, handlers));
             case 'edit':
                 return buildButton(t('table.edit'), 'secondary', () => openEdit(worktree));
-            case 'sync':
-                return buildButton(t('table.sync'), 'secondary', () => void sync(worktree, handlers));
-            case 'provision':
-                return buildButton(t('table.provision'), 'secondary', () =>
-                    openProvision(worktree, (fresh) => provision(worktree.name, fresh, handlers)),
+            case 'rebuild':
+                return buildButton(t('table.rebuild'), 'secondary', () =>
+                    openRebuild(worktree, (chosen) => this.rebuild(worktree, chosen)),
                 );
             case 'discard':
                 return buildButton(
@@ -595,6 +592,17 @@ export class WorktreeView extends View {
             case 'remove':
                 return buildButton(t('table.remove'), 'danger', () => void remove(worktree, handlers));
         }
+    }
+
+    /** What the one press does, once the dialog has said which of the three. */
+    private rebuild(worktree: Worktree, chosen: Rebuild): void {
+        if (chosen.built) {
+            void provision(worktree.name, chosen.fresh, this.handlers);
+
+            return;
+        }
+
+        void sync(worktree, this.handlers);
     }
 
     private async readUsage(name: string): Promise<void> {

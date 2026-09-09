@@ -10,7 +10,7 @@
 
 import { api } from '../api.js';
 import { go } from '../router.js';
-import { refresh, reportError, setError, state, t } from '../state.js';
+import { refresh, reportError, setError, t } from '../state.js';
 import type { Commits, JobHandlers, JobKind, Worktree } from '../types.js';
 import { askConfirm } from './confirm.js';
 
@@ -19,22 +19,6 @@ import { askConfirm } from './confirm.js';
  * where it comes from is a choice the reader made a moment ago.
  */
 export async function sync(worktree: Worktree, handlers: JobHandlers): Promise<void> {
-    const confirmed = await askConfirm({
-        title: t('confirm.sync.title'),
-        message: t('confirm.sync.body'),
-        facts: [
-            { label: t('table.worktree'), value: worktree.name },
-            { label: t('table.database'), value: worktree.database },
-            {
-                label: t('confirm.source'),
-                value: t('field.branchFromProject', { branch: state.project?.branch ?? state.branch }),
-            },
-        ],
-        confirmLabel: t('action.sync'),
-    });
-    if (!confirmed) {
-        return;
-    }
     await start(() => api.syncWorktree(worktree.name), worktree.name, 'sync', handlers);
 }
 

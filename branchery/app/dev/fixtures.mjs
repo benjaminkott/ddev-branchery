@@ -82,17 +82,15 @@ function worktree(values) {
         tip: { sha: '5e9a71b', subject: '[BUGFIX] Keep the language of a copied record' },
         isProject: false,
         url: url(values.name ?? null),
+        entrypoints: (values.profile ?? 'typo3-app').startsWith('typo3')
+            ? [{ name: 'Backend', url: `${url(values.name ?? null)}typo3` }]
+            : [],
         // Null where the configuration says nothing about accounts, and "made" is
         // the state a fork is in: it inherited the project's data and with it every
         // account in it. Press the button and it turns.
         account: (values.profile ?? 'typo3-app').startsWith('typo3')
             ? { user: values.name ?? '', password: '#Password1', made: false }
             : null,
-        entrypoints: (values.profile ?? 'typo3-app').startsWith('typo3')
-            ? [{ name: 'Backend', url: `${url(values.name ?? null)}typo3` }]
-            : [],
-        // Null where the configuration says nothing about accounts, and "made" is
-        // the state a fork is in: it inherited the project's data and with it every
         path,
         // What the container works out from the marks in the project and the
         // machine it stands on -- written out here, because the mock has neither.

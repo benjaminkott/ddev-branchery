@@ -107,7 +107,7 @@ function shownFact(fact: Fact, at: number): TemplateResult {
                   : fact.said === true
                     ? fact.value
                     : html`<code class="sds-mono">${fact.value}</code>`
-        }</dd>`;
+        }${ways.length === 0 ? nothing : html`<span class="branchery-fact__ways">${ways}</span>`}</dd>`;
 }
 
 /**

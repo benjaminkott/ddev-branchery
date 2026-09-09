@@ -83,6 +83,34 @@ branchery-commit {
 /* Set like the title of a worktree's own page, and in the same face: a reader
    arriving from one to the other should find the name in the same place, in the
    same letters. */
+/* The press a group of facts is about stands under its rows, and the rows end
+   at the baseline of the last of them -- so the space between the two is this
+   one and not the list's own. */
+.sds-facts-group > sds-button {
+    display: inline-block;
+    margin-block-start: var(--space-4);
+}
+
+/* A fact that leads somewhere puts the ways under the value rather than after
+   it. Inline they read two ways down one column: a short address keeps its
+   press beside it and a long path pushes the same press onto a line of its own,
+   so where the button stands says nothing but how many characters came before
+   it. Under the value it is the same row every time.
+
+   The step is the list's own, so a fact standing over its ways is spaced like
+   two facts and the column keeps its rhythm. */
+.branchery-fact {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    gap: var(--space-2);
+}
+.branchery-fact__ways {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
 /* The name and the door beside it share a line, and the parting space is the
    heading's: the row the system draws leaves its own, which is wider than what
    a title stands over here. */

@@ -34,12 +34,26 @@ function heldReason(offers: Offer[], action: Action): string | null | undefined 
 }
 
 describe('what can be done to a worktree', () => {
-    it('always offers the three that are true of every one of them', () => {
+    it('always offers the two that are true of every one of them', () => {
         const { doing } = actions(worktree());
 
-        for (const action of ['edit', 'sync', 'provision'] as const) {
+        for (const action of ['edit', 'rebuild'] as const) {
             assert.ok(names(doing).includes(action), `${action} was not offered`);
         }
+    });
+
+    /**
+     * The one press that is not in the row: it is drawn beside the login it makes,
+     * because that is where a reader looks for it -- and offered only where the
+     * configuration says how an account is made here.
+     */
+    it('offers an account beside the facts, and only where one can be made', () => {
+        const said = { user: 'demo', password: '#Password1', made: false };
+
+        assert.deepEqual(names(actions(worktree({ account: said })).beside), ['account']);
+        assert.deepEqual(actions(worktree({ account: null })).beside, []);
+        // And never in the row, where its outcome is nowhere to be seen.
+        assert.ok(!names(actions(worktree({ account: said })).doing).includes('account'));
     });
 
     it('always offers removing it, and nothing holds that back', () => {
