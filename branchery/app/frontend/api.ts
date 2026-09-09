@@ -149,6 +149,9 @@ export const api = {
     restoreWorktree: (name: string): Promise<{ job: string }> =>
         request<{ job: string }>(`worktrees/${encodeURIComponent(name)}/restore`, { method: 'POST' }),
 
+    accountWorktree: (name: string): Promise<{ job: string }> =>
+        request<{ job: string }>(`worktrees/${encodeURIComponent(name)}/account`, { method: 'POST' }),
+
     removeWorktree: (name: string): Promise<{ job: string }> =>
         request<{ job: string }>(`worktrees/${encodeURIComponent(name)}`, { method: 'DELETE' }),
 

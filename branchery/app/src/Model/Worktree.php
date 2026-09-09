@@ -101,6 +101,18 @@ final readonly class Worktree implements \JsonSerializable
          * @var ?array{sha: string, subject: string}
          */
         public ?array $tip = null,
+        /**
+         * The login of this worktree: its own name, and the one development
+         * password. Null where the configuration says nothing about how an
+         * account is made -- there is then nothing to offer and nothing to state.
+         *
+         * "made" is the difference between a login that opens the application and
+         * one that would if it were asked for: a worktree that inherited a
+         * database inherited its accounts, and nobody here knows their passwords.
+         *
+         * @var ?array{user: string, password: string, made: bool}
+         */
+        public ?array $account = null,
     ) {
     }
 
@@ -137,6 +149,7 @@ final readonly class Worktree implements \JsonSerializable
             'forkedAt' => $this->forkedAt,
             'base' => $this->base,
             'tip' => $this->tip,
+            'account' => $this->account,
         ];
     }
 }

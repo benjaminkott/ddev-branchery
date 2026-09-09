@@ -52,6 +52,12 @@ final readonly class Places
             web: $this->web,
             files: $this->files,
             tld: $this->project->tld(),
+            // Its own name, so two worktrees of one project never share an account
+            // and nobody has to remember which is which -- and its own address, which
+            // is where mail from this worktree would be read.
+            adminUser: $name,
+            adminPassword: $build->password(),
+            adminEmail: $name . '@' . Place::hostOf($this->project->urlFor($name)),
         );
     }
 }

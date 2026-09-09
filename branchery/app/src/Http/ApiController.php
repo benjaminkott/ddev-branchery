@@ -187,6 +187,15 @@ final class ApiController
     }
 
     /**
+     * What the reader presses when the worktree inherited a database and with it
+     * accounts nobody knows the password of.
+     */
+    public function account(string $name): Response
+    {
+        return $this->operate($name, ['worktree:account', $name]);
+    }
+
+    /**
      * The caller has been asked before it gets this far -- it is the one operation
      * whose whole subject is losing something.
      */

@@ -4,7 +4,6 @@
  * page's, and is handed over on every draw.
  */
 
-import { EDITOR } from '../editor.js';
 import { formatBytes, formatWhen, host } from '../dom.js';
 import { state, t } from '../state.js';
 import { wandered } from '../rules/actions.js';
@@ -29,7 +28,7 @@ export interface Usage {
  * facts: a state that asks for something is a note carrying the press that
  * answers it, and everything else is a fact among facts.
  */
-export function summaryFacts(worktree: Worktree, usage: Usage): FactGroup[] {
+export function summaryFacts(worktree: Worktree, usage: Usage, account: Element | null = null): FactGroup[] {
     return [
         {
             // The name is the worktree's and the branch is what it stands on -- two
@@ -111,22 +110,29 @@ export function summaryFacts(worktree: Worktree, usage: Usage): FactGroup[] {
             // the button that copies it, and they stand together because that is what
             // a reader comes to this block to do.
             title: t('detail.taken'),
+            // The login below is what it makes, so this is where a reader looks for
+            // it. Null on the project's own checkout and wherever the configuration
+            // says nothing about accounts.
+            press: worktree.account === null ? null : account,
             facts: [
                 { label: t('table.directory'), value: worktree.path, copy: true },
                 { label: t('table.database'), value: worktree.database, copy: true },
-                // The same login every time and in the documentation; having it here is
-                // the difference between opening the editing interface and hunting through the log
-                // of an operation from last week.
+                // Only a login this worktree has. One it would have if somebody asked
+                // for it is not a login, and stating it was the difference between
+                // opening the editing interface and typing a pair that opens nothing --
+                // which is every worktree that inherited a database.
                 //
-                // Two rows and not one, because a login is pasted into two fields, one at
-                // a time -- "admin / Password1!" was one button copying a line that fits
-                // in neither of them.
-                ...(worktree.entrypoints.length === 0
-                    ? []
-                    : [
-                          { label: t('detail.user'), value: EDITOR.user, copy: true },
-                          { label: t('detail.password'), value: EDITOR.password, copy: true },
-                      ]),
+                // Two rows and not one, because a login is pasted into two fields, one
+                // at a time: one button copying the whole line fits in neither of them.
+                ...(worktree.account?.made === true
+                    ? [
+                          { label: t('detail.user'), value: worktree.account.user, copy: true },
+                          { label: t('detail.password'), value: worktree.account.password, copy: true },
+                      ]
+                    : []),
+                ...(worktree.account !== null && !worktree.account.made
+                    ? [{ label: t('detail.user'), value: t('detail.accountMissing'), said: true }]
+                    : []),
             ],
         },
         ...(worktree.isProject ? [] : [storageGroup(usage)]),

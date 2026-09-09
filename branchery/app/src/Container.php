@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App;
 
+use App\Command\AccountCommand;
 use App\Command\AddCommand;
 use App\Command\CheckReleasesCommand;
 use App\Command\ConfigCommand;
@@ -572,6 +573,7 @@ final class Container
             new PullCommand($this->jobs(), $this->web(), $this->manager()),
             new RestoreCommand($this->jobs(), $this->web(), $this->manager()),
             new DiscardCommand($this->jobs(), $this->web(), $this->manager()),
+            new AccountCommand($this->jobs(), $this->web(), $this->manager()),
             new FetchCommand($this->jobs(), $this->web(), $this->git(), $this->ssh()),
             new ConfigCommand($this->manager(), $this->worktrees(), $this->describe()),
             new ExampleCommand($this->recipes(), $this->project(), $this->files()),

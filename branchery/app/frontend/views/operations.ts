@@ -106,6 +106,14 @@ export async function pull(worktree: Worktree, handlers: JobHandlers): Promise<v
     await start(() => api.pullWorktree(worktree.name), worktree.name, 'pull', handlers);
 }
 
+/**
+ * Nothing is asked first: what it drops is an account of this worktree's own,
+ * named after it, in this worktree's own copy of the data.
+ */
+export async function account(worktree: Worktree, handlers: JobHandlers): Promise<void> {
+    await start(() => api.accountWorktree(worktree.name), worktree.name, 'account', handlers);
+}
+
 export async function provision(name: string, fresh: boolean, handlers: JobHandlers): Promise<void> {
     await start(() => api.provisionWorktree(name, fresh), name, 'create', handlers);
 }

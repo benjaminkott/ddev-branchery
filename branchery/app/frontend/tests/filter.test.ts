@@ -40,6 +40,7 @@ function worktree(values: Partial<Worktree> & { name: string }): Worktree {
         issueId: null,
         base: null,
         tip: null,
+        account: null,
         isProject: false,
         url: `https://${name}.blog.ddev.site/`,
         path: `/home/dev/projects/blog/.worktrees/${name}`,

@@ -142,6 +142,7 @@ final readonly class Provisioning
             $place->at($build, 'migrate', $reporter);
         } else {
             $place->at($build, 'setup', $reporter);
+            $this->worktrees->store($name, ['account' => time()]);
         }
 
         $reporter->step('Finishing up');
@@ -157,6 +158,34 @@ final readonly class Provisioning
             'building' => null,
         ]);
         $this->describe->refresh();
+        $reporter->finish();
+    }
+
+    /**
+     * An account of this worktree's own, made now. Every other moment belongs to
+     * a build; this one is pressed, because a worktree that inherited a database
+     * inherited its accounts and nobody here knows their passwords.
+     */
+    public function account(string $name, string $branch, StepReporter $reporter): void
+    {
+        $build = $this->recipes->for($this->project->worktreeDirectory($name));
+        if (!$build->does('account')) {
+            throw new \RuntimeException(sprintf('%s says nothing about how an account is made here.', $build->name() ?? Recipe::FILE));
+        }
+
+        $place = $this->places->of($name, $branch);
+        $reporter->expect(1);
+        $reporter->step('Making an account');
+        // Said here because the lines themselves say nothing: a client is silent
+        // about a statement that changed rows, and the console command that makes a
+        // backend user prints nothing at all when it works. Without this the entry
+        // in the history is a tick over an empty log.
+        $reporter->note(sprintf('%s, an administrator, reachable at %s.', $place->adminUser, $place->adminEmail));
+        $place->at($build, 'account', $reporter);
+        // What the interface reads to know there is one at all -- and with it, that
+        // the login it states is a login this worktree has.
+        $this->worktrees->store($name, ['account' => time()]);
+        $reporter->note(sprintf('The login is %s / %s.', $place->adminUser, $place->adminPassword));
         $reporter->finish();
     }
 
@@ -231,6 +260,7 @@ final readonly class Provisioning
             $this->databases->drop($place->databaseName);
             $this->databases->create($place->databaseName);
             $place->at($build, 'setup', $reporter);
+            $this->worktrees->store($place->name, ['account' => time()]);
         }
     }
 

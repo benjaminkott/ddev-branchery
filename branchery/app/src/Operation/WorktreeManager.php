@@ -221,6 +221,18 @@ final readonly class WorktreeManager
         $this->branches->pull($name, $reporter);
     }
 
+    /**
+     * An account of this worktree's own. Under the worktree's lock like anything
+     * else that writes into its database: a build running beside this one would
+     * be installing over what it just made.
+     */
+    public function account(string $name, StepReporter $reporter): void
+    {
+        $claim = $this->claimExisting($name, $reporter);
+
+        $this->provisioning->account($name, $this->madeFor($name), $reporter);
+    }
+
     public function restoreBranch(string $name, StepReporter $reporter): void
     {
         $claim = $this->claimExisting($name, $reporter);

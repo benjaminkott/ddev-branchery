@@ -16,7 +16,7 @@
 import type { Worktree } from '../types.js';
 
 /** Everything a reader can set going from the page about one worktree. */
-export type Action = 'restore' | 'pull' | 'edit' | 'sync' | 'provision' | 'discard' | 'remove';
+export type Action = 'restore' | 'pull' | 'account' | 'edit' | 'sync' | 'provision' | 'discard' | 'remove';
 
 /** One of them as the page offers it: which, and why it cannot be pressed. */
 export interface Offer {
@@ -30,6 +30,13 @@ export interface Actions {
     doing: Offer[];
     /** What takes something away, and stands at the far end of the row. */
     undoing: Offer[];
+    /**
+     * What stands beside the fact it is about rather than in the row. A press
+     * whose whole outcome is two lines further down the page is one the reader
+     * looks for there -- and a block of those lines with no press beside them
+     * reads as a block nothing can be done about.
+     */
+    beside: Offer[];
 }
 
 /**
@@ -42,7 +49,16 @@ export function wandered(worktree: Worktree): boolean {
 }
 
 export function actions(worktree: Worktree): Actions {
-    return { doing: [...onBranch(worktree), ...always], undoing: undoing(worktree) };
+    return { doing: [...onBranch(worktree), ...always], undoing: undoing(worktree), beside: account(worktree) };
+}
+
+/**
+ * Offered only where the configuration says how an account is made -- elsewhere
+ * the press would reach a container with nothing to run, and a held button with
+ * that on it says nothing a reader of this project can act on.
+ */
+function account(worktree: Worktree): Offer[] {
+    return worktree.account === null ? [] : [{ action: 'account', held: null }];
 }
 
 /** The three that are true of every worktree, whatever state it is in. */

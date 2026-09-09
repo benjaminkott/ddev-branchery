@@ -164,6 +164,7 @@ describe('the shapes the interface is written against', () => {
         state: 'ServerState',
         worktree: 'Worktree',
         entrypoint: 'Entrypoint',
+        account: 'Account',
         cut: 'Cut',
         tip: 'Tip',
         branch: 'Branch',

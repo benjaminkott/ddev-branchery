@@ -103,7 +103,10 @@ function named(text: string, declared: Record<string, string>): Set<string> {
 function counted(text: string): Set<string> {
     const found = new Set<string>();
     for (const [, name, given] of text.matchAll(/\bt\(\s*['"]([\w.]+)['"]\s*,\s*\{([^}]*)\}/g)) {
-        if (name !== undefined && given?.includes('count') === true) {
+        // The word and not the letters: "account.user" among the parameters carries
+        // "count" in the middle of it, and read as a substring it makes every line
+        // said with an account a line said with a number.
+        if (name !== undefined && given !== undefined && /(?<![\w.])count(?![\w])/.test(given)) {
             found.add(name);
         }
     }

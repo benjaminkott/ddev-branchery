@@ -212,6 +212,14 @@ final readonly class Worktrees
             // otherwise -- see Lineage.
             base: Lineage::baseOf($branch, $distances[$branch] ?? [], $trunks, isset($meta['forkedFrom']) ? (string) $meta['forkedFrom'] : null),
             tip: $state->tip,
+            // Only where the configuration says how one is made, so the page never
+            // offers a press that the container would refuse. What the login is is a
+            // rule and not a record: the name is the worktree's own and the password
+            // is the same everywhere, so nothing of it is kept -- only that a setup
+            // or a press has made one.
+            account: $build->does('account')
+                ? ['user' => $name, 'password' => $build->password(), 'made' => isset($meta['account'])]
+                : null,
         );
     }
 

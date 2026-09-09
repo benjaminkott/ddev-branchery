@@ -41,6 +41,7 @@ function worktree(values: Partial<Worktree> & { name: string }): Worktree {
         issueId: null,
         base: null,
         tip: null,
+        account: null,
         ...values,
     };
 }

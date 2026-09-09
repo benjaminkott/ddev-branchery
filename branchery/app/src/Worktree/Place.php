@@ -36,9 +36,10 @@ final readonly class Place
          * already.
          */
         public ?string $nodeDirectory = null,
-        public string $adminUser = 'admin',
-        public string $adminPassword = 'Password1!',
-        public string $adminEmail = 'admin@example.com',
+        public string $adminUser = '',
+        public string $adminPassword = Build::PASSWORD,
+        /** Its own address, so mail from a worktree says which one it came from. */
+        public string $adminEmail = '',
     ) {
     }
 
@@ -86,6 +87,9 @@ final readonly class Place
             'BRANCHERY_DB_PASSWORD' => $database->password(),
             // The same connection as one string, for what wants a URL.
             'BRANCHERY_DB_URL' => $database->url($this->databaseName),
+            // And as a client, for a line that has a statement to run: both of them
+            // read one from standard input.
+            'BRANCHERY_DB_CLIENT' => $database->client($this->databaseName),
             'BRANCHERY_ADMIN_USER' => $this->adminUser,
             'BRANCHERY_ADMIN_PASSWORD' => $this->adminPassword,
             'BRANCHERY_ADMIN_EMAIL' => $this->adminEmail,

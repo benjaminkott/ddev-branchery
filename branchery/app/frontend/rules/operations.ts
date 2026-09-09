@@ -23,6 +23,7 @@ const COMMANDS: Record<string, { kind: JobKind; history: string; doing: string }
     'worktree:pull': { kind: 'pull', history: 'history.pull', doing: 'job.doing.pull' },
     'worktree:restore': { kind: 'restore', history: 'history.restore', doing: 'job.doing.restore' },
     'worktree:discard': { kind: 'discard', history: 'history.discard', doing: 'job.doing.discard' },
+    'worktree:account': { kind: 'account', history: 'history.account', doing: 'job.doing.account' },
     'git:fetch': { kind: 'fetch', history: 'history.fetch', doing: 'job.doing.fetch' },
 };
 

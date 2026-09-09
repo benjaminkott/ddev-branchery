@@ -67,6 +67,7 @@ export function createApi() {
         ['POST', /^\/api\/worktrees\/(?<name>[A-Za-z0-9][A-Za-z0-9.-]*)\/pull$/, (v) => pull(v.name)],
         ['POST', /^\/api\/worktrees\/(?<name>[A-Za-z0-9][A-Za-z0-9.-]*)\/restore$/, (v) => restore(v.name)],
         ['POST', /^\/api\/worktrees\/(?<name>[A-Za-z0-9][A-Za-z0-9.-]*)\/discard$/, (v) => discard(v.name)],
+        ['POST', /^\/api\/worktrees\/(?<name>[A-Za-z0-9][A-Za-z0-9.-]*)\/account$/, (v) => account(v.name)],
         [
             'GET',
             /^\/api\/worktrees\/(?<name>[A-Za-z0-9][A-Za-z0-9.-]*)\/commits$/,
@@ -616,6 +617,34 @@ export function createApi() {
         const touched = commitOf(name, sha)?.files.find((entry) => entry.path === path);
 
         return json({ path, ...changeIn(name, path, touched?.status ?? 'modified', true) });
+    }
+
+    /**
+     * A worktree whose configuration says nothing about accounts answers null
+     * there, and the page offers no press -- so a request for one is a request
+     * this project has no answer to.
+     */
+    function account(name) {
+        const worktree = mustFind(name);
+        assertFree(name);
+
+        if (worktree.account === null) {
+            return error('This project says nothing about how an account is made.');
+        }
+
+        return accepted(
+            start(
+                plans.account(worktree.account.user),
+                () => {
+                    world.worktrees = world.worktrees.map((entry) =>
+                        entry.name === name ? { ...entry, account: { ...entry.account, made: true } } : entry,
+                    );
+                },
+                name,
+                name,
+                'worktree:account',
+            ),
+        );
     }
 
     /** The one answer here that ends with something gone. */

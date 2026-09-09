@@ -25,7 +25,7 @@ import { commitLog } from './commits.js';
 import { shownGroup } from './facts.js';
 import { summaryFacts } from './summary.js';
 import { closeChanges, onChangesClose, showChanges, shownChanges } from './changes.js';
-import { discard, provision, pull, remove, restore, sync } from './operations.js';
+import { account, discard, provision, pull, remove, restore, sync } from './operations.js';
 import { fileList, keepDiff, type Shown, toggleFile } from './files.js';
 import { openProvision } from './provision.js';
 import { waiting } from './waiting.js';
@@ -89,7 +89,13 @@ export class WorktreeView extends View {
         () => this.requestUpdate(),
     );
 
-    private bar: { key: string; doing: SdsButton[]; undoing: SdsButton[]; held: Set<SdsButton> } | null = null;
+    private bar: {
+        key: string;
+        doing: SdsButton[];
+        undoing: SdsButton[];
+        beside: SdsButton[];
+        held: Set<SdsButton>;
+    } | null = null;
 
     protected override arrived(): void {
         // The dialog is the reader's to close. What it leaves behind is the page's
@@ -263,10 +269,17 @@ export class WorktreeView extends View {
 
         <section class="sds-band sds-band--quiet">
             <h2 class="sds-h3">${t('detail.settled')}</h2>
-            <div class="sds-facts-set">${summaryFacts(worktree, {
-                value: this.usage.of(worktree.name),
-                trouble: this.usage.trouble(worktree.name),
-            }).map(shownGroup)}</div>
+            <div class="sds-facts-set">${summaryFacts(
+                worktree,
+                {
+                    value: this.usage.of(worktree.name),
+                    trouble: this.usage.trouble(worktree.name),
+                },
+                // The row of buttons is built before this is drawn -- see
+                // actionBar() -- so what stands beside a group of facts is the same
+                // element and not a second one wearing the same word.
+                this.bar?.beside[0] ?? null,
+            ).map(shownGroup)}</div>
         </section>
 
         ${this.commitList(worktree)}
@@ -501,7 +514,7 @@ export class WorktreeView extends View {
         // Nothing is live while something is being done to it. And what the
         // container refuses on its own grounds is not offered as if it were not --
         // the reason stands on the button.
-        for (const button of [...this.bar.doing, ...this.bar.undoing]) {
+        for (const button of [...this.bar.doing, ...this.bar.undoing, ...this.bar.beside]) {
             button.disabled = busy || this.bar.held.has(button);
         }
         const { doing, undoing } = this.bar;
@@ -524,7 +537,12 @@ export class WorktreeView extends View {
      * offered() that makes it -- see there. What is left here is what each of
      * them is as a control: the word on it, its weight, and what it sets going.
      */
-    private buildBar(worktree: Worktree): { doing: SdsButton[]; undoing: SdsButton[]; held: Set<SdsButton> } {
+    private buildBar(worktree: Worktree): {
+        doing: SdsButton[];
+        undoing: SdsButton[];
+        beside: SdsButton[];
+        held: Set<SdsButton>;
+    } {
         const held = new Set<SdsButton>();
         const make = (offer: Offer): SdsButton => {
             const button = this.pressFor(offer.action, worktree);
@@ -539,7 +557,12 @@ export class WorktreeView extends View {
         };
         const plan = actions(worktree);
 
-        return { doing: plan.doing.map(make), undoing: plan.undoing.map(make), held };
+        return {
+            doing: plan.doing.map(make),
+            undoing: plan.undoing.map(make),
+            beside: plan.beside.map(make),
+            held,
+        };
     }
 
     private pressFor(action: Action, worktree: Worktree): SdsButton {
@@ -553,6 +576,8 @@ export class WorktreeView extends View {
                 );
             case 'pull':
                 return buildButton(t('table.pull'), 'secondary', () => void pull(worktree, handlers));
+            case 'account':
+                return buildButton(t('table.account'), 'secondary', () => void account(worktree, handlers));
             case 'edit':
                 return buildButton(t('table.edit'), 'secondary', () => openEdit(worktree));
             case 'sync':
@@ -614,9 +639,10 @@ function missing(name: string): TemplateResult {
 }
 
 /**
- * The running site, its editing interface, the repository, the review, the
- * issue: places one goes, as against the row under them, which is what one does
- * to the worktree. Drawn only where there is somewhere to lead.
+ * The running site, its editing interface, the checkout in the editor, the
+ * repository, the review, the issue: places one goes, as against the row under
+ * them, which is what one does to the worktree. Drawn only where there is
+ * somewhere to lead.
  */
 function away(url: string | null, label: string): TemplateResult | typeof nothing {
     return url === null ? nothing : html`${buildWayOut(url, label)}`;

@@ -16,6 +16,9 @@ namespace App\Config;
  */
 final readonly class Build
 {
+    /** The password every worktree's account is made with where nothing says otherwise. */
+    public const PASSWORD = '#Password1';
+
     public function __construct(
         private Recipe $recipe,
         /** What it is built on, by name, where it is built on anything. */
@@ -48,6 +51,16 @@ final readonly class Build
     public function bin(): string
     {
         return $this->recipe->bin ?? 'vendor/bin';
+    }
+
+    /**
+     * What the account of a worktree is made with. The shipped one is written down
+     * in the manual, which is what makes it a development login and not a secret;
+     * a project whose application refuses it says its own.
+     */
+    public function password(): string
+    {
+        return $this->recipe->password ?? self::PASSWORD;
     }
 
     /** What this checkout is to be served with, where anything is asked for. */

@@ -33,6 +33,16 @@ export interface Fact {
 export interface FactGroup {
     title: string;
     facts: Fact[];
+    /**
+     * The press these rows are about, where there is one. A reader looks for it
+     * where its outcome is stated, and a group of facts with nothing to do about
+     * them reads as a group nothing can be done about.
+     *
+     * Handed in as the element itself and kept by whoever built it: Soul's button
+     * takes its label out of the element it is given, so one written again from a
+     * template keeps the word it was first drawn with.
+     */
+    press?: Element | null;
 }
 
 /** A group of them, or nothing at all where it has no rows. */
@@ -43,6 +53,7 @@ export function shownGroup(group: FactGroup): TemplateResult | typeof nothing {
         <div class="sds-facts-group">
             <p class="sds-label">${group.title}</p>
             <dl class="sds-facts">${group.facts.map(shownFact)}</dl>
+            ${group.press ?? nothing}
         </div>`;
 }
 

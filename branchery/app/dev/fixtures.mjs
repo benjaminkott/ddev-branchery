@@ -80,6 +80,12 @@ function worktree(values) {
         tip: { sha: '5e9a71b', subject: '[BUGFIX] Keep the language of a copied record' },
         isProject: false,
         url: url(values.name ?? null),
+        // Null where the configuration says nothing about accounts, and "made" is
+        // the state a fork is in: it inherited the project's data and with it every
+        // account in it. Press the button and it turns.
+        account: (values.profile ?? 'typo3-app').startsWith('typo3')
+            ? { user: values.name ?? '', password: '#Password1', made: false }
+            : null,
         entrypoints: (values.profile ?? 'typo3-app').startsWith('typo3')
             ? [{ name: 'Backend', url: `${url(values.name ?? null)}typo3` }]
             : [],
@@ -780,6 +786,7 @@ export const plans = {
      * already where the remote is -- the answer most often, and the one that has
      * to read as a success rather than as nothing.
      */
+    account: (name) => [step('Making an account', 2, `→ 1 row affected.`, `Backend user "${name}" created.`)],
     pull: (branch, upstream, behind) => [
         step(
             `Updating ${upstream.split('/')[0]}`,

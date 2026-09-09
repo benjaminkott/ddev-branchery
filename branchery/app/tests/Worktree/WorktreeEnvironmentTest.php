@@ -36,6 +36,10 @@ final class WorktreeEnvironmentTest extends TestCase
         self::assertSame('npm', $environment['BRANCHERY_NPM']);
         // The tld as a pattern, which is what a trusted-hosts setting wants.
         self::assertSame('.*\\.blog\\.ddev\\.site', $environment['BRANCHERY_HOSTS_PATTERN']);
+        // Every word of it bare. A shell splits the value of a variable into words
+        // and removes no quotes from it, so one quoted here reaches the client as
+        // part of the host it is meant to name.
+        self::assertSame('mysql -h db -P 3306 -u db -pdb branchery_my_fix', $environment['BRANCHERY_DB_CLIENT']);
     }
 
     /**

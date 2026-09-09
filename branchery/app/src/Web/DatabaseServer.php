@@ -92,6 +92,43 @@ final class DatabaseServer
     }
 
     /**
+     * The client for one database, as a line a recipe pipes a statement into.
+     * Both clients read from standard input, which is what lets this be one
+     * string rather than a flag every line would have to choose between.
+     *
+     * The account an application connects with, not the one that creates
+     * databases: a recipe speaks about the data of its own worktree.
+     *
+     * Nothing here is quoted, and it may not be: a shell splits the value of a
+     * variable into words but performs no quote removal on it, so a quoted host
+     * arrives as part of the argument -- "Unknown server host ''db''". What goes
+     * in is DDEV's own naming and a database named by Project::assertName, and
+     * there is no space in any of it.
+     */
+    public function client(string $database): string
+    {
+        if ($this->kind() === 'postgres') {
+            return sprintf(
+                'PGPASSWORD=%s psql -h %s -p %d -U %s -d %s',
+                $this->password(),
+                $this->host(),
+                $this->port(),
+                $this->user(),
+                $database,
+            );
+        }
+
+        return sprintf(
+            'mysql -h %s -P %d -u %s -p%s %s',
+            $this->host(),
+            $this->port(),
+            $this->user(),
+            $this->password(),
+            $database,
+        );
+    }
+
+    /**
      * As a URL, which is how a good many frameworks take it -- Symfony's
      * DATABASE_URL, Doctrine's, and everything that reads a DSN.
      */

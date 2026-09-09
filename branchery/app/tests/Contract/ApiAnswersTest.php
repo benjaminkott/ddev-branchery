@@ -45,12 +45,18 @@ final class ApiAnswersTest extends TestCase
         // A page worth opening, because a shape only reached through a list is
         // never walked by a project that names none -- and an unwalked shape is
         // one the contract holds nobody to.
-        $this->wiring->recipe("entrypoints:\n  - Backend: /typo3\n");
+        // And a way to make an account, because a worktree whose configuration says
+        // nothing about one answers null there -- and a shape only reached through
+        // a value that is null is a shape this holds nobody to.
+        $this->wiring->recipe("entrypoints:\n  - Backend: /typo3\naccount:\n  - ./bin/account.sh\n");
         $directory = $this->wiring->worktree(self::NAME);
         // An image the worktree carries uncommitted, because the change in one is
         // the two images and not a diff -- and a shape nothing answers with is a
         // shape this holds nobody to.
         file_put_contents($directory . '/logo.png', str_repeat('.', 96));
+        // And one already made, so the field that tells the two apart is answered
+        // as it is on a worktree somebody has pressed it for.
+        $this->wiring->worktrees->store(self::NAME, ['account' => 1767225600]);
         $this->tell();
         $this->finished = $this->ran();
         // And one still going, which is what the list marks a row with.

@@ -36,6 +36,7 @@ Run ``ddev branchery`` for the commands the installed image has, and append
     ``worktree:provision <name>``        rebuild dependencies and application state
     ``worktree:config [<name>]``         rewrite generated configuration for one or all worktrees
     ``worktree:php <name> [<version>]``  show or change the PHP runtime
+    ``worktree:account <name>``           make an administrator whose password is known
     ``worktree:remove <name>``           remove checkout, branch, database and state
     ``database:sync <name>``             replace a worktree database from another source
     ``database:prune``                   list or drop databases without a worktree

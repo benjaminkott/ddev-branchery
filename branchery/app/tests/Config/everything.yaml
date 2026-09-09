@@ -96,10 +96,17 @@ configure:
   - inherit: profile
   - ./bin/extra-config.sh
 
+# What a worktree's account is made with, where the shipped one will not do.
+password: '#Password1'
+
 # No "inherit" line: this moment is what stands here, and what it is built on
 # does nothing at this one.
 setup:
   - ./bin/install-fresh.sh
+
+# What a press makes rather than a build: an account of this worktree's own.
+account:
+  - inherit: profile
 
 migrate:
   - inherit: profile

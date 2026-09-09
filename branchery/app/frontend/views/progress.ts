@@ -11,12 +11,11 @@ import { html, type TemplateResult } from 'lit';
 import type { SdsButton } from '@typo3/soul-frontend';
 import { api } from '../api.js';
 import { buildButton, formatDuration, maybe, runSteps, setButtonLabel } from '../dom.js';
-import { EDITOR } from '../editor.js';
 import { gather, unread } from '../rules/journal.js';
 import { poll } from '../rules/polling.js';
 import { kindOf } from '../rules/operations.js';
 import { operationName, refresh, state, stateWords, subscribe, t, trackJob } from '../state.js';
-import type { JobKind, TrackedJob } from '../types.js';
+import type { JobKind, TrackedJob, Worktree } from '../types.js';
 import { hasResult, titleOf, whyItStopped } from '../rules/verdict.js';
 import {
     closeWizard,
@@ -322,14 +321,23 @@ function outcome(job: TrackedJob): string | TemplateResult {
                 ? t('job.done.restore', { branch: worktree.branch })
                 : job.kind === 'discard'
                   ? t('job.done.discard', { branch: worktree.branch })
-                  : worktree.entrypoints.length === 0
-                    ? t('job.done.built', { php: worktree.php })
-                    : `${t('job.done.built', { php: worktree.php })} ${t('job.login', EDITOR)}`;
+                  : job.kind === 'account'
+                    ? login(worktree)
+                    : worktree.account?.made !== true
+                      ? t('job.done.built', { php: worktree.php })
+                      : `${t('job.done.built', { php: worktree.php })} ${login(worktree)}`;
 
     return html`
         ${said}
         <sds-link external href=${worktree.url}
                   label=${t('action.openWorktree')}></sds-link>`;
+}
+
+/** The login of a worktree, as the sentence that hands it over. */
+function login(worktree: Worktree): string {
+    const account = worktree.account;
+
+    return account === null ? '' : t('job.login', { user: account.user, password: account.password });
 }
 
 /** The whole log, for the report that needs it. */

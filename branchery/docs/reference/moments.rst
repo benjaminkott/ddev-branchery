@@ -23,8 +23,16 @@ Lifecycle moments
     ``configure`` the same, and on every ``worktree:config``
     ``setup``     a worktree with no data to inherit: the application is installed
     ``migrate``   data was copied in — ``add``, ``fork``, ``sync`` — or a rebuilt worktree has its own
+    ``account``   somebody asks for an administrator of their own — and nothing else asks for it
     ``finish``    the last step of every one of them, and of a version switch
     ============= =====================================================================================
+
+``account`` is the one moment no build asks for. A worktree that inherited a
+database inherited the accounts in it, and nobody here knows their passwords;
+this is what makes one that is known. The shipped TYPO3 profiles drop an account
+of that name before creating it, because the core refuses a username that is
+taken and has no command that changes an account it finds — so a second press
+would fail on what the first one made.
 
 A moment is the lines it runs, in the order they are written:
 
@@ -123,6 +131,13 @@ line reaches for when it has to point at something:
 ``BRANCHERY_DB_URL``
     the same connection as one string
 
+``BRANCHERY_DB_CLIENT``
+    the client for this worktree's database, as a line to pipe a statement into:
+    ``echo "DELETE FROM be_users WHERE …" | $BRANCHERY_DB_CLIENT``. Both clients
+    read from standard input, so a line needs no case for the two of them
+
 ``BRANCHERY_ADMIN_USER``, ``BRANCHERY_ADMIN_PASSWORD``, ``BRANCHERY_ADMIN_EMAIL``
-    the editor a setup creates: ``admin``, ``Password1!``,
-    ``admin@example.com`` — a development login, the same in every worktree
+    the login a setup creates: the worktree's own name, the password
+    ``password:`` names — ``#Password1`` where it names none — and an address
+    under the worktree's own host. A development login, written down here,
+    which is what keeps it from being a secret

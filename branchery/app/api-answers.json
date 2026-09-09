@@ -208,11 +208,17 @@
             "forkedFrom": "?string",
             "forkedAt": "?string",
             "base": "?@cut",
-            "tip": "?@tip"
+            "tip": "?@tip",
+            "account": "?@account"
         },
         "entrypoint": {
             "name": "string",
             "url": "string"
+        },
+        "account": {
+            "user": "string",
+            "password": "string",
+            "made": "bool"
         },
         "cut": {
             "branch": "string",

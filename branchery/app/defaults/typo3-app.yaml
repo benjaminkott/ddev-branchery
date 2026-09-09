@@ -97,6 +97,22 @@ setup:
       --project-name="$BRANCHERY_NAME" --create-site="$BRANCHERY_URL" \
       --server-type=apache --force --no-interaction
 
+# An administrator for this worktree, on request rather than at build time: a
+# worktree that inherited a database has the accounts that came with it, and
+# nobody here knows their passwords.
+#
+# The one this makes goes first. "backend:user:create" refuses a name that is
+# taken -- deleted ones included, and the core has no command that deletes one
+# -- so a second press would fail on the account the first one made. What is
+# dropped is this worktree's own copy of the data, and an account named after
+# the worktree it is in.
+account:
+  - echo "DELETE FROM be_users WHERE username = '$BRANCHERY_ADMIN_USER'" | $BRANCHERY_DB_CLIENT
+  - |
+    "$BRANCHERY_PHP" "$BRANCHERY_BIN/typo3" backend:user:create \
+      --username="$BRANCHERY_ADMIN_USER" --password="$BRANCHERY_ADMIN_PASSWORD" \
+      --email="$BRANCHERY_ADMIN_EMAIL" --admin --no-interaction
+
 # Data written by another state of the code, fitted to this one.
 migrate:
   - $BRANCHERY_PHP $BRANCHERY_BIN/typo3 extension:setup

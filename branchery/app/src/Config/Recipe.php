@@ -34,8 +34,12 @@ final readonly class Recipe
      * a worktree with no data to inherit is set up, one that has data is fitted
      * to it. "finish" is asked for at the end of every operation that touches a
      * worktree, a version switch and a bare reconfiguration included.
+     *
+     * "account" is the one no build asks for: it is what a reader presses, on a
+     * worktree that inherited a database and with it accounts nobody here knows
+     * the password of.
      */
-    public const MOMENTS = ['install', 'configure', 'setup', 'migrate', 'finish'];
+    public const MOMENTS = ['install', 'configure', 'setup', 'migrate', 'account', 'finish'];
 
     /**
      * What never travels into a worktree, whatever a project says: the repository's
@@ -44,7 +48,7 @@ final readonly class Recipe
      */
     private const NEVER = ['.git', '.ddev'];
 
-    private const SETTINGS = ['profile', 'docroot', 'php', 'node', 'bin'];
+    private const SETTINGS = ['profile', 'docroot', 'php', 'node', 'bin', 'password'];
 
     private const INHERIT_KEY = 'inherit';
 
@@ -106,6 +110,8 @@ final readonly class Recipe
         public ?array $entrypoints,
         /** Where the project's own binaries are -- composer's bin-dir. */
         public ?string $bin,
+        /** What a worktree's account is made with, where the shipped one will not do. */
+        public ?string $password,
         public array $links,
         public array $data,
         /**
@@ -127,6 +133,7 @@ final readonly class Recipe
             node: null,
             entrypoints: null,
             bin: null,
+            password: null,
             links: self::NOTHING_SAID['links'],
             data: self::NOTHING_SAID['data'],
             copy: self::NOTHING_SAID['copy'],
@@ -203,6 +210,7 @@ final readonly class Recipe
             node: self::readVersion($data['node'] ?? null, 'node'),
             entrypoints: self::readEntrypoints($data['entrypoints'] ?? null),
             bin: self::readSetting($data, 'bin'),
+            password: self::readSetting($data, 'password'),
             links: self::readLinks($data['links'] ?? null),
             data: self::readData($data['data'] ?? null),
             copy: self::readCopy($data['copy'] ?? null),
@@ -228,6 +236,7 @@ final readonly class Recipe
             node: $this->node ?? $base->node,
             entrypoints: $this->entrypoints ?? $base->entrypoints,
             bin: $this->bin ?? $base->bin,
+            password: $this->password ?? $base->password,
             links: [
                 'review' => $this->links['review'] ?? $base->links['review'],
                 'issue' => $this->links['issue'] ?? $base->links['issue'],

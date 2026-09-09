@@ -36,6 +36,31 @@ worktree's. The code is not touched, and neither are files outside what
 
 #.  **Flushing caches** (**config**).
 
+..  _operations-account:
+
+account
+=======
+
+``ddev branchery worktree:account <name>`` ·
+``POST /api/worktrees/<name>/account``
+
+Makes this worktree an administrator whose password is known: its own name, and
+the password :ref:`the project names <configuration-basic>` — ``#Password1``
+where it names none. Nothing else about the worktree is touched.
+
+A worktree that inherited a database inherited the accounts in it, and their
+passwords belong to whoever set them; a fresh installation has one this made
+already. So the page states a login only where there is one to state, and offers
+this where there is not.
+
+#.  **Making an account** (**config** ``account``). What that means is the
+    project's, and the shipped TYPO3 profiles drop an account of that name first
+    — the core refuses a username that is taken and has no command that changes
+    one it finds, so a second press would otherwise fail on what the first made.
+
+Offered only where the configuration says how an account is made here, and never
+on the project's own checkout: that database is the developer's, not a copy.
+
 ..  _operations-remove:
 
 remove

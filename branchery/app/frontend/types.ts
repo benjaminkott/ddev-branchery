@@ -22,6 +22,18 @@ export interface Entrypoint {
     url: string;
 }
 
+/**
+ * The login of a worktree. The name is the worktree's own and the password is
+ * the same everywhere -- a development login, written down in the manual, and
+ * not a secret.
+ */
+export interface Account {
+    user: string;
+    password: string;
+    /** Whether it opens the application yet, or would once it is asked for. */
+    made: boolean;
+}
+
 export interface Worktree {
     name: string;
     branch: string;
@@ -91,6 +103,11 @@ export interface Worktree {
     /** Null for the trunk itself, which is cut from nothing. */
     base: Cut | null;
     tip: Tip | null;
+    /**
+     * Null where the configuration says nothing about how an account is made --
+     * there is then nothing to offer and nothing to state.
+     */
+    account: Account | null;
 }
 
 /**
@@ -307,7 +324,7 @@ export interface JobSummary {
  * It decides what the end of it says: a worktree that was built is opened and
  * logged into, one whose data was fetched is neither.
  */
-export type JobKind = 'create' | 'sync' | 'pull' | 'restore' | 'discard' | 'remove' | 'fetch';
+export type JobKind = 'create' | 'sync' | 'pull' | 'restore' | 'discard' | 'remove' | 'fetch' | 'account';
 
 /**
  * A running operation together with the worktree it concerns -- and with the
