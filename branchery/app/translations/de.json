@@ -262,7 +262,7 @@
     "table.profile": "Projekttyp",
     "table.provision": "Neu einrichten",
     "table.pull": "Auf Stand bringen",
-    "table.rebuild": "Neu aufbauen…",
+    "table.rebuild": "Neu aufbauen",
     "table.remove": "Entfernen",
     "table.restore": "Zurück auf {branch}",
     "table.staleMark": "Abhängigkeiten geändert",

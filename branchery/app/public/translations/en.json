@@ -262,7 +262,7 @@
     "table.profile": "Project type",
     "table.provision": "Provision again",
     "table.pull": "Bring up to date",
-    "table.rebuild": "Rebuild…",
+    "table.rebuild": "Rebuild",
     "table.remove": "Remove",
     "table.restore": "Back to {branch}",
     "table.staleMark": "dependencies changed",
