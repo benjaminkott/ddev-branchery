@@ -32,9 +32,16 @@ configuration are written; creating one does not require a DDEV restart.
 
 ..  code-block:: text
 
-    <worktree>.<project>.ddev.site    one worktree
-    <project>.ddev.site:8041          Branchery
-    <project>.ddev.site               the project checkout
+    <worktree>.<project>.ddev.site            one worktree
+    <worktree>-<label>.<project>.ddev.site    the same worktree, for each further hostname of the project
+    <project>.ddev.site:8041                  Branchery
+    <project>.ddev.site                       the project checkout
+
+The wildcard takes every name under the project's domain, so a hostname the
+project asked DDEV for as ``<label>.<project>`` would be served as a worktree
+of that name. The entry point links those labels onto the project's own
+docroot at every start, and the name is refused for a worktree. See
+:ref:`data-other-hostnames` for how a worktree gets its further addresses.
 
 ``ddev describe`` gets a Branchery section with the active addresses, PHP
 versions and databases. That section is regenerated when worktrees change and
@@ -54,7 +61,7 @@ What is written where
     ``.worktrees/<name>/``                        git                  the checkout
     ``.worktrees/<name>/.vscode/``                Branchery            debugger and terminal environment, with its own ``.gitignore``
     ``.ddev/branchery/var/metadata/<name>.json``  Branchery            branch, base, profile, docroot, PHP version, database and built commit
-    ``.ddev/branchery/var/docroots/<name>``       Branchery            link from the web server to the worktree docroot
+    ``.ddev/branchery/var/docroots/<name>``       Branchery            link from the web server to the worktree docroot, one more per further hostname of the project
     ``.ddev/branchery/var/php.map``               Branchery            PHP assignment for every worktree
     ``.ddev/branchery/var/node.map``              Branchery            Node assignment for every worktree
     ``.ddev/branchery/var/jobs/<id>.*``           Branchery            operation log, status, process id and exit code

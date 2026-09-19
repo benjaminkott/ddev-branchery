@@ -80,6 +80,53 @@ without a file being touched, and ``git status`` in a fresh worktree is empty.
 The placeholder is resolved when the configuration is read and cached with it --
 which is no trouble here, because every operation ends with ``finish``.
 
+..  _data-other-hostnames:
+
+A project with more than one domain
+===================================
+
+A project that serves a second site at a second domain has told DDEV so, in
+``additional_hostnames`` or ``additional_fqdns``. What the project has, every
+worktree has: for each of those hostnames a worktree answers at one more
+address of its own, under the wildcard, named after the worktree and the
+hostname's label.
+
+..  code-block:: text
+
+    site-b.ddev.site          ->  <worktree>-site-b.blog.ddev.site
+    shop.blog.ddev.site       ->  <worktree>-shop.blog.ddev.site
+    shop.example.test         ->  <worktree>-shop-example-test.blog.ddev.site
+
+The label is the hostname with what DDEV appends taken off, and with dots as
+hyphens where a domain of the project's own keeps them. Nothing has to be
+declared: the addresses follow from what DDEV routes, and a project that
+changes its hostnames changes every worktree's addresses at the next
+``ddev restart`` -- the worktrees built before included, which are linked under
+their new addresses as the container starts.
+
+A copied site configuration is pointed at these addresses hostname by
+hostname, so the second site stays a second site instead of folding into the
+main address; a committed one asks for them the way it asks for the main
+address, by label:
+
+..  code-block:: yaml
+    :caption: config/sites/site-b/config.yaml
+
+    base: 'https://%env(BRANCHERY_HOST_SITE_B)%/'
+
+``BRANCHERY_HOST_<LABEL>`` and ``BRANCHERY_URL_<LABEL>`` stand in the
+environment of every worktree beside ``BRANCHERY_HOST``, the label in capitals
+with hyphens as underscores. The project checkout sets its own in
+``web_environment``, as it does for ``BRANCHERY_HOST``.
+
+Two names are not a worktree's to take because of this. A hostname the project
+put directly under its own name -- ``shop.blog.ddev.site`` -- is what the
+wildcard would serve for a worktree called ``shop``, so the project keeps that
+name and the operation refuses it. And ``<worktree>-<label>`` is an address, so
+a worktree cannot be called what another worktree's second address is, nor be
+given a name whose second address is a worktree already; both are refused
+before anything is built, with the name that is in the way.
+
 **A step of the project's own.** Where neither fits — a base that is stored
 somewhere else, a second site that has to be renamed, an address in a fixture --
 this file is the place: ``migrate.after`` runs after the data has arrived, with

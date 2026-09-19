@@ -86,6 +86,9 @@ final readonly class Provisioning
             'database' => $this->database->nameFor($name),
         ]);
         $this->surroundings->linkDocroot($name, $docroot);
+        foreach ($this->project->otherUrlsFor($name) as $label => $url) {
+            $reporter->note(sprintf('Also answers at %s, for %s', $url, $this->project->otherHostnames()[$label]));
+        }
 
         $reporter->step('Choosing the versions');
         $this->choosePhpVersion($name, $build, $php, $reporter);

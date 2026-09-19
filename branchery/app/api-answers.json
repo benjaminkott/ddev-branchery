@@ -191,6 +191,7 @@
             "docroot": "string",
             "url": "string",
             "entrypoints": "[@entrypoint]",
+            "addresses": "[@address]",
             "path": "string",
             "editors": "[@editor]",
             "changes": "int",
@@ -214,6 +215,10 @@
         },
         "entrypoint": {
             "name": "string",
+            "url": "string"
+        },
+        "address": {
+            "label": "string",
             "url": "string"
         },
         "editor": {

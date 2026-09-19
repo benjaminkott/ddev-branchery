@@ -18,6 +18,7 @@ export function matching(worktrees: readonly Worktree[], needle: string): Worktr
                 worktree.branch,
                 worktree.database,
                 worktree.url,
+                ...worktree.addresses.map((address) => address.url),
                 worktree.php,
                 worktree.base?.branch ?? '',
                 worktree.tip?.subject ?? '',

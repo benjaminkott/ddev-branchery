@@ -394,5 +394,18 @@ final readonly class WorktreeManager
         if ($this->worktrees->exists($name)) {
             throw new \InvalidArgumentException(sprintf('Worktree "%s" already exists.', $name));
         }
+        // The other addresses are "<worktree>-<label>", so two names can meet without
+        // being equal: a worktree "shop" with a label "eu" is served at "shop-eu", and
+        // a worktree called that would be, too.
+        foreach ($this->worktrees->names() as $other) {
+            foreach (array_keys($this->project->otherHostnames()) as $label) {
+                if ($name === $other . '-' . $label) {
+                    throw new \InvalidArgumentException(sprintf('"%s" is where worktree "%s" answers for %s. Pick another name (--name).', $name, $other, $label));
+                }
+                if ($other === $name . '-' . $label) {
+                    throw new \InvalidArgumentException(sprintf('"%s" would answer for %s at "%s", which is a worktree already. Pick another name (--name).', $name, $label, $other));
+                }
+            }
+        }
     }
 }

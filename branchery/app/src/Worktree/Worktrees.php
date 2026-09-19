@@ -184,6 +184,7 @@ final readonly class Worktrees
             docroot: (string) ($meta['docroot'] ?? ''),
             url: $url,
             entrypoints: self::entrypointsUnder($url, $build->entrypoints()),
+            addresses: self::addressesOf($this->project->otherUrlsFor($name)),
             path: $this->project->hostWorktreeDirectory($name),
             editors: $this->editors->of($this->project->hostWorktreeDirectory($name), $build),
             changes: $state->changes,
@@ -266,6 +267,11 @@ final readonly class Worktrees
             docroot: '',
             url: $url,
             entrypoints: self::entrypointsUnder($url, $build->entrypoints()),
+            // The hostnames themselves: what the worktrees' further addresses stand for.
+            addresses: self::addressesOf(array_map(
+                static fn (string $hostname): string => sprintf('https://%s/', $hostname),
+                $this->project->otherHostnames(),
+            )),
             path: $this->project->hostRoot(),
             editors: $this->editors->of($this->project->hostRoot(), $build),
             changes: $state->changes,
@@ -462,6 +468,21 @@ final readonly class Worktrees
                 : null,
             'issueId' => $state->issue !== '' ? $state->issue : null,
         ];
+    }
+
+    /**
+     * @param array<string, string> $urls label => url
+     *
+     * @return list<array{label: string, url: string}>
+     */
+    private static function addressesOf(array $urls): array
+    {
+        $addresses = [];
+        foreach ($urls as $label => $url) {
+            $addresses[] = ['label' => $label, 'url' => $url];
+        }
+
+        return $addresses;
     }
 
     /**

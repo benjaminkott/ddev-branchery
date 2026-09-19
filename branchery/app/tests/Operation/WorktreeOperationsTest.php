@@ -17,6 +17,7 @@ use App\Tests\Fake\Wiring;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Filesystem\Filesystem;
 
 /**
  * What an operation does, as the order of the commands it runs.
@@ -55,6 +56,14 @@ final class WorktreeOperationsTest extends TestCase
     private function reporter(): StepReporter
     {
         return new StepReporter(static function (): void {});
+    }
+
+    /** The same project, told it answers at these hostnames too. */
+    private function withHostnames(string ...$hostnames): Wiring
+    {
+        $this->wiring->remove();
+
+        return new Wiring($this->wiring->root, array_values($hostnames));
     }
 
     /**
@@ -324,5 +333,82 @@ final class WorktreeOperationsTest extends TestCase
                 'a worktree was made for a name that was taken',
             );
         }
+    }
+
+    /**
+     * A worktree is served at one more address for each of the project's other
+     * hostnames, by the same files: one link per address, all on the worktree.
+     */
+    public function testTheOtherAddressesAreLinkedBesideTheWorktreesOwn(): void
+    {
+        $this->wiring = $this->withHostnames('site-b.ddev.site');
+        $web = $this->wiring->web;
+        $web->answer('rev-parse --verify --quiet refs/heads/my-fix', 'refs/heads/my-fix');
+
+        $this->wiring->manager->add('my-fix', null, $this->reporter());
+
+        $docroots = $this->wiring->project->docrootsDirectory();
+        self::assertTrue(is_link($docroots . '/my-fix'));
+        self::assertTrue(is_link($docroots . '/my-fix-site-b'), 'the second address has no link: ' . implode(', ', array_map('basename', glob($docroots . '/*') ?: [])));
+        self::assertSame(readlink($docroots . '/my-fix'), readlink($docroots . '/my-fix-site-b'));
+    }
+
+    /**
+     * A copied site configuration names the project's hostnames, and each of them
+     * goes onto the worktree's address for it -- the second site stays a second
+     * site. The command is run here as recorded, because what it does is sed's
+     * doing: the expressions run one after the other on the same line, and the
+     * address just written is one more host under the domain.
+     */
+    public function testACopiedSiteConfigurationKeepsItsSecondSiteApart(): void
+    {
+        $this->wiring = $this->withHostnames('site-b.ddev.site', 'shop.example.test');
+        $sites = $this->wiring->worktree('my-fix') . '/typo3conf/sites';
+        (new Filesystem())->mkdir($sites);
+        file_put_contents($sites . '/config.yaml', implode("\n", [
+            "main: 'https://blog.ddev.site/'",
+            "b: 'https://site-b.ddev.site/en/'",
+            "shop: 'https://shop.example.test'",
+            "other: 'https://other.ddev.site/'",
+            '',
+        ]));
+
+        // Not under version control, or it would be left as the branch has it.
+        $this->wiring->web->answer('ls-files --error-unmatch', '', 1);
+
+        $this->wiring->surroundings->retargetSites('my-fix', 'https://my-fix.blog.ddev.site/', ['typo3conf/sites']);
+
+        $rewrite = array_values(array_filter($this->wiring->web->commands(), static fn (array $command): bool => str_contains(implode(' ', $command), 'sed -i -E')));
+        self::assertCount(1, $rewrite, 'no rewrite was run');
+        exec(implode(' ', array_map('escapeshellarg', $rewrite[0])), $output, $status);
+        self::assertSame(0, $status, implode("\n", $output));
+        self::assertSame(implode("\n", [
+            "main: 'https://my-fix.blog.ddev.site/'",
+            "b: 'https://my-fix-site-b.blog.ddev.site/en/'",
+            "shop: 'https://my-fix-shop-example-test.blog.ddev.site/'",
+            "other: 'https://my-fix.blog.ddev.site/'",
+            '',
+        ]), file_get_contents($sites . '/config.yaml'));
+    }
+
+    /**
+     * The other addresses are "<worktree>-<label>", so a name can be another
+     * worktree's address without being its name -- from either side.
+     */
+    public function testANameThatIsAnotherWorktreesAddressIsRefused(): void
+    {
+        $this->wiring = $this->withHostnames('site-b.ddev.site');
+        $this->wiring->worktree('shop');
+        $this->wiring->worktree('my-fix-site-b');
+
+        foreach (['shop-site-b', 'my-fix'] as $name) {
+            try {
+                $this->wiring->manager->add($name, null, $this->reporter());
+                self::fail(sprintf('"%s" was taken for a name.', $name));
+            } catch (\InvalidArgumentException $refusal) {
+                self::assertStringContainsString('Pick another name', $refusal->getMessage());
+            }
+        }
+        self::assertFalse($this->wiring->web->ran('worktree add'), 'a worktree was made for a name that is an address');
     }
 }

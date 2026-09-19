@@ -108,6 +108,17 @@ final class RecordingContainer implements WebContainer
     }
 
     /**
+     * What was run, as it was handed over: for the one test that runs a recorded
+     * command itself, where the joined line would have lost the quoting.
+     *
+     * @return list<list<string>>
+     */
+    public function commands(): array
+    {
+        return $this->ran;
+    }
+
+    /**
      * What was run, one line each -- which is the form an expectation is written
      * in and the form a failure is read in.
      *

@@ -22,6 +22,12 @@ export interface Entrypoint {
     url: string;
 }
 
+/** One of the project's other hostnames, as the worktree answers for it. */
+export interface Address {
+    label: string;
+    url: string;
+}
+
 /**
  * What opens a checkout on the machine reading this page, under the editor's
  * own name. The same two fields as an entrypoint and a different thing: that
@@ -79,6 +85,11 @@ export interface Worktree {
     url: string;
     /** The pages worth opening, in the order the configuration offers them. */
     entrypoints: Entrypoint[];
+    /**
+     * Where else it answers: one address for each hostname the project has beside
+     * its own name. Empty for a project with one domain, which is most of them.
+     */
+    addresses: Address[];
     /** Where it lies on the machine, as the terminal would have to be told. */
     path: string;
     /**

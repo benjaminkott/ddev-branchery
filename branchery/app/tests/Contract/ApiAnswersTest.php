@@ -41,7 +41,10 @@ final class ApiAnswersTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->wiring = new Wiring(sys_get_temp_dir() . '/branchery-answers-' . bin2hex(random_bytes(4)));
+        // With a second hostname, because a project with one domain answers every
+        // worktree's further addresses as an empty list -- and a shape only reached
+        // through an empty one is a shape this holds nobody to.
+        $this->wiring = new Wiring(sys_get_temp_dir() . '/branchery-answers-' . bin2hex(random_bytes(4)), ['shop.ddev.site']);
         // A page worth opening, because a shape only reached through a list is
         // never walked by a project that names none -- and an unwalked shape is
         // one the contract holds nobody to.

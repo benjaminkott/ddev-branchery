@@ -40,6 +40,13 @@ final readonly class Place
         public string $adminPassword = Build::PASSWORD,
         /** Its own address, so mail from a worktree says which one it came from. */
         public string $adminEmail = '',
+        /**
+         * The addresses for the project's other hostnames, by label -- see
+         * Project::otherHostnames().
+         *
+         * @var array<string, string>
+         */
+        public array $otherUrls = [],
     ) {
     }
 
@@ -61,7 +68,18 @@ final readonly class Place
     {
         $database = $this->database;
 
+        // One pair per other address, named by its label: a site configuration that
+        // reads "%env(BRANCHERY_HOST_SITE_B)%" is right in every worktree, as it is
+        // for the main address already.
+        $others = [];
+        foreach ($this->otherUrls as $label => $url) {
+            $suffix = strtoupper(str_replace('-', '_', $label));
+            $others['BRANCHERY_URL_' . $suffix] = $url;
+            $others['BRANCHERY_HOST_' . $suffix] = self::hostOf($url);
+        }
+
         return [
+            ...$others,
             'BRANCHERY_NAME' => $this->name,
             'BRANCHERY_BRANCH' => $this->branch,
             'BRANCHERY_URL' => $this->url,
