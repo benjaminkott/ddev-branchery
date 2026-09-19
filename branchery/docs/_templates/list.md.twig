@@ -1,0 +1,14 @@
+{# The theme's list for the Markdown twin, counting from one where the source
+   does not say.
+
+   guides gives an auto-enumerated list -- every "#." in the reference -- an
+   empty string for its start, and the theme's template adds the item's index
+   to it, which PHP refuses. Until the theme reads an empty start as one, this
+   copy does.
+
+   Everything else is the theme's template as it stands. #}
+{%- autoescape false -%}
+{%- for child in node.children -%}
+{{ renderNode(child)|md_indent(node.isOrdered ? (loop.index0 + (node.start is empty ? 1 : node.start)) ~ '. ' : '- ') }}
+{% endfor %}
+{% endautoescape %}
