@@ -133,3 +133,53 @@ teardown() {
     run env DDEV_WEBSERVER_TYPE=nginx-fpm bash -c 'source "$0"; webserver' "${SCRIPT}"
     [ "$output" = "nginx" ]
 }
+
+# The wildcard takes every name under the project's domain, so a hostname the
+# project asked for as "<label>.<project>" is the project's to keep -- through a
+# link of that name onto the project's own web directory.
+@test "the project's hostnames under the wildcard are its labels, and nothing else is" {
+    run bash -c 'source "$0"; project_labels "$1" blog.ddev.site' "${SCRIPT}" \
+        'blog.ddev.site,*.blog.ddev.site,site-b.ddev.site,Shop.blog.ddev.site, deep.shop.blog.ddev.site,shop.example.test'
+
+    [ "$status" -eq 0 ]
+    [ "$output" = "shop" ]
+}
+
+@test "the project's labels get a link onto the project, and a label it lost loses its link" {
+    mkdir -p "${WORK}/docroots"
+    ln -s ../../../.. "${WORK}/docroots/gone"
+    ln -s ../../../../.worktrees/my-fix "${WORK}/docroots/my-fix"
+
+    run bash -c 'source "$0"; link_project_labels "$1" ../../../.. shop eu' "${SCRIPT}" "${WORK}/docroots"
+
+    [ "$status" -eq 0 ]
+    [ "$(readlink "${WORK}/docroots/shop")" = "../../../.." ]
+    [ "$(readlink "${WORK}/docroots/eu")" = "../../../.." ]
+    [ ! -L "${WORK}/docroots/gone" ]
+    # A worktree's link points elsewhere and is none of this function's business.
+    [ -L "${WORK}/docroots/my-fix" ]
+}
+
+# The application links a worktree once per address, all onto the same files;
+# the map names the worktree alone, so its other names are found by where they
+# point.
+@test "the other addresses of a worktree are the links that point where its own does" {
+    mkdir -p "${WORK}/docroots"
+    ln -s ../../../../.worktrees/my-fix/public "${WORK}/docroots/my-fix"
+    ln -s ../../../../.worktrees/my-fix/public "${WORK}/docroots/my-fix-site-b"
+    ln -s ../../../../.worktrees/other/public "${WORK}/docroots/other"
+    ln -s ../../../.. "${WORK}/docroots/shop"
+
+    run bash -c 'source "$0"; aliases_of "$1" my-fix' "${SCRIPT}" "${WORK}/docroots"
+
+    [ "$status" -eq 0 ]
+    [ "$output" = "my-fix-site-b" ]
+}
+
+@test "an Apache entry for one more address covers the view it is reached through" {
+    run bash -c 'source "$0"; apache_directory /var/www/html/.ddev/branchery/var/docroots/my-fix-site-b 8.4' "${SCRIPT}"
+
+    [ "$status" -eq 0 ]
+    [[ "$output" == *'<Directory "/var/www/html/.ddev/branchery/var/docroots/my-fix-site-b">'* ]]
+    [[ "$output" == *'proxy:unix:/run/php/php-fpm-8.4.sock|fcgi://localhost'* ]]
+}

@@ -35,16 +35,26 @@ final readonly class Surroundings
      * the branch -- the one thing about a worktree that moves -- a checkout
      * switched to another branch was listed at an address nothing served.
      *
+     * One more link for each of the project's other hostnames, all on the same
+     * target: a site served at a second domain is served at the worktree's second
+     * address by the same files.
+     *
      * Relative, and pointed back out of .ddev: what the container mounts is the
      * project directory, so a link into it has to be a path and not a host place.
      */
     public function linkDocroot(string $name, string $docroot): void
     {
-        $this->forgetOtherLinksTo($name);
-        $this->files->symlink(
-            $this->project->docrootsDirectory() . '/' . $name,
-            self::linkTarget($name) . ($docroot !== '' ? '/' . $docroot : ''),
-        );
+        $names = [$name];
+        foreach (array_keys($this->project->otherHostnames()) as $label) {
+            $names[] = $name . '-' . $label;
+        }
+        $this->forgetOtherLinksTo($name, $names);
+        foreach ($names as $link) {
+            $this->files->symlink(
+                $this->project->docrootsDirectory() . '/' . $link,
+                self::linkTarget($name) . ($docroot !== '' ? '/' . $docroot : ''),
+            );
+        }
     }
 
     /** The worktree is served nowhere any more, under whatever name. */
@@ -56,15 +66,18 @@ final readonly class Surroundings
 
     /**
      * A worktree built before the address followed the name is linked under its
-     * branch, and that link would go on serving it beside the right one. Found by
-     * where they point rather than by what they are called, because what they were
-     * called is exactly what is not known here any more.
+     * branch, and that link would go on serving it beside the right one -- as would
+     * one under a hostname the project no longer has. Found by where they point
+     * rather than by what they are called, because what they were called is exactly
+     * what is not known here any more.
+     *
+     * @param list<string> $keep the links the worktree is served through now
      */
-    private function forgetOtherLinksTo(string $name): void
+    private function forgetOtherLinksTo(string $name, array $keep = []): void
     {
         $target = self::linkTarget($name);
         foreach (glob($this->project->docrootsDirectory() . '/*') ?: [] as $link) {
-            if (basename($link) === $name || !is_link($link)) {
+            if (basename($link) === $name || \in_array(basename($link), $keep, true) || !is_link($link)) {
                 continue;
             }
             $points = (string) readlink($link);
@@ -166,11 +179,26 @@ final readonly class Surroundings
             // the addresses in a copied configuration end in -- and not the usual one,
             // which a project set up under another domain never wrote.
             $domain = str_replace('.', '\\.', $this->project->domain());
+            // The project's other hostnames first, each onto the worktree's address for
+            // it: a site served at a second domain keeps being one of its own, instead
+            // of folding into the main address with every other host. Through a marker,
+            // because sed runs the expressions one after the other on the same line and
+            // the address just written is one more host under the domain.
+            $before = [];
+            $after = [];
+            $hosts = [];
+            foreach ($this->project->otherHostnames() as $label => $hostname) {
+                $host = str_replace('.', '\\.', $hostname);
+                $hosts[] = $host;
+                $before[] = sprintf('s|https://%s/?|@@branchery:%s@@|g', $host, $label);
+                $after[] = sprintf('s|@@branchery:%s@@|%s|g', $label, $this->project->urlFor($name, $label));
+            }
+            $expressions = [...$before, sprintf('s|https://[a-z0-9.-]+\\.%s/?|%s|g', $domain, $url), ...$after];
             $rewritten = $this->web->run(['bash', '-c', sprintf(
-                'set -o pipefail; grep -rl %s %s 2>/dev/null | while read -r f; do sed -i -E %s "$f" || exit 1; done; true',
-                escapeshellarg($domain),
+                'set -o pipefail; grep -rlE %s %s 2>/dev/null | while read -r f; do sed -i -E %s "$f" || exit 1; done; true',
+                escapeshellarg(implode('|', [...$hosts, $domain])),
                 escapeshellarg($this->project->hostWorktreeDirectory($name) . '/' . $relative),
-                escapeshellarg(sprintf('s|https://[a-z0-9.-]+\\.%s/?|%s|g', $domain, $url)),
+                implode(' ', array_map(static fn (string $expression): string => '-e ' . escapeshellarg($expression), $expressions)),
             )]);
             if (!$rewritten->isSuccessful()) {
                 throw new \RuntimeException(sprintf('Putting the addresses in %s back: %s', $relative, $rewritten->message()));

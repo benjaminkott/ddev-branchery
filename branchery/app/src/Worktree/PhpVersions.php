@@ -114,8 +114,13 @@ final class PhpVersions
         return $minimum === null || version_compare($version, $minimum, '>=');
     }
 
-    /** Start pools and reload Apache -- only the web container can do that. */
-    private function apply(): void
+    /**
+     * Start pools and reload the web server -- only the web container can do that.
+     * Public for the one caller outside an assignment: the pools are written per
+     * link, so a worktree linked under a new address is served by the project's
+     * PHP until this runs again.
+     */
+    public function apply(): void
     {
         $result = $this->web->run(['sudo', 'bash', $this->project->webEntrypointScript(), 'php-versions']);
         // Said rather than passed over: a pool that did not start leaves the

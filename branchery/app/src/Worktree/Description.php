@@ -60,6 +60,11 @@ final readonly class Description
             $addresses[] = 'Worktrees:';
             foreach ($names as $name) {
                 $addresses[] = ' - ' . $this->line($name);
+                // The other addresses under it, without the facts: those are the
+                // worktree's, and the line above has said them.
+                foreach ($this->project->otherUrlsFor($name) as $url) {
+                    $addresses[] = '   ' . rtrim($url, '/');
+                }
             }
         }
 

@@ -85,6 +85,9 @@ function worktree(values) {
         entrypoints: (values.profile ?? 'typo3-app').startsWith('typo3')
             ? [{ name: 'Backend', url: `${url(values.name ?? null)}typo3` }]
             : [],
+        // Most projects have one domain, so most rows have none; the ones that do
+        // are written where they are, because a second site is the state to see.
+        addresses: [],
         // Null where the configuration says nothing about accounts, and "made" is
         // the state a fork is in: it inherited the project's data and with it every
         // account in it. Press the button and it turns.
@@ -154,6 +157,12 @@ export function createWorld() {
             changes: 3,
             url: url(null),
             entrypoints: [{ name: 'Backend', url: `${url(null)}typo3` }],
+            // The hostnames the project has beside its own name, which is what
+            // every worktree's further addresses stand for.
+            addresses: [
+                { label: 'shop', url: `https://shop.${TLD}/` },
+                { label: 'intranet-example-test', url: 'https://intranet.example.test/' },
+            ],
             base: null,
             tip: { sha: 'b02c8d4', subject: '[TASK] Raise doctrine/dbal to 4.2' },
         }),
@@ -176,6 +185,12 @@ export function createWorld() {
                 entrypoints: [
                     { name: 'Backend', url: `${url('feature-checkout')}typo3` },
                     { name: 'Storybook', url: `${url('feature-checkout')}storybook` },
+                ],
+                // Served for the project's second and third domain too, as every
+                // worktree is -- one label short, one long enough to test the row.
+                addresses: [
+                    { label: 'shop', url: `https://feature-checkout-shop.${TLD}/` },
+                    { label: 'intranet-example-test', url: `https://feature-checkout-intranet-example-test.${TLD}/` },
                 ],
             }),
             worktree({

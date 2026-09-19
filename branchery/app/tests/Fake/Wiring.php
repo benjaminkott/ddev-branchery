@@ -12,6 +12,7 @@ use App\Jobs\JobRunner;
 use App\ManagedFiles;
 use App\Operation\WorktreeManager;
 use App\Project;
+use App\Worktree\Surroundings;
 use App\Worktree\Worktrees;
 use Symfony\Component\Filesystem\Filesystem;
 
@@ -35,9 +36,11 @@ final class Wiring
     public readonly WorktreeManager $manager;
     public readonly JobRunner $jobs;
     public readonly ManagedFiles $files;
+    public readonly Surroundings $surroundings;
     public readonly ApiController $api;
 
-    public function __construct(public readonly string $root)
+    /** @param list<string> $hostnames what DDEV routes to the project beside its own name */
+    public function __construct(public readonly string $root, array $hostnames = [])
     {
         (new Filesystem())->mkdir($root);
 
@@ -47,6 +50,7 @@ final class Wiring
             projectName: 'blog',
             worktrees: '.worktrees',
             domain: 'ddev.site',
+            hostnames: ['blog.ddev.site', '*.blog.ddev.site', ...$hostnames],
         );
         $this->web = new RecordingContainer();
 
@@ -63,6 +67,7 @@ final class Wiring
         $this->manager = $container->manager();
         $this->jobs = $container->jobs();
         $this->files = $container->files();
+        $this->surroundings = $container->surroundings();
         // The API over the same graph. What it answers with is the one thing the
         // interface is written against, and the shape of that is worth holding to
         // -- see ApiAnswersTest.

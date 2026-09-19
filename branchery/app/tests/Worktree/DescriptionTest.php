@@ -56,6 +56,8 @@ final class DescriptionTest extends TestCase
         // At the address it is served under, which is its own name -- the branch
         // it was made for is a different word and answers nowhere.
         self::assertStringContainsString('         - https://my-fix.demo.ddev.site (PHP 8.3, branchery_my_fix)', $contents);
+        // And its other addresses under it, one for each of the project's other hostnames.
+        self::assertStringContainsString("\n           https://my-fix-site-b.demo.ddev.site\n", $contents);
         self::assertStringNotContainsString('feature-my-fix', $contents);
         self::assertStringContainsString('        1 worktree', $contents);
 
@@ -142,7 +144,7 @@ final class DescriptionTest extends TestCase
 
     private function describeInfo(): Description
     {
-        $project = new Project($this->root, $this->root, 'demo', '.worktrees');
+        $project = new Project($this->root, $this->root, 'demo', '.worktrees', 'ddev.site', ['demo.ddev.site', '*.demo.ddev.site', 'site-b.ddev.site']);
         $files = new ManagedFiles(0, 0);
         $locks = new Locks($project, $files);
         $web = new RecordingContainer();

@@ -58,6 +58,7 @@ final readonly class Places
             adminUser: $name,
             adminPassword: $build->password(),
             adminEmail: $name . '@' . Place::hostOf($this->project->urlFor($name)),
+            otherUrls: $this->project->otherUrlsFor($name),
         );
     }
 }

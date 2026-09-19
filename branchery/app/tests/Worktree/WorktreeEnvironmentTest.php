@@ -62,7 +62,22 @@ final class WorktreeEnvironmentTest extends TestCase
         self::assertSame('', Place::hostOf(''));
     }
 
-    private function context(?string $nodeDirectory = null): Place
+    /**
+     * A site configuration that names its second domain through the environment
+     * is right in every worktree, as it is for the main address already.
+     */
+    public function testItNamesTheOtherAddressesByTheirLabel(): void
+    {
+        $environment = $this->context(otherUrls: ['site-b' => 'https://my-fix-site-b.blog.ddev.site/'])->environment();
+
+        self::assertSame('https://my-fix-site-b.blog.ddev.site/', $environment['BRANCHERY_URL_SITE_B']);
+        self::assertSame('my-fix-site-b.blog.ddev.site', $environment['BRANCHERY_HOST_SITE_B']);
+        self::assertSame('my-fix.blog.ddev.site', $environment['BRANCHERY_HOST']);
+        self::assertArrayNotHasKey('BRANCHERY_URL_SITE_B', $this->context()->environment());
+    }
+
+    /** @param array<string, string> $otherUrls */
+    private function context(?string $nodeDirectory = null, array $otherUrls = []): Place
     {
         $web = new RecordingContainer();
 
@@ -81,6 +96,7 @@ final class WorktreeEnvironmentTest extends TestCase
             files: new ManagedFiles(0, 0),
             tld: 'blog.ddev.site',
             nodeDirectory: $nodeDirectory,
+            otherUrls: $otherUrls,
         );
     }
 }

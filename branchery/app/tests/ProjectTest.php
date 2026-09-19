@@ -102,6 +102,58 @@ final class ProjectTest extends TestCase
     }
 
     /**
+     * What the project has beside its own name, every worktree has under its own:
+     * a site served at a second domain has a second address in the worktree too,
+     * derived from the hostname the way the data names it. DDEV appends its domain
+     * to what a project asks for, so the label is what stands before that -- and
+     * a hostname the project put under its own name loses that as well.
+     */
+    public function testTheProjectsOtherHostnamesBecomeAddressesOfEveryWorktree(): void
+    {
+        $project = new Project('/var/www/html', '/home/dev/blog', 'blog', '.worktrees', 'ddev.site', [
+            'blog.ddev.site',
+            '*.blog.ddev.site',
+            'site-b.ddev.site',
+            'Shop.blog.ddev.site ',
+            'shop.example.test',
+            '',
+        ]);
+
+        self::assertSame(
+            ['site-b' => 'site-b.ddev.site', 'shop' => 'shop.blog.ddev.site', 'shop-example-test' => 'shop.example.test'],
+            $project->otherHostnames(),
+        );
+        self::assertSame(
+            [
+                'site-b' => 'https://my-fix-site-b.blog.ddev.site/',
+                'shop' => 'https://my-fix-shop.blog.ddev.site/',
+                'shop-example-test' => 'https://my-fix-shop-example-test.blog.ddev.site/',
+            ],
+            $project->otherUrlsFor('my-fix'),
+        );
+        self::assertSame([], $this->project()->otherUrlsFor('my-fix'));
+    }
+
+    /**
+     * A hostname the project put directly under its own name is what the wildcard
+     * serves for a worktree of that name, so the project keeps the name. One under
+     * DDEV's domain meets no worktree and reserves nothing.
+     */
+    public function testRefusesAWorktreeNamedAfterAnAddressOfTheProject(): void
+    {
+        $project = new Project('/var/www/html', '/home/dev/blog', 'blog', '.worktrees', 'ddev.site', [
+            'blog.ddev.site', '*.blog.ddev.site', 'site-b.ddev.site', 'shop.blog.ddev.site',
+        ]);
+
+        self::assertSame(['shop'], $project->reservedNames());
+        self::assertSame('site-b', $project->assertNotItself('site-b'));
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('"shop" is an address of the project itself (shop.blog.ddev.site)');
+        $project->assertNotItself('shop');
+    }
+
+    /**
      * The name a branch is made into, which is a directory, an address and a
      * database name. The interface makes the same one to offer it before the
      * press -- frontend/dom.ts, where these four names stand again, because a

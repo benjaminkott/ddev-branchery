@@ -22,6 +22,14 @@ final class Project
         private readonly string $worktrees,
         /** What DDEV puts every project under -- "ddev.site" unless it was told otherwise. */
         private readonly string $domain = 'ddev.site',
+        /**
+         * Every hostname DDEV routes to the project, as it lists them itself: the
+         * project's own, the worktrees' wildcard and whatever the project asked for
+         * beside those.
+         *
+         * @var list<string>
+         */
+        private readonly array $hostnames = [],
     ) {
     }
 
@@ -171,10 +179,90 @@ final class Project
      * makes the difference is that the name stays: a worktree that switched branch
      * afterwards is served where it was linked, and an address built from the
      * branch of the moment is one the list shows and nothing answers.
+     *
+     * With a label, the address the worktree carries one of the project's other
+     * hostnames under -- see otherHostnames().
      */
-    public function urlFor(string $worktree): string
+    public function urlFor(string $worktree, string $label = ''): string
     {
-        return sprintf('https://%s.%s/', self::slug($worktree), $this->tld());
+        return sprintf('https://%s.%s/', $label === '' ? self::slug($worktree) : self::slug($worktree) . '-' . $label, $this->tld());
+    }
+
+    /**
+     * The hostnames the project answers at beside its own name, each under the label
+     * a worktree carries it as. A site that is served at a second domain is served
+     * at one in every worktree too, and the data copied into the worktree names that
+     * domain -- so what the project has, every worktree has, derived and not declared.
+     *
+     * The label is the hostname with what DDEV appends taken off: "site-b.ddev.site"
+     * and "site-b.blog.ddev.site" both become "site-b", and a domain of the project's
+     * own keeps its dots as hyphens. Read once from what DDEV routes, so a project
+     * that changes its hostnames changes every worktree's addresses at the next start.
+     *
+     * @return array<string, string> label => hostname of the project
+     */
+    public function otherHostnames(): array
+    {
+        $labels = [];
+        foreach ($this->hostnames as $hostname) {
+            $hostname = strtolower(trim($hostname));
+            if ($hostname === '' || $hostname === $this->tld() || str_contains($hostname, '*')) {
+                continue;
+            }
+            $label = self::slug($this->stemOf($hostname));
+            if ($label !== '' && !isset($labels[$label])) {
+                $labels[$label] = $hostname;
+            }
+        }
+
+        return $labels;
+    }
+
+    private function stemOf(string $hostname): string
+    {
+        foreach (['.' . $this->tld(), '.' . $this->domain] as $suffix) {
+            if (str_ends_with($hostname, $suffix)) {
+                return substr($hostname, 0, -\strlen($suffix));
+            }
+        }
+
+        return $hostname;
+    }
+
+    /**
+     * The other addresses of a worktree, one for each of the project's other
+     * hostnames, keyed the same way.
+     *
+     * @return array<string, string> label => url
+     */
+    public function otherUrlsFor(string $worktree): array
+    {
+        $urls = [];
+        foreach (array_keys($this->otherHostnames()) as $label) {
+            $urls[$label] = $this->urlFor($worktree, $label);
+        }
+
+        return $urls;
+    }
+
+    /**
+     * The labels of the project's hostnames that stand directly under the worktrees'
+     * wildcard: "site-b.blog.ddev.site" is what a worktree called "site-b" would be
+     * served at, and the web server hands that name to whichever of the two has the
+     * link. The project keeps it, so the name is not a worktree's to take.
+     *
+     * @return list<string>
+     */
+    public function reservedNames(): array
+    {
+        $reserved = [];
+        foreach ($this->otherHostnames() as $label => $hostname) {
+            if ($hostname === $label . '.' . $this->tld()) {
+                $reserved[] = $label;
+            }
+        }
+
+        return $reserved;
     }
 
     /**
@@ -208,6 +296,9 @@ final class Project
     {
         if ($name === $this->projectName) {
             throw new \InvalidArgumentException(sprintf('"%s" is the name of the project itself, and a worktree of that name would be taken for the project checkout at every door. Pick another name (--name).', $name));
+        }
+        if (\in_array($name, $this->reservedNames(), true)) {
+            throw new \InvalidArgumentException(sprintf('"%s" is an address of the project itself (%s.%s), and a worktree of that name would take it over. Pick another name (--name).', $name, $name, $this->tld()));
         }
 
         return $name;

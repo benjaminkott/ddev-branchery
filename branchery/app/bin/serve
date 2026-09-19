@@ -2,13 +2,15 @@
 #
 # What the container runs.
 #
-# Only one thing happens before the server: DDEV merges the compose files as it
-# starts the project, and that merge is what "ddev describe" reads. The block
-# listing the worktrees is written into the result of it, so it has to be put
-# back once per start -- which is here, the first moment after the merge at
-# which this application runs.
+# Two things happen before the server. The worktrees are linked under every
+# address they have now, since the project may have gained a hostname since they
+# were built. And DDEV merges the compose files as it starts the project, and
+# that merge is what "ddev describe" reads: the block listing the worktrees is
+# written into the result of it, so it has to be put back once per start --
+# which is here, the first moment after the merge at which this application runs.
 set -eu
 
+php /opt/branchery/bin/console worktree:link >/dev/null 2>&1 || true
 php /opt/branchery/bin/console ddev:describe >/dev/null 2>&1 || true
 
 # What the newest released version is, which is the one thing no project can

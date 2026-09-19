@@ -89,6 +89,14 @@ export function summaryFacts(worktree: Worktree, usage: Usage, account: Element 
                     copy: true,
                     link: { href: entry.url, label: t('detail.openAt', { name: entry.name }) },
                 })),
+                // The same files at one more address per hostname of the project,
+                // each under the label a site configuration reads it by.
+                ...worktree.addresses.map((address) => ({
+                    label: address.label,
+                    value: host(address.url),
+                    copy: true,
+                    link: { href: address.url, label: t('detail.openAt', { name: address.label }) },
+                })),
             ],
         },
         {

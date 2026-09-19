@@ -37,6 +37,13 @@ final readonly class Worktree implements \JsonSerializable
          */
         public array $entrypoints,
         /**
+         * The other addresses it answers at, one for each of the project's other
+         * hostnames, by the label the worktree carries it under.
+         *
+         * @var list<array{label: string, url: string}>
+         */
+        public array $addresses,
+        /**
          * Where it lies as the host sees it: whoever works in several worktrees
          * changes directory far more often than they open a page, and the
          * container's own view -- /var/www/html/... -- would be wrong for that.
@@ -138,6 +145,7 @@ final readonly class Worktree implements \JsonSerializable
             'docroot' => $this->docroot,
             'url' => $this->url,
             'entrypoints' => $this->entrypoints,
+            'addresses' => $this->addresses,
             'path' => $this->path,
             'editors' => $this->editors,
             'changes' => $this->changes,

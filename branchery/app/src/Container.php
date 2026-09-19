@@ -14,6 +14,7 @@ use App\Command\DocsCommand;
 use App\Command\ExampleCommand;
 use App\Command\FetchCommand;
 use App\Command\ForkCommand;
+use App\Command\LinkCommand;
 use App\Command\ListJobsCommand;
 use App\Command\ListWorktreesCommand;
 use App\Command\PhpCommand;
@@ -160,6 +161,9 @@ final class Container
                 projectName: $this->string('DDEV_PROJECT', 'ddev'),
                 worktrees: self::WORKTREES,
                 domain: $this->string('DDEV_TLD', 'ddev.site'),
+                // DDEV hands the compose file every hostname of the project as one
+                // comma-separated value, additional ones and FQDNs included.
+                hostnames: explode(',', $this->string('VIRTUAL_HOST', '')),
             );
         });
     }
@@ -592,6 +596,7 @@ final class Container
             new ConfigCommand($this->manager(), $this->worktrees(), $this->describe()),
             new ExampleCommand($this->recipes(), $this->project(), $this->files()),
             new DescribeCommand($this->describe()),
+            new LinkCommand($this->worktrees(), $this->surroundings(), $this->php()),
             new CheckReleasesCommand($this->releases(), $this->project(), $this->files()),
             new DocsCommand($this->docs()),
             new ListWorktreesCommand($this->worktrees()),
