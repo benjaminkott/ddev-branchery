@@ -35,6 +35,7 @@
     <base-template-paths><path>branchery/docs</path></base-template-paths>
     <template file="_templates/hero.html.twig" node="TYPO3\Soul\GuidesTheme\Nodes\HeroNode"/>
     <template file="_templates/image.html.twig" node="phpDocumentor\Guides\Nodes\ImageNode"/>
+    <template file="_templates/list.md.twig" node="phpDocumentor\Guides\Nodes\ListNode" format="md"/>
     <extension class="TYPO3\Soul\GuidesTheme\DependencyInjection\SoulExtension">
         <!-- The mark, put here by "make docs": the renderer refuses to read
              outside its own root, and the drawing belongs to the application,
