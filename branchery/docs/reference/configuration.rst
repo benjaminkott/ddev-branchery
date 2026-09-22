@@ -186,8 +186,19 @@ contains project commands and is exposed to configuration tasks as
 ``entrypoints`` are the pages a worktree is worth opening at, each written as
 the word it is offered under and the path it stands at. Each is drawn in the row
 that states its address, in the order they are written. A path and not a whole
-address: the worktree's own is put in front of it. ``php`` and ``node`` select runtimes
-and are described under :ref:`php-and-node-versions`.
+address: the worktree's own is put in front of it.
+
+The TYPO3 profiles offer the backend at ``/typo3``. A project that serves it
+somewhere else writes its own list, which stands instead of the profile's rather
+than beside it — so it names everything the project offers:
+
+..  code-block:: yaml
+
+    entrypoints:
+      - Backend: /admin
+
+``php`` and ``node`` select runtimes and are described under
+:ref:`php-and-node-versions`.
 
 ..  _php-and-node-versions:
 
