@@ -27,12 +27,12 @@
         "@types/node": "^26.6.2",
         "esbuild": "^0.28.2",
         "eslint": "10.11.0",
-        "prettier": "3.9.8",
-        "typescript": "^6.0.3",
-        "typescript-eslint": "8.70.0"
+        "prettier": "3.9.9",
+        "typescript": "^7.0.2",
+        "typescript-eslint": "8.70.1"
     },
     "dependencies": {
-        "@typo3/soul-frontend": "0.6.0",
+        "@typo3/soul-frontend": "0.7.1",
         "lit": "^3.2.0"
     }
 }
