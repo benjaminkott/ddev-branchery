@@ -28,6 +28,11 @@ updates:
     groups:
       interface:
         patterns: ['*']
+    # typescript-eslint reads no TypeScript past 6.0, and one major it cannot
+    # resolve makes npm refuse the whole group. Lifted once it can.
+    ignore:
+      - dependency-name: typescript
+        update-types: ['version-update:semver-major']
 
   # The image the add-on ships as, and everything it is built out of.
   - package-ecosystem: docker
