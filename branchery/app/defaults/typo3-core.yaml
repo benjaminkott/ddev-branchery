@@ -66,9 +66,14 @@ install:
   - exec: cd Build && npm ci --no-audit --no-fund
     optional: true
 
-# Under typo3conf/ and already ignored in the core repository, so this file
+# The core ignores its root .htaccess and only "setup" writes one, so a worktree
+# built on the project's data serves nothing but its root under Apache. Out of
+# the branch's own template, and never over one that is there.
+#
+# Under typo3conf/ and already ignored in the core repository, so additional.php
 # shows up in no patch.
 configure:
+  - '[ -e .htaccess ] || cp typo3/sysext/install/Resources/Private/FolderStructureTemplateFiles/root-htaccess .htaccess'
   - |
     mkdir -p typo3conf/system
     cat > typo3conf/system/additional.php <<PHP

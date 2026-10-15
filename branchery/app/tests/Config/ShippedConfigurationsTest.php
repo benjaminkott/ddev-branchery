@@ -11,6 +11,8 @@ use App\Web\DatabaseServer;
 use App\Worktree\Place;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\Process\Process;
 
 /**
  * The configurations this image ships. They are files rather than classes so a
@@ -79,6 +81,31 @@ final class ShippedConfigurationsTest extends TestCase
             ],
             $optional,
         );
+    }
+
+    /**
+     * The core ignores its root .htaccess and only "setup" writes one, so a
+     * worktree that took the project's data served nothing but its root page.
+     */
+    public function testACoreWorktreeIsServedWithTheHtaccessOfItsBranch(): void
+    {
+        $line = $this->recipes()->shipped('typo3-core')->plan('configure')[0]->line ?? '';
+        $template = 'typo3/sysext/install/Resources/Private/FolderStructureTemplateFiles/root-htaccess';
+        $filesystem = new Filesystem();
+        $directory = $filesystem->tempnam(sys_get_temp_dir(), 'branchery-');
+        $filesystem->remove($directory);
+        $filesystem->dumpFile($directory . '/' . $template, 'RewriteEngine On');
+
+        try {
+            (new Process(['bash', '-c', $line], $directory))->mustRun();
+            self::assertStringEqualsFile($directory . '/.htaccess', 'RewriteEngine On');
+
+            $filesystem->dumpFile($directory . '/.htaccess', 'edited');
+            (new Process(['bash', '-c', $line], $directory))->mustRun();
+            self::assertStringEqualsFile($directory . '/.htaccess', 'edited');
+        } finally {
+            $filesystem->remove($directory);
+        }
     }
 
     /**
