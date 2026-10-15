@@ -68,7 +68,11 @@ Checks out a branch that exists locally or on a remote, and builds it.
     paths.
 
 #.  **Finishing up.** **finish** (**config**) runs -- where a cache flush
-    stands -- and the ``ddev describe`` block is rewritten.
+    stands -- and the ``ddev describe`` block is rewritten. Every page under
+    ``entrypoints`` is then asked of the web server, redirects followed; one that
+    answers an error, or nothing, ends the operation in ``⚠`` with the status,
+    so a backend that cannot be reached is said here and not found in the
+    browser.
 
 A branch that is already in the repository is checked out as it stands and is
 never moved onto its remote; one that is behind stays behind, and the list says

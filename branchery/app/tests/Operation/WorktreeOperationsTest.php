@@ -201,6 +201,33 @@ final class WorktreeOperationsTest extends TestCase
         self::assertSame('c0ffee0123456789', $this->wiring->worktrees->metadata('review')['forkedAt'] ?? null);
     }
 
+    /** The build finishes either way; what it says at the end is what differs. */
+    #[DataProvider('answers')]
+    public function testABuildAsksItsEntrypointsAndSaysWhatTheyAnswer(string $status, bool $concerning): void
+    {
+        file_put_contents($this->wiring->worktree('my-fix') . '/index.php', '<?php');
+        $this->wiring->recipe("entrypoints:\n  - Backend: /typo3\n");
+        $web = $this->wiring->web;
+        $web->answer('curl', $status);
+        $reporter = $this->reporter();
+
+        $this->wiring->manager->provision('my-fix', false, $reporter);
+
+        $asked = $web->lines()[(int) $web->at('curl')];
+        self::assertStringContainsString('my-fix.', $asked);
+        self::assertStringEndsWith('/typo3', $asked);
+        self::assertStringContainsString(':443:127.0.0.1', $asked);
+        self::assertSame($concerning, $reporter->concerns() !== [], implode("\n", $reporter->concerns()));
+    }
+
+    /** @return iterable<string, array{string, bool}> */
+    public static function answers(): iterable
+    {
+        yield 'a page' => ['200', false];
+        yield 'a page that is not served' => ['403', true];
+        yield 'nothing at all' => ['000', true];
+    }
+
     public function testABaseThatNamesNoCommitIsRefusedBeforeAnythingIsMade(): void
     {
         $web = $this->wiring->web;

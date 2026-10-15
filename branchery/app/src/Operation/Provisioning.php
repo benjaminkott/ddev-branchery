@@ -151,6 +151,7 @@ final readonly class Provisioning
         $reporter->step('Finishing up');
         $place->at($build, 'finish', $reporter);
         $this->reportEmptyDocroot($directory, $docroot, $reporter);
+        $this->askEntrypoints($build, $place, $reporter);
         // The commit this was built for: a checkout that has moved on since has
         // dependencies and a schema made for other code.
         $this->worktrees->store($name, [
@@ -273,6 +274,38 @@ final readonly class Provisioning
      * link that says "Forbidden", which reads as a broken tool. A note and not a
      * failure: the worktree is there to put something in.
      */
+    /**
+     * A build that ends cleanly over a backend answering 403 is otherwise a green
+     * tick the developer finds out about in the browser.
+     */
+    private function askEntrypoints(Build $build, Place $place, StepReporter $reporter): void
+    {
+        $host = Place::hostOf($place->url);
+        foreach ($build->entrypoints() as $entry) {
+            $url = rtrim($place->url, '/') . $entry['path'];
+            $result = $place->web->run([
+                'curl', '--silent', '--insecure', '--location', '--max-redirs', '5', '--max-time', '60',
+                // Through this container's own web server and not out to the router,
+                // so what is asked is the worktree and nothing in front of it.
+                '--resolve', $host . ':80:127.0.0.1', '--resolve', $host . ':443:127.0.0.1',
+                '--output', '/dev/null', '--write-out', '%{http_code}', $url,
+            ]);
+            $status = (int) $result->output;
+            // No three digits is a container that could not be asked, which says
+            // nothing about the worktree.
+            if (preg_match('/^\d{3}$/', $result->output) !== 1) {
+                continue;
+            }
+            if ($status === 0) {
+                $reporter->warn(sprintf('%s, %s, did not answer.', $entry['name'], $url));
+            } elseif ($status >= 400) {
+                $reporter->warn(sprintf('%s, %s, answers %d.', $entry['name'], $url, $status));
+            } else {
+                $reporter->note(sprintf('%s, %s, answers %d.', $entry['name'], $url, $status));
+            }
+        }
+    }
+
     private function reportEmptyDocroot(string $directory, string $docroot, StepReporter $reporter): void
     {
         $served = $docroot !== '' ? $directory . '/' . $docroot : $directory;
