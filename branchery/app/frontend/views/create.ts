@@ -28,6 +28,8 @@ interface Answers {
     branch: string;
     /** Which worktree a new branch starts from; empty is the project checkout. */
     from: string;
+    /** The commit a new branch is cut at; empty is where the source stands. */
+    base: string;
     /** The directory, where it should not be the one derived from the branch. */
     name: string;
 }
@@ -75,6 +77,11 @@ function taken(branch: string): boolean {
     );
 }
 
+/** The start point is held to the rule a branch name is, which is the one the server holds it to. */
+function malformedBase(base: string): string {
+    return base !== '' && !isBranchName(base) ? t('error.refName') : '';
+}
+
 /** What is wrong with a new branch's name, where something is. */
 function refusable(branch: string): string {
     const shape = malformed(branch);
@@ -95,6 +102,7 @@ export function openCreate(handlers: CreateHandlers, branch = ''): void {
         mode: state.branches.length > 0 ? 'branch' : 'fork',
         branch,
         from: '',
+        base: '',
         name: '',
     };
 
@@ -236,7 +244,10 @@ function forkStep(answers: Answers): FlowStep {
         heading: t('step.fork.heading'),
         lead: t('step.fork.lead'),
         when: () => answers.mode === 'fork',
-        ready: () => isBranchName(answers.branch) && !taken(answers.branch),
+        ready: () =>
+            isBranchName(answers.branch) &&
+            !taken(answers.branch) &&
+            (answers.base === '' || isBranchName(answers.base)),
         enter(body, control) {
             const draw = (): void => {
                 render(
@@ -257,8 +268,20 @@ function forkStep(answers: Answers): FlowStep {
                             draw();
                         }}></sds-field>
                     ${source(answers)}
+                    <sds-field
+                        field-id="base"
+                        caption=${t('field.base')}
+                        hint=${t('field.baseHint')}
+                        value=${answers.base === '' ? t('field.basePlaceholder') : answers.base}
+                        ?filled=${answers.base !== ''}
+                        @sds-input=${(event: CustomEvent<string>) => {
+                            answers.base = event.detail.trim();
+                            draw();
+                        }}></sds-field>
                     <sds-note tone="error" ?hidden=${refusable(answers.branch) === ''}
-                              body=${refusable(answers.branch)}></sds-note>`,
+                              body=${refusable(answers.branch)}></sds-note>
+                    <sds-note tone="error" ?hidden=${malformedBase(answers.base) === ''}
+                              body=${malformedBase(answers.base)}></sds-note>`,
                     body,
                 );
                 control.update();
@@ -316,7 +339,8 @@ function reviewStep(answers: Answers, derivedName: () => string, nameTrouble: ()
 
 /** The answers as one key, which is what an answer from the container is filed under. */
 function keyOf(answers: Answers, name: string): string {
-    return JSON.stringify([answers.mode, answers.branch, answers.mode === 'fork' ? answers.from : '', name]);
+    const fork = answers.mode === 'fork';
+    return JSON.stringify([answers.mode, answers.branch, fork ? answers.from : '', fork ? answers.base : '', name]);
 }
 
 async function foresee(answers: Answers, name: string, arrived: () => void): Promise<void> {
@@ -334,6 +358,7 @@ async function foresee(answers: Answers, name: string, arrived: () => void): Pro
             mode: answers.mode,
             branch: answers.branch,
             from: answers.from,
+            base: answers.base,
             name: answers.name,
         });
     } catch {
@@ -410,6 +435,12 @@ function drawReview(
             <dl>
                 <dt>${t('preview.branch')}</dt>
                 <dd><code class="sds-mono">${answers.branch}</code></dd>
+                ${
+                    answers.mode === 'fork' && answers.base !== ''
+                        ? html`<dt>${t('preview.base')}</dt>
+                              <dd><code class="sds-mono">${answers.base}</code></dd>`
+                        : nothing
+                }
                 <dt>${t('preview.directory')}</dt>
                 <dd><code class="sds-mono">.worktrees/${derivedName()}</code></dd>
                 <dt>${t('preview.address')}</dt>
@@ -446,7 +477,7 @@ function drawReview(
 async function create(answers: Answers, expected: string, handlers: CreateHandlers): Promise<void> {
     const payload: Record<string, string> =
         answers.mode === 'fork'
-            ? { mode: 'fork', branch: answers.branch, from: answers.from, name: answers.name }
+            ? { mode: 'fork', branch: answers.branch, from: answers.from, base: answers.base, name: answers.name }
             : { mode: 'branch', branch: answers.branch, name: answers.name };
 
     try {

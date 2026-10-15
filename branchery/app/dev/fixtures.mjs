@@ -709,9 +709,13 @@ export const plans = {
         step('Finishing up', 2, '→ Flushing caches'),
     ],
 
-    fork: (name, branch, from) => [
+    fork: (name, branch, from, base = '') => [
         step('Reading what the branch needs', 1, '→ Requires PHP ^8.2, running on 8.3.'),
-        step(`Creating branch "${branch}" (4f2a1c9)`, 2, `Branched off from ${from || 'the project checkout'}`),
+        step(
+            `Creating branch "${branch}" (4f2a1c9)`,
+            2,
+            `Branched from ${base || from || 'the project checkout'} at 4f2a1c9.`,
+        ),
         step('Carrying over unversioned files', 2, '→ 4 files copied'),
         ...plans.add(name, branch).slice(2, -2),
         step(

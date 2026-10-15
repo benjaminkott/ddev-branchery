@@ -79,11 +79,14 @@ so. :ref:`architecture-branch-safety` is the rule.
 fork
 ====
 
-``ddev branchery worktree:fork <branch> [--from=<worktree>]`` ·
+``ddev branchery worktree:fork <branch> [--from=<worktree>] [--base=<ref>]`` ·
 ``POST /api/worktrees`` with ``mode: fork``
 
 Creates a branch that does not exist yet, from the project checkout or from
-another worktree, and builds it.
+another worktree, and builds it. ``--base`` cuts it at another commit -- a
+review of ``origin/main`` while the project checkout stands on a feature --
+and everything else still comes from the source: its unversioned files and its
+data.
 
 #.  **Reading what the branch needs**, as for ``add``, out of the commit the
     branch starts from. The lock file checked is the one the fork installs
@@ -91,10 +94,13 @@ another worktree, and builds it.
     of git, the source checkout's working copy.
 
 #.  **Creating branch.**
-    ``git worktree add -b <branch> .worktrees/<name> <base>``, where the base is
-    ``HEAD`` of the source worktree or of the project checkout. Which branch and
+    ``git worktree add -b <branch> .worktrees/<name> <commit>``, where the
+    commit is the one ``--base`` names, or ``HEAD`` of the source worktree or of
+    the project checkout. It is cut at the commit and not at the name, so a base
+    on a remote does not become the new branch's upstream. Which branch and
     commit that was is written into the worktree's metadata and shown on its
-    page, because git keeps no such thing.
+    page, because git keeps no such thing. A base that names no commit stops the
+    operation before anything exists.
 
 #.  **Carrying over unversioned files.** Everything git ignores in the source is
     copied over — ``vendor/``, generated files, configuration, uploads --

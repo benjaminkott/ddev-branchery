@@ -228,6 +228,14 @@ final class Facts
         return $this->runner->run('rev-parse', '--verify', '--quiet', $ref)->isSuccessful();
     }
 
+    /** The commit a ref names -- a branch, a remote's branch, a tag, a hash -- or null. */
+    public function commitOf(string $ref): ?string
+    {
+        $result = $this->runner->run('rev-parse', '--verify', '--quiet', $ref . '^{commit}');
+
+        return $result->isSuccessful() && $result->output !== '' ? $result->output : null;
+    }
+
     /**
      * Its own ref, or the remote's where the branch is only there -- such a branch
      * has no short name that resolves. Null where neither is there.

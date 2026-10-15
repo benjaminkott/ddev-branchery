@@ -101,6 +101,11 @@ final readonly class Git
         return $this->facts->hasRef($ref);
     }
 
+    public function commitOf(string $ref): ?string
+    {
+        return $this->facts->commitOf($ref);
+    }
+
     public function refOf(string $branch): ?string
     {
         return $this->facts->refOf($branch);

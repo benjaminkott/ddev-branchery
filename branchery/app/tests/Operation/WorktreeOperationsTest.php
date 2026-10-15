@@ -183,6 +183,40 @@ final class WorktreeOperationsTest extends TestCase
     }
 
     /**
+     * A review starts on the trunk while the checkout stands on a feature. Cut at
+     * the commit and not at the remote's name, or the new branch would track the
+     * trunk and its first pull would pull that.
+     */
+    public function testAForkStartsAtTheBaseItWasGiven(): void
+    {
+        $web = $this->wiring->web;
+        $web->answer('rev-parse --verify --quiet refs/heads/review', '', 1);
+        $web->answer('origin/main^{commit}', 'c0ffee0123456789');
+
+        $this->wiring->manager->fork('review', null, null, $this->reporter(), 'origin/main');
+
+        self::assertTrue($web->ran('worktree add -b review'), implode("\n", $web->lines()));
+        self::assertStringEndsWith(' c0ffee0123456789', $web->lines()[(int) $web->at('worktree add -b review')]);
+        self::assertSame('origin/main', $this->wiring->worktrees->metadata('review')['forkedFrom'] ?? null);
+        self::assertSame('c0ffee0123456789', $this->wiring->worktrees->metadata('review')['forkedAt'] ?? null);
+    }
+
+    public function testABaseThatNamesNoCommitIsRefusedBeforeAnythingIsMade(): void
+    {
+        $web = $this->wiring->web;
+        $web->answer('rev-parse --verify --quiet refs/heads/review', '', 1);
+        $web->answer('nowhere^{commit}', '', 1);
+
+        try {
+            $this->wiring->manager->fork('review', null, null, $this->reporter(), 'nowhere');
+            self::fail('A base naming nothing was taken.');
+        } catch (\InvalidArgumentException $refusal) {
+            self::assertStringContainsString('"nowhere"', $refusal->getMessage());
+        }
+        self::assertFalse($web->ran('worktree add'));
+    }
+
+    /**
      * A branch this repository has never had is cut from the remote, which is the
      * other half of the same rule.
      */

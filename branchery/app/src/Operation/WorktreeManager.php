@@ -113,8 +113,11 @@ final readonly class WorktreeManager
         return $this->worktrees->get($name) ?? throw new \RuntimeException('Worktree disappeared.');
     }
 
-    /** Without a source the project checkout applies, and its data is carried over. */
-    public function fork(string $newBranch, ?string $from, ?string $name, StepReporter $reporter): Worktree
+    /**
+     * Without a source the project checkout applies, and its data is carried over.
+     * Without a base the branch starts where the source stands.
+     */
+    public function fork(string $newBranch, ?string $from, ?string $name, StepReporter $reporter, ?string $base = null): Worktree
     {
         if ($from !== null) {
             Project::assertName($from);
@@ -135,27 +138,29 @@ final readonly class WorktreeManager
             throw new \InvalidArgumentException(sprintf('Branch "%s" already exists on the remote. "worktree:add %s" checks it out.', $newBranch, $newBranch));
         }
 
-        $base = $this->baseFor($from);
+        $commit = $this->commitFor($from, $base);
+        // git keeps no parent for a branch, and "what did I branch this off" is
+        // the first question asked about a worktree a fortnight later.
+        $origin = $base ?? ($from !== null ? $this->branchIn($from) : $this->git->currentBranch());
 
         $reporter->expect(9);
         $reporter->step('Reading what the branch needs');
-        $build = $this->preflight->asked($base);
+        $build = $this->preflight->asked($commit);
         $php = $this->preflight->phpFor($build, sprintf('Branch "%s"', $newBranch), $reporter);
-        $this->preflight->checkLockCarried($build, $base, $from, $name, $reporter);
+        $this->preflight->checkLockCarried($build, $commit, $origin, $from, $name, $reporter);
         $this->preflight->assertDatabaseFree($name, $reporter);
         $this->preflight->forgetOperations($name, $reporter);
 
-        $reporter->step(sprintf('Creating branch "%s" (%s)', $newBranch, substr($base, 0, 11)));
+        $reporter->step(sprintf('Creating branch "%s" (%s)', $newBranch, substr($commit, 0, 11)));
         $this->files->ensureIgnoredDirectory($this->project->worktreesDirectory());
-        $result = $this->git->addNewBranch($name, $newBranch, $base);
+        // Cut at the commit rather than at the name, so a base on a remote does not
+        // become the new branch's upstream and its first pull does not pull that.
+        $result = $this->git->addNewBranch($name, $newBranch, $commit);
         if (!$result->isSuccessful()) {
             throw new \RuntimeException($result->message());
         }
-        // git keeps no parent for a branch, and "what did I branch this off" is
-        // the first question asked about a worktree a fortnight later.
-        $origin = $from !== null ? $this->branchIn($from) : $this->git->currentBranch();
-        $this->worktrees->store($name, ['forkedFrom' => $origin, 'forkedAt' => $base]);
-        $reporter->note(sprintf('Branched from %s at %s.', $origin, substr($base, 0, 11)));
+        $this->worktrees->store($name, ['forkedFrom' => $origin, 'forkedAt' => $commit]);
+        $reporter->note(sprintf('Branched from %s at %s.', $origin, substr($commit, 0, 11)));
 
         // What git ignores is what gets carried, so nothing is missing in a
         // project this add-on knows nothing about.
@@ -293,7 +298,7 @@ final readonly class WorktreeManager
      *
      * @return array{php: ?string, readFrom: ?string, warnings: list<string>}
      */
-    public function foresee(string $branch, bool $fork, ?string $from, ?string $name): array
+    public function foresee(string $branch, bool $fork, ?string $from, ?string $name, ?string $base = null): array
     {
         if ($from !== null) {
             Project::assertName($from);
@@ -310,12 +315,20 @@ final readonly class WorktreeManager
         }
         $php = null;
 
-        $ref = $fork ? $this->baseFor($from) : $this->startPointFor($branch);
+        try {
+            $ref = $fork ? $this->commitFor($from, $base) : $this->startPointFor($branch);
+        } catch (\InvalidArgumentException $refusal) {
+            // Said like the others, and the rest asked of where the source stands.
+            $refusals[] = $refusal->getMessage();
+            $base = null;
+            $ref = $this->commitFor($from, null);
+        }
         $build = $this->preflight->asked($ref);
         try {
             $php = $this->preflight->phpFor($build, sprintf('Branch "%s"', $branch), $reporter);
             if ($fork) {
-                $this->preflight->checkLockCarried($build, $ref, $from, $name, $reporter);
+                $origin = $base ?? ($from !== null ? $this->branchIn($from) : $this->git->currentBranch());
+                $this->preflight->checkLockCarried($build, $ref, $origin, $from, $name, $reporter);
             } else {
                 $this->preflight->checkLockAt($build, $ref, $reporter);
             }
@@ -345,11 +358,18 @@ final readonly class WorktreeManager
             ?? throw new \InvalidArgumentException(sprintf('Branch "%s" is unknown.', $branch));
     }
 
-    private function baseFor(?string $from): string
+    /** A base that does not name a commit is refused before anything is made. */
+    private function commitFor(?string $from, ?string $base): string
     {
-        return $from !== null
-            ? $this->git->inWorktree($from, 'rev-parse', 'HEAD')->output
-            : $this->git->run('rev-parse', 'HEAD')->output;
+        if ($base === null) {
+            return $from !== null
+                ? $this->git->inWorktree($from, 'rev-parse', 'HEAD')->output
+                : $this->git->run('rev-parse', 'HEAD')->output;
+        }
+        // git would read a base beginning with a dash as an option of its own.
+        $commit = str_starts_with($base, '-') ? null : $this->git->commitOf($base);
+
+        return $commit ?? throw new \InvalidArgumentException(sprintf('"%s" names no commit to branch off.', $base));
     }
 
     private function branchIn(string $name): string

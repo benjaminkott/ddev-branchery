@@ -99,11 +99,10 @@ final readonly class Checks
      * its repository still has one on disk, and the fork carries it over like
      * everything else git ignores. Read from where it will actually come from.
      */
-    public function checkLockCarried(Build $build, string $base, ?string $from, string $name, StepReporter $reporter): void
+    public function checkLockCarried(Build $build, string $base, string $branch, ?string $from, string $name, StepReporter $reporter): void
     {
         $json = $this->git->fileAt($base, 'composer.json');
         $lock = $this->git->fileAt($base, 'composer.lock');
-        $branch = $from !== null ? $this->branchIn($from) : $this->git->currentBranch();
         $what = sprintf('composer.lock on %s', $branch);
         $where = sprintf('on %s, committed,', $branch);
 
@@ -213,10 +212,5 @@ final readonly class Checks
         if ($forgotten > 0) {
             $reporter->note(sprintf('Forgot the record of %s under this name.', Text::count($forgotten, 'earlier operation')));
         }
-    }
-
-    private function branchIn(string $name): string
-    {
-        return $this->git->inWorktree($name, 'rev-parse', '--abbrev-ref', 'HEAD')->output;
     }
 }

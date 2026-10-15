@@ -6,6 +6,7 @@
 ##   ddev branchery worktree:list                # overview
 ##   ddev branchery worktree:fork my-fix         # branch off from the current state
 ##   ddev branchery worktree:fork my-fix --from=other  # or from another worktree
+##   ddev branchery worktree:fork review --base=origin/main  # or at another commit
 ##   ddev branchery worktree:add 13.4            # check out an existing branch
 ##   ddev branchery worktree:php my-fix 8.4      # set the PHP version
 ##   ddev branchery worktree:pull my-fix         # bring the branch onto its remote

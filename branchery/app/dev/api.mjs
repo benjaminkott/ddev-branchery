@@ -284,6 +284,10 @@ export function createApi() {
         if (from !== '') {
             mustFind(from);
         }
+        const base = fork ? String(payload.base ?? '').trim() : '';
+        if (base !== '' && !BRANCH_NAME.test(base)) {
+            return error('Invalid ref.');
+        }
 
         // The release branch of this invented project is where the copied data
         // does not fit the code it lands in -- the one outcome that cannot be
@@ -292,7 +296,7 @@ export function createApi() {
 
         return accepted(
             start(
-                fork ? plans.fork(name, branch, from) : add(name, branch),
+                fork ? plans.fork(name, branch, from, base) : add(name, branch),
                 () => {
                     world.worktrees = [...world.worktrees, newWorktree(world, { name, branch })];
                     if (fork && !world.branches.some((entry) => entry.name === branch)) {
@@ -303,6 +307,20 @@ export function createApi() {
                 name,
                 fork ? 'worktree:fork' : 'worktree:add',
             ),
+        );
+    }
+
+    /**
+     * What git would resolve to a commit here: a branch, the remote's copy of one,
+     * or a hash.
+     */
+    function names(ref) {
+        const branch = ref.replace(/^origin\//, '');
+        return (
+            /^[0-9a-f]{7,40}$/.test(ref) ||
+            branch === world.branch ||
+            world.branches.some((entry) => entry.name === branch) ||
+            world.worktrees.some((entry) => entry.branch === branch)
         );
     }
 
@@ -321,8 +339,15 @@ export function createApi() {
         if (!fork && !world.branches.some((entry) => entry.name === branch)) {
             return error(`Branch "${branch}" is unknown.`);
         }
+        const base = fork ? String(query.base ?? '').trim() : '';
+        if (base !== '' && !BRANCH_NAME.test(base)) {
+            return error('Invalid ref.');
+        }
 
         const warnings = [];
+        if (base !== '' && !names(base)) {
+            warnings.push(`"${base}" names no commit to branch off.`);
+        }
         // The one refusal about the name, said as the container's foresee() says it.
         const name = optionalName(query.name) ?? slug(branch);
         if (name === world.project.name) {

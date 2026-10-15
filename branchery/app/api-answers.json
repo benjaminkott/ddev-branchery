@@ -115,6 +115,16 @@
             }
         },
         {
+            "ask": "POST /api/worktrees",
+            "status": 400,
+            "says": "Invalid ref.",
+            "body": {
+                "mode": "fork",
+                "branch": "feature/x",
+                "base": "-- --upload-pack=touch"
+            }
+        },
+        {
             "ask": "GET /api/branch?branch=--%20--upload-pack%3Dtouch",
             "status": 400,
             "says": "Invalid branch name."

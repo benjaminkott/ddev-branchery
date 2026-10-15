@@ -85,6 +85,23 @@ final readonly class Parameters
     }
 
     /**
+     * A commit, branch or tag, where the caller named one. Held to the rule a
+     * branch name is, so nothing reaches git that it would read as an option.
+     */
+    public function ref(string $field): ?string
+    {
+        $ref = $this->text($field);
+        if ($ref === '') {
+            return null;
+        }
+        if (preg_match(self::BRANCH, $ref) !== 1) {
+            throw new \InvalidArgumentException('Invalid ref.');
+        }
+
+        return $ref;
+    }
+
+    /**
      * The name the caller chose for a worktree, where they chose one. It becomes
      * a hostname, a directory and a database name, which is why the rule is the
      * one the operation holds it to and not a looser one.

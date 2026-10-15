@@ -29,6 +29,7 @@ final class ForkCommand extends AbstractJobCommand
         parent::configure();
         $this->addArgument('branch', InputArgument::REQUIRED, 'Name of the new branch')
             ->addOption('from', null, InputOption::VALUE_REQUIRED, 'Worktree to use as the source; the project checkout if omitted')
+            ->addOption('base', null, InputOption::VALUE_REQUIRED, 'Commit, branch or tag the branch starts at; where the source stands if omitted. Unversioned files still come from the source')
             ->addOption('name', null, InputOption::VALUE_REQUIRED, 'Different directory name');
     }
 
@@ -47,6 +48,7 @@ final class ForkCommand extends AbstractJobCommand
             $input->getOption('from') !== null ? (string) $input->getOption('from') : null,
             $input->getOption('name') !== null ? (string) $input->getOption('name') : null,
             $reporter,
+            $input->getOption('base') !== null ? (string) $input->getOption('base') : null,
         );
         $this->report($output, $reporter, sprintf('%s  (%s)', $worktree->url, $worktree->branch), $worktree);
 

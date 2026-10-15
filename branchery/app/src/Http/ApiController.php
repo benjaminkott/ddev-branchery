@@ -77,6 +77,10 @@ final class ApiController
                 $this->assertWorktree($from);
                 $arguments[] = '--from=' . $from;
             }
+            $base = $asked->ref('base');
+            if ($base !== null) {
+                $arguments[] = '--base=' . $base;
+            }
         }
 
         if ($name !== null) {
@@ -104,7 +108,7 @@ final class ApiController
             $this->assertWorktree($from);
         }
 
-        return Response::json($this->manager->foresee($branch, $fork, $from === '' ? null : $from, $asked->name()));
+        return Response::json($this->manager->foresee($branch, $fork, $from === '' ? null : $from, $asked->name(), $fork ? $asked->ref('base') : null));
     }
 
     /** @param array<string, mixed> $payload */
