@@ -61,7 +61,12 @@ copy:
 # The npm half is optional, and that is not a shrug: a branch whose
 # Build/package-lock.json predates the npm this container brings cannot be
 # installed at all, and every one of those is a branch whose work is PHP.
+#
+# The caches go first. TYPO3 keys its compiled container by the packages and not
+# by the code, so a worktree rebuilt on other code would run "setup" on the old
+# one -- and "cache:flush" needs that very container, so it cannot do this.
 install:
+  - rm -rf typo3temp/var/cache
   - $BRANCHERY_PHP /usr/local/bin/composer install --no-interaction --no-progress
   - exec: cd Build && npm ci --no-audit --no-fund
     optional: true

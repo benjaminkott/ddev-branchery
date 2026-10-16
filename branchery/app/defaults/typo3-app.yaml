@@ -35,7 +35,11 @@ copy:
     - .vscode
     - .idea
 
+# The caches go first. TYPO3 keys its compiled container by the packages and not
+# by the code, so a worktree rebuilt on other code would run "setup" on the old
+# one -- and "cache:flush" needs that very container, so it cannot do this.
 install:
+  - rm -rf var/cache
   - $BRANCHERY_PHP /usr/local/bin/composer install --no-interaction --no-progress
 
 # Said in the file Branchery owns, so an installation that rewrites its own

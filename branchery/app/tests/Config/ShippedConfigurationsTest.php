@@ -76,11 +76,44 @@ final class ShippedConfigurationsTest extends TestCase
 
         self::assertSame(
             [
+                'rm -rf typo3temp/var/cache' => false,
                 '$BRANCHERY_PHP /usr/local/bin/composer install --no-interaction --no-progress' => false,
                 'cd Build && npm ci --no-audit --no-fund' => true,
             ],
             $optional,
         );
+    }
+
+    /**
+     * TYPO3 keys its compiled container by the installed packages and not by the
+     * code, so a worktree rebuilt on other code started "setup" on the container
+     * of the old one and died in a constructor. "cache:flush" needs that same
+     * container, which is why it is a removal and why it comes first.
+     */
+    #[DataProvider('typo3')]
+    public function testATypo3WorktreeIsBuiltWithoutTheCodeItWasCompiledFrom(string $name, string $cache): void
+    {
+        $line = $this->recipes()->shipped($name)->plan('install')[0]->line ?? '';
+        $filesystem = new Filesystem();
+        $directory = $filesystem->tempnam(sys_get_temp_dir(), 'branchery-');
+        $filesystem->remove($directory);
+        $filesystem->dumpFile($directory . '/' . $cache . '/code/di/DependencyInjectionContainer_stale.php', '<?php');
+
+        try {
+            (new Process(['bash', '-c', $line], $directory))->mustRun();
+            self::assertDirectoryDoesNotExist($directory . '/' . $cache);
+
+            (new Process(['bash', '-c', $line], $directory))->mustRun();
+        } finally {
+            $filesystem->remove($directory);
+        }
+    }
+
+    /** @return iterable<array{string, string}> */
+    public static function typo3(): iterable
+    {
+        yield 'typo3-app' => ['typo3-app', 'var/cache'];
+        yield 'typo3-core' => ['typo3-core', 'typo3temp/var/cache'];
     }
 
     /**

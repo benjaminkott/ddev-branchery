@@ -49,7 +49,10 @@ Checks out a branch that exists locally or on a remote, and builds it.
     the cache is fetched once. :ref:`php-and-node-versions` says how both are
     read.
 
-#.  **Installing dependencies** (**config**).
+#.  **Installing dependencies** (**config**). The TYPO3 profiles remove the
+    application's caches before anything else: its compiled container is kept
+    for the installed packages and not for the code, so a worktree rebuilt on
+    other code would otherwise run on the container of the old one.
 
 #.  **Writing the configuration** (**config**), together with the worktree's
     ``.vscode/launch.json`` and ``.vscode/settings.json``.
