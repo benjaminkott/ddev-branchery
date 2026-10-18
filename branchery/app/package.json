@@ -23,13 +23,13 @@
     },
     "devDependencies": {
         "@eslint/js": "10.0.1",
-        "@playwright/test": "^1.64.0",
+        "@playwright/test": "^1.64.1",
         "@types/node": "^26.6.5",
         "esbuild": "^0.28.2",
         "eslint": "10.12.0",
-        "prettier": "3.9.9",
+        "prettier": "3.9.10",
         "typescript": "^6.0.3",
-        "typescript-eslint": "8.71.1"
+        "typescript-eslint": "8.71.2"
     },
     "dependencies": {
         "@typo3/soul-frontend": "0.8.1",
