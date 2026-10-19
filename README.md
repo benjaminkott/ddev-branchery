@@ -124,7 +124,10 @@ the original project is therefore the one building its worktrees.
 
 - The DDEV project is a git repository.
 - DDEV 1.24.0 or newer is installed.
-- Both nginx and Apache are supported.
+- The project is served by Apache. nginx is not supported: it serves a
+  worktree through one generic server block, and rewrite rules the project
+  keeps in its own nginx configuration do not reach it. Switch with
+  `ddev config --webserver-type=apache-fpm`.
 - The web image must provide a compatible PHP-FPM pool; current worktrees can
   use PHP 8.2 and newer.
 - A branch can be checked out in only one worktree at a time.

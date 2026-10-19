@@ -88,6 +88,9 @@ final readonly class State
             // assumed: null while the port is the developer's own machine's, and
             // otherwise what put it on the network beside them.
             'exposed' => $this->exposure->beyondThisMachine(),
+            // Which web server serves the project; the interface warns under the one
+            // that is not supported.
+            'webserver' => $this->project->webserver(),
         ]);
     }
 }

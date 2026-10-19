@@ -298,5 +298,7 @@
     "update.command": "Aktualisierungsbefehl",
     "update.fetch": "Zum Aktualisieren bitte ausführen:",
     "update.how": "Ein Neustart des Projekts bringt die neue Version: ddev restart. Ein Container behält das Image, aus dem er entstanden ist, und ändert sich bis dahin nicht.",
-    "update.waiting": "Branchery wurde aktualisiert. Dieses Projekt läuft noch auf der Version davor."
+    "update.waiting": "Branchery wurde aktualisiert. Dieses Projekt läuft noch auf der Version davor.",
+    "webserver.heading": "nginx wird nicht unterstützt",
+    "webserver.nginx": "Dieses Projekt läuft mit nginx. Ein Worktree wird dann über einen allgemeinen Server-Block ausgeliefert, und die Rewrite-Regeln aus der nginx-Konfiguration des Projekts erreichen ihn nicht. Stell auf Apache um: „ddev config --webserver-type=apache-fpm && ddev restart“."
 }

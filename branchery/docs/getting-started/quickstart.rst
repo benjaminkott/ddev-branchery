@@ -20,6 +20,18 @@ working project rather than from an empty DDEV configuration.
 
 ..  warning::
 
+    nginx is not supported; the project must be served by Apache. Under Apache
+    every worktree reads the ``.htaccess`` of its own branch, while nginx
+    serves it through one generic server block that the rewrite rules in the
+    project's own nginx configuration do not reach. Switch before installing:
+
+    ..  code-block:: bash
+
+        ddev config --webserver-type=apache-fpm
+        ddev restart
+
+..  warning::
+
     The Branchery API is intentionally unauthenticated. Keep its port on the
     developer's own machine behind DDEV's router; do not expose it on a shared
     or public network.

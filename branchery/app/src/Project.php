@@ -30,7 +30,14 @@ final class Project
          * @var list<string>
          */
         private readonly array $hostnames = [],
+        /** As DDEV names it -- "nginx-fpm", "apache-fpm" -- and empty where nothing said. */
+        private readonly string $webserver = '',
     ) {
+    }
+
+    public function webserver(): string
+    {
+        return $this->webserver;
     }
 
     public function name(): string

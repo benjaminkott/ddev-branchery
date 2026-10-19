@@ -180,6 +180,7 @@ export function createApi() {
             // fixtures to see the note that says so and how to fetch it.
             updateAvailable: world.updateAvailable ?? null,
             exposed: world.exposed ?? null,
+            webserver: world.webserver ?? 'apache-fpm',
         });
     }
 

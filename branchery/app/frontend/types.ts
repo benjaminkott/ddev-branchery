@@ -431,6 +431,8 @@ export interface ServerState {
      * that stopped being true is said rather than left silent.
      */
     exposed: string | null;
+    /** As DDEV names it, "nginx-fpm" or "apache-fpm"; empty where nothing said. */
+    webserver: string;
 }
 
 export interface AppState extends ServerState {

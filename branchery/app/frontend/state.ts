@@ -32,6 +32,7 @@ export const { state, subscribe } = createStore<AppState>({
     updateWaiting: false,
     updateAvailable: null,
     exposed: null,
+    webserver: '',
 });
 
 export function t(key: string, params: Record<string, string | number> = {}): string {
@@ -123,6 +124,7 @@ async function load(): Promise<RunningJob[]> {
     put('updateWaiting', data.updateWaiting ?? false);
     put('updateAvailable', data.updateAvailable ?? null);
     put('exposed', data.exposed ?? null);
+    put('webserver', data.webserver ?? '');
     put('runningJobs', data.runningJobs ?? []);
 
     return state.runningJobs;

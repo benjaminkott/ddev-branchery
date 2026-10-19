@@ -146,6 +146,8 @@ export function createWorld() {
         // Null while the port is the developer's own machine's. "router" and
         // "container" are the two ways it stops being -- see Exposure.
         exposed: null,
+        // As DDEV names it. "nginx-fpm" shows the note that nginx is not supported.
+        webserver: 'apache-fpm',
         projectPhp: '8.3',
         // The same application as the worktrees cut from it, so it has a type and
         // a way in like they do. Named as DDEV names the project, which is what

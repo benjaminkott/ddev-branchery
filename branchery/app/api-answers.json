@@ -187,7 +187,8 @@
             "version": "string",
             "updateWaiting": "bool",
             "updateAvailable": "?string",
-            "exposed": "?string"
+            "exposed": "?string",
+            "webserver": "string"
         },
         "worktree": {
             "name": "string",

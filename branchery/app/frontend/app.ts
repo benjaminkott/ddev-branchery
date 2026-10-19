@@ -158,6 +158,19 @@ function paintExposed(): void {
 }
 
 /**
+ * Under nginx a worktree is served by one generic server block and the
+ * project's own rewrite rules never reach it, so it is said once at the top
+ * rather than discovered as a 404 in a worktree.
+ */
+function paintWebserver(): void {
+    paintNote('#webserver', state.webserver.startsWith('nginx'), () => ({
+        tone: 'warn',
+        heading: t('webserver.heading'),
+        body: t('webserver.nginx'),
+    }));
+}
+
+/**
  * Nothing is guessed, so a project with no configuration gets exactly what it
  * asked for: a checkout at an address, with nothing installed. A reasonable
  * thing to want and a terrible thing to discover, so it is said at the top.
@@ -212,6 +225,7 @@ function render(route: Route = currentRoute()): void {
     paintBar();
     paintOffline();
     paintExposed();
+    paintWebserver();
     paintUpdateWaiting();
     paintUpdateAvailable();
     watchTheOthers();

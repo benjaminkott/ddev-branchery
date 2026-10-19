@@ -298,5 +298,7 @@
     "update.command": "Upgrade command",
     "update.fetch": "Please run this to upgrade:",
     "update.how": "Restart the project and the new one takes over: ddev restart. A container keeps the image it was made from, so nothing changes until it is replaced.",
-    "update.waiting": "Branchery has been updated. This project is still running the version before it."
+    "update.waiting": "Branchery has been updated. This project is still running the version before it.",
+    "webserver.heading": "nginx is not supported",
+    "webserver.nginx": "This project is served by nginx. A worktree is then served by one generic server block, and the rewrite rules in the project’s own nginx configuration do not reach it. Switch to Apache: \"ddev config --webserver-type=apache-fpm && ddev restart\"."
 }

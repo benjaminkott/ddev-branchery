@@ -33,6 +33,8 @@ services:
       # The addresses of the worktrees hang under the project's domain, which is
       # the machine's to choose.
       - DDEV_TLD=${DDEV_TLD}
+      # nginx is not supported, and the interface says so where it serves.
+      - DDEV_WEBSERVER_TYPE=${DDEV_WEBSERVER_TYPE:-}
       # Which distribution the project lies in, where the developer works in WSL:
       # an editor outside it reaches the checkout by a name that carries this and
       # by no other, and nothing inside a container can read it. Empty everywhere

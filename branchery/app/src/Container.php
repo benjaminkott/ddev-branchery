@@ -164,6 +164,7 @@ final class Container
                 // DDEV hands the compose file every hostname of the project as one
                 // comma-separated value, additional ones and FQDNs included.
                 hostnames: explode(',', $this->string('VIRTUAL_HOST', '')),
+                webserver: $this->string('DDEV_WEBSERVER_TYPE', ''),
             );
         });
     }
