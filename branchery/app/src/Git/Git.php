@@ -47,6 +47,7 @@ final readonly class Git
 
     // What the repository says about itself.
 
+    /** @phpstan-impure the answer is git's, and a write to the repository changes it */
     public function currentBranch(): string
     {
         return $this->facts->currentBranch();
