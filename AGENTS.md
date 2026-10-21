@@ -81,12 +81,12 @@ what a worktree is built out of -- the checkout before anything installed into
 it, the question asked before a database is dropped, the branch deleted after
 the checkout it was in -- is a thing a test can hold to.
 
-The PHP side needs 8.4. Where the host has an older one the container does the
-work -- `docker run --rm -v "$PWD":/app -w /app php:8.4-cli php
-vendor/bin/phpunit` -- and static analysis wants room in it: `php -d
-memory_limit=1G vendor/bin/phpstan analyse`, because the image's own limit stops
-the analysis partway and reports it as "severe errors", which reads like a
-finding about the code and is nothing of the sort.
+The PHP side needs 8.4, and the image runs 8.5. Where the host has an older
+one the container does the work -- `docker run --rm -v "$PWD":/app -w /app
+php:8.5-cli php vendor/bin/phpunit` -- and static analysis wants room in it:
+`php -d memory_limit=1G vendor/bin/phpstan analyse`, because the image's own
+limit stops the analysis partway and reports it as "severe errors", which
+reads like a finding about the code and is nothing of the sort.
 
 `npm test` runs what can be tested without a browser: the rules the interface
 applies -- a name made into a hostname, a length of time, what a search leaves
