@@ -88,7 +88,11 @@ async function letGo(worktrees: Worktree[], handlers: TidyHandlers): Promise<voi
     // Asked for all at once, and kept beside the name each was asked about, so
     // the one followed is named after the worktree it is actually removing and
     // not after the first in the list, which may have been refused.
-    const answers = await Promise.allSettled(worktrees.map((worktree) => api.removeWorktree(worktree.name)));
+    // A merged branch is held by the project's own and needs nothing; a gone one
+    // was ticked by hand against the line saying its commits may be nowhere else.
+    const answers = await Promise.allSettled(
+        worktrees.map((worktree) => api.removeWorktree(worktree.name, worktree.gone)),
+    );
     const started: { job: string; name: string }[] = [];
     answers.forEach((answer, index) => {
         const name = worktrees[index]?.name ?? '';

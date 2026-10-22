@@ -43,6 +43,8 @@ function worktree(values) {
         // Set it apart from `branch` on one of them below to see the way back
         // offered.
         madeFor: values.branch ?? null,
+        // False on one of them below to see removal leave the branch standing.
+        ownsBranch: true,
         // Written down when the cut is made, so a worktree of a branch that
         // already existed has nothing here.
         forkedFrom: null,
@@ -282,6 +284,8 @@ export function createWorld() {
             worktree({
                 name: 'v12',
                 branch: '12.4',
+                // Checked out as it stood, so it outlives the worktree.
+                ownsBranch: false,
                 php: '8.2',
                 minPhp: '8.1',
                 node: '22.11.0',
@@ -417,10 +421,11 @@ export function newBranch(name, tip, onRemote = false) {
     return { name, when: Math.round(Date.now() / 1000), tip, onRemote };
 }
 
-export function newWorktree(world, { name, branch, profile }) {
+export function newWorktree(world, { name, branch, profile, ownsBranch }) {
     return worktree({
         name,
         branch,
+        ownsBranch,
         php: world.projectPhp,
         profile: profile ?? 'typo3-app',
         // Just cut, and standing where it was cut.

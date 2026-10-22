@@ -479,6 +479,7 @@ final class Container
             // Not shared on its own: a removal is the only thing that forgets a
             // worktree, so there is one of these anyway.
             new Traces($this->surroundings(), $this->worktrees(), $this->php(), $this->node(), $this->describe()),
+            $this->worktrees(),
             $this->checks(),
         ));
     }

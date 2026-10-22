@@ -53,6 +53,17 @@ final readonly class Worktrees
         return is_array($data) ? $data : [];
     }
 
+    /**
+     * Whether the branch was cut for the worktree, and so goes with it. Forks
+     * written down before the key was said so only by their parent.
+     *
+     * @param array<string, mixed> $meta
+     */
+    public static function ownsBranch(array $meta): bool
+    {
+        return (bool) ($meta['ownsBranch'] ?? isset($meta['forkedFrom']));
+    }
+
     /** @param array<string, mixed> $values */
     public function store(string $name, array $values): void
     {
@@ -176,6 +187,7 @@ final readonly class Worktrees
             // Where nothing was written down, the branch it is on now is the best
             // that can be said, and it says the worktree has not wandered.
             madeFor: isset($meta['branch']) ? (string) $meta['branch'] : $branch,
+            ownsBranch: self::ownsBranch($meta),
             php: $this->php->forWorktree($name),
             minPhp: $this->php->minimumFor($name, $vendor),
             node: $this->node->forWorktree($name),
@@ -259,6 +271,7 @@ final readonly class Worktrees
             name: $this->project->name(),
             branch: $branch !== '' ? $branch : '?',
             madeFor: null,
+            ownsBranch: false,
             php: $this->php->projectVersion(),
             minPhp: $this->php->minimumFor('', $this->vendorDirectory($root)),
             node: $this->node->projectVersion(),

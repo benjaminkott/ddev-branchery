@@ -10,6 +10,7 @@
 
 import { api } from '../api.js';
 import { go } from '../router.js';
+import { takesBranch, wandered } from '../rules/actions.js';
 import { refresh, reportError, setError, t } from '../state.js';
 import type { Commits, JobHandlers, JobKind, Worktree } from '../types.js';
 import { askConfirm } from './confirm.js';
@@ -27,10 +28,10 @@ export async function sync(worktree: Worktree, handlers: JobHandlers): Promise<v
  * it, commits that were never pushed take themselves, and what was never
  * committed was only ever in that directory.
  */
-function losses(worktree: Worktree): string[] {
+function losses(worktree: Worktree, taken: boolean): string[] {
     return [
-        ...(worktree.ahead === null ? [t('confirm.worktree.nowhere')] : []),
-        ...(worktree.ahead !== null && worktree.ahead > 0
+        ...(taken && worktree.ahead === null ? [t('confirm.worktree.nowhere')] : []),
+        ...(taken && worktree.ahead !== null && worktree.ahead > 0
             ? [t('confirm.worktree.unpushed', { count: worktree.ahead })]
             : []),
         ...(worktree.changes > 0 ? [t('confirm.worktree.changes', { count: worktree.changes })] : []),
@@ -104,16 +105,17 @@ export async function provision(name: string, fresh: boolean, handlers: JobHandl
 
 /** Removing one takes its page with it, so the way back is the list. */
 export async function remove(worktree: Worktree, handlers: JobHandlers): Promise<void> {
-    const lost = losses(worktree);
+    const taken = takesBranch(worktree);
+    const lost = losses(worktree, taken);
     const confirmed = await askConfirm({
         title: t('confirm.worktree.title'),
-        message: t('confirm.worktree.body'),
-        // Everything that exists here and nowhere else: the branch goes with the
-        // worktree, so what is on it and never pushed goes too.
+        message: taken ? t('confirm.worktree.body') : `${t('confirm.worktree.body')} ${kept(worktree)}`,
+        // Everything that exists here and nowhere else: where the branch goes with
+        // the worktree, what is on it and never pushed goes too.
         ...(lost.length > 0 ? { warning: lost.join(' ') } : {}),
         facts: [
             { label: t('table.worktree'), value: worktree.name },
-            { label: t('table.branch'), value: worktree.branch },
+            ...(taken ? [{ label: t('table.branch'), value: worktree.branch }] : []),
             { label: t('table.database'), value: worktree.database },
         ],
         confirmLabel: t('action.remove'),
@@ -122,9 +124,18 @@ export async function remove(worktree: Worktree, handlers: JobHandlers): Promise
     if (!confirmed) {
         return;
     }
-    if (await start(() => api.removeWorktree(worktree.name), null, 'remove', handlers)) {
+    // Only what the reader was warned about is let go; anything that turned up
+    // since is kept by the container and said in the log.
+    if (await start(() => api.removeWorktree(worktree.name, lost.length > 0), null, 'remove', handlers)) {
         go('/');
     }
+}
+
+/** Said beside what goes, since a branch that stays is what the reader expected least. */
+function kept(worktree: Worktree): string {
+    return wandered(worktree)
+        ? t('confirm.worktree.keptWandered', { branch: worktree.branch, madeFor: worktree.madeFor ?? '' })
+        : t('confirm.worktree.kept', { branch: worktree.branch });
 }
 
 async function start(

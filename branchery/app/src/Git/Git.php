@@ -207,6 +207,11 @@ final readonly class Git
         return $this->history->unpushed($name);
     }
 
+    public function orphanedBy(string $name, ?string $branch): ?int
+    {
+        return $this->history->orphanedBy($name, $branch);
+    }
+
     // What a checkout has uncommitted.
 
     public function tracks(string $worktree, string $path): bool

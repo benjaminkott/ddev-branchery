@@ -15,6 +15,7 @@ function worktree(values: Partial<Worktree> & { name: string }): Worktree {
     return {
         branch: values.name,
         madeFor: values.name,
+        ownsBranch: true,
         forkedFrom: null,
         forkedAt: null,
         php: '8.3',

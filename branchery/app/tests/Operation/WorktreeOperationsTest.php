@@ -304,17 +304,119 @@ final class WorktreeOperationsTest extends TestCase
     public function testTheBranchGoesAfterTheCheckoutItWasIn(): void
     {
         $this->wiring->worktree('my-fix');
+        $this->wiring->worktrees->store('my-fix', ['branch' => 'bugfix/my-fix', 'ownsBranch' => true]);
         $web = $this->wiring->web;
-        $web->answer('symbolic-ref', 'bugfix/my-fix');
+        $web->answer('rev-parse --abbrev-ref HEAD', 'bugfix/my-fix');
+        $web->answer('rev-list --count', '0');
 
         $this->wiring->manager->remove('my-fix', $this->reporter());
 
         $checkout = $web->at('worktree remove');
-        $branch = $web->at('branch -D');
+        $branch = $web->at('branch -D bugfix/my-fix');
         self::assertNotNull($checkout);
-        if ($branch !== null) {
-            self::assertGreaterThan($checkout, $branch, 'the branch was deleted while it was still checked out');
+        self::assertNotNull($branch, 'the branch the worktree cut was left behind: ' . implode("\n", $web->lines()));
+        self::assertGreaterThan($checkout, $branch, 'the branch was deleted while it was still checked out');
+    }
+
+    /**
+     * Only what the worktree made is taken back with it. A branch that was here
+     * before is the developer's, and one the checkout wandered onto was never
+     * the worktree's at all.
+     *
+     * @param array<string, mixed> $meta
+     */
+    #[DataProvider('keptBranches')]
+    public function testABranchTheWorktreeDidNotCutStays(array $meta, string $on): void
+    {
+        $this->wiring->worktree('my-fix');
+        $this->wiring->worktrees->store('my-fix', $meta);
+        $web = $this->wiring->web;
+        $web->answer('rev-parse --abbrev-ref HEAD', $on);
+
+        $this->wiring->manager->remove('my-fix', $this->reporter());
+
+        self::assertTrue($web->ran('worktree remove'), 'the checkout was left behind');
+        self::assertFalse($web->ran('branch -D'), 'a branch was deleted: ' . implode("\n", $web->lines()));
+    }
+
+    /** @return iterable<string, array{array<string, mixed>, string}> */
+    public static function keptBranches(): iterable
+    {
+        yield 'checked out as it stood' => [['branch' => 'my-fix', 'ownsBranch' => false], 'my-fix'];
+        yield 'wandered onto a patch' => [['branch' => 'my-fix', 'ownsBranch' => true], 'review/12345'];
+        // Made before anything was written down about it: not knowing is keeping.
+        yield 'nothing written down' => [['branch' => 'my-fix'], 'my-fix'];
+    }
+
+    /**
+     * Commits only the branch holds are kept by keeping the branch: the rest of
+     * the worktree can go without them, and asked for, they go too.
+     */
+    public function testABranchHoldingCommitsNowhereElseStaysUnlessTold(): void
+    {
+        foreach ([false, true] as $force) {
+            $this->wiring->worktree('my-fix');
+            $this->wiring->worktrees->store('my-fix', ['branch' => 'my-fix', 'ownsBranch' => true]);
+            $web = $this->wiring->web;
+            $web->answer('rev-parse --abbrev-ref HEAD', 'my-fix');
+            $web->answer('rev-list --count HEAD --not --exclude=my-fix', '2');
+
+            $this->wiring->manager->remove('my-fix', $this->reporter(), $force);
+
+            self::assertTrue($web->ran('worktree remove'), 'the checkout was left behind');
+            self::assertSame($force, $web->ran('branch -D my-fix'), implode("\n", $web->lines()));
         }
+    }
+
+    /**
+     * What is only in the checkout cannot be kept by keeping a branch, so the
+     * removal is refused before it has touched anything -- the database first.
+     *
+     * @param array<string, string> $answers
+     */
+    #[DataProvider('workOnlyInTheCheckout')]
+    public function testARemovalThatWouldLoseWorkIsRefused(array $answers): void
+    {
+        $this->wiring->worktree('my-fix');
+        $web = $this->wiring->web;
+        foreach ($answers as $match => $output) {
+            $web->answer($match, $output);
+        }
+
+        try {
+            $this->wiring->manager->remove('my-fix', $this->reporter());
+            self::fail('the removal went ahead: ' . implode("\n", $web->lines()));
+        } catch (\RuntimeException $refused) {
+            self::assertStringContainsString('--force', $refused->getMessage());
+        }
+        self::assertFalse($web->ran('DROP DATABASE'), 'the database was dropped anyway');
+        self::assertFalse($web->ran('worktree remove'), 'the checkout was removed anyway');
+
+        $this->wiring->manager->remove('my-fix', $this->reporter(), true);
+
+        self::assertTrue($web->ran('worktree remove'), 'told to, it still would not go');
+    }
+
+    /** @return iterable<string, array{array<string, string>}> */
+    public static function workOnlyInTheCheckout(): iterable
+    {
+        yield 'uncommitted changes' => [['status --porcelain' => " M index.php\n?? notes.md"]];
+        yield 'commits on no branch' => [['rev-parse --abbrev-ref HEAD' => 'HEAD', 'rev-list --count' => '1']];
+    }
+
+    /** What a removal is allowed to take is decided when the worktree is made. */
+    public function testAWorktreeOwnsOnlyTheBranchItCut(): void
+    {
+        $web = $this->wiring->web;
+        $web->answer('rev-parse --verify --quiet refs/heads/my-fix', 'refs/heads/my-fix');
+        $this->wiring->manager->add('my-fix', null, $this->reporter());
+
+        self::assertFalse($this->wiring->worktrees->metadata('my-fix')['ownsBranch'] ?? null, 'a branch that was here became the worktree\'s');
+
+        $web->answer('rev-parse --verify --quiet refs/heads/review', '', 1);
+        $this->wiring->manager->fork('review', null, null, $this->reporter());
+
+        self::assertTrue($this->wiring->worktrees->metadata('review')['ownsBranch'] ?? null, 'the branch a fork cut is not the worktree\'s');
     }
 
     /**

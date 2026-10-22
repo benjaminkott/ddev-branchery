@@ -17,6 +17,11 @@ final readonly class Worktree implements \JsonSerializable
          * project's own checkout, which is nobody's to move.
          */
         public ?string $madeFor,
+        /**
+         * The branch was cut for it, so removing the worktree takes it along. One
+         * that was here before is the developer's and stays.
+         */
+        public bool $ownsBranch,
         public string $php,
         public ?string $minPhp,
         /**
@@ -137,6 +142,7 @@ final readonly class Worktree implements \JsonSerializable
             'name' => $this->name,
             'branch' => $this->branch,
             'madeFor' => $this->madeFor,
+            'ownsBranch' => $this->ownsBranch,
             'php' => $this->php,
             'minPhp' => $this->minPhp,
             'node' => $this->node,

@@ -122,8 +122,15 @@ code that is checked out now, or install anew into an empty database.
 Remove what is finished
 =======================
 
-*Remove* on a worktree's page takes its database, its checkout and its branch,
-and says beforehand what is uncommitted or unpushed in it.
+*Remove* on a worktree's page takes its database and its checkout, and says
+beforehand what is uncommitted or unpushed in it. The branch goes with it only
+where the worktree cut it — by *fork*, or by *add* of a branch that was only on
+the remote. A branch that was here before the worktree stays, and so does one
+the checkout has wandered onto.
+
+From the command line nothing is asked first, so nothing is lost either: a
+worktree with uncommitted changes is refused, and a branch holding commits that
+are nowhere else stays. ``--force`` removes both.
 
 ..  code-block:: bash
 

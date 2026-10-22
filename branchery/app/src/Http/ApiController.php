@@ -417,9 +417,20 @@ final class ApiController
         return Response::json($this->jobs->history($name));
     }
 
-    public function remove(string $name): Response
+    /**
+     * Without "force" a removal keeps the work that is only in the worktree; the
+     * caller sends it once the reader has been shown what goes.
+     *
+     * @param array<string, mixed> $payload
+     */
+    public function remove(string $name, array $payload = []): Response
     {
-        return $this->operate($name, ['worktree:remove', $name]);
+        $arguments = ['worktree:remove', $name];
+        if (Parameters::of($payload)->flag('force')) {
+            $arguments[] = '--force';
+        }
+
+        return $this->operate($name, $arguments);
     }
 
     public function branches(): Response

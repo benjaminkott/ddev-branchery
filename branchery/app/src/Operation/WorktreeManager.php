@@ -107,6 +107,8 @@ final readonly class WorktreeManager
         if (!$result->isSuccessful()) {
             throw new \RuntimeException($result->message());
         }
+        // A removal takes back only what was made here.
+        $this->worktrees->store($name, ['ownsBranch' => !$here]);
 
         $this->provisioning->run($name, $branch, Provisioning::PROJECT_SOURCE, $php, $reporter);
 
@@ -159,7 +161,7 @@ final readonly class WorktreeManager
         if (!$result->isSuccessful()) {
             throw new \RuntimeException($result->message());
         }
-        $this->worktrees->store($name, ['forkedFrom' => $origin, 'forkedAt' => $commit]);
+        $this->worktrees->store($name, ['forkedFrom' => $origin, 'forkedAt' => $commit, 'ownsBranch' => true]);
         $reporter->note(sprintf('Branched from %s at %s.', $origin, substr($commit, 0, 11)));
 
         // What git ignores is what gets carried, so nothing is missing in a
@@ -192,11 +194,11 @@ final readonly class WorktreeManager
         return $this->worktrees->get($name) ?? throw new \RuntimeException('Worktree disappeared.');
     }
 
-    public function remove(string $name, StepReporter $reporter): void
+    public function remove(string $name, StepReporter $reporter, bool $force = false): void
     {
         $claim = $this->claimExisting($name, $reporter);
 
-        $this->removal->run($name, $reporter);
+        $this->removal->run($name, $reporter, $force);
     }
 
     /** Only refresh the generated configuration, without rebuilding. */

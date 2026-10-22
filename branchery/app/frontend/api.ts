@@ -152,8 +152,12 @@ export const api = {
     accountWorktree: (name: string): Promise<{ job: string }> =>
         request<{ job: string }>(`worktrees/${encodeURIComponent(name)}/account`, { method: 'POST' }),
 
-    removeWorktree: (name: string): Promise<{ job: string }> =>
-        request<{ job: string }>(`worktrees/${encodeURIComponent(name)}`, { method: 'DELETE' }),
+    /** Without `force` the container keeps what is only in the worktree rather than lose it. */
+    removeWorktree: (name: string, force = false): Promise<{ job: string }> =>
+        request<{ job: string }>(`worktrees/${encodeURIComponent(name)}`, {
+            method: 'DELETE',
+            body: JSON.stringify({ force }),
+        }),
 
     fetch: (remote?: string): Promise<{ job: string }> =>
         request<{ job: string }>('fetch', {

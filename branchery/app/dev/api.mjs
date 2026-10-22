@@ -299,7 +299,7 @@ export function createApi() {
             start(
                 fork ? plans.fork(name, branch, from, base) : add(name, branch),
                 () => {
-                    world.worktrees = [...world.worktrees, newWorktree(world, { name, branch })];
+                    world.worktrees = [...world.worktrees, newWorktree(world, { name, branch, ownsBranch: fork })];
                     if (fork && !world.branches.some((entry) => entry.name === branch)) {
                         world.branches = [...world.branches, newBranch(branch, world.project.tip)];
                     }

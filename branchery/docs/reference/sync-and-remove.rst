@@ -66,17 +66,26 @@ on the project's own checkout: that database is the developer's, not a copy.
 remove
 ======
 
-``ddev branchery worktree:remove <name>`` · ``DELETE /api/worktrees/<name>``
+``ddev branchery worktree:remove <name> [--force]`` · ``DELETE /api/worktrees/<name>``
+
+Nothing that exists only in the worktree is lost unless ``--force`` says so
+(``{"force": true}`` through the API). Before anything is touched, a worktree
+with uncommitted changes is refused, and so is one on no branch whose commits
+no branch, tag or remote holds. A branch the removal would delete stays where
+commits on it are nowhere else, and the log says how to let go of it. The
+question in the interface names what goes and sends ``force`` only for that.
 
 #.  **Removing database.** ``DROP DATABASE IF EXISTS branchery_<name>``.
 
 #.  **Removing worktree.** ``git worktree remove --force``, the directory, and
-    the branch the worktree is on (``git branch -D``) — for a worktree that has
-    wandered onto a patch, the patch's branch and not the one it was made for,
-    which the question before the press names. Where git refuses the worktree --
-    one holding a submodule, or a locked one — the directory goes anyway and
-    the stale entry is pruned. A branch git will not delete ends the operation
-    as failed, after the cleaning up.
+    the branch the worktree cut (``git branch -D``): the one a fork made, or
+    the local branch an add made of one that was only on the remote. A branch
+    that was here before the worktree stays, and so does everything of a
+    worktree that has wandered onto a patch — the patch's branch and the one it
+    was made for. The question before the press says which. Where git refuses
+    the worktree — one holding a submodule, or a locked one — the directory goes
+    anyway and the stale entry is pruned. A branch git will not delete ends the
+    operation as failed, after the cleaning up.
 
 #.  **Cleaning up.** Docroot link, metadata, PHP pool assignment, the
     ``ddev describe`` block, and the worktree's operation history. Only the

@@ -169,6 +169,19 @@ final readonly class History
     }
 
     /**
+     * What the worktree's HEAD holds that no branch, tag or remote would once
+     * $branch is deleted -- what removing it takes along for good. Null where git
+     * cannot say.
+     */
+    public function orphanedBy(string $name, ?string $branch): ?int
+    {
+        $exclude = $branch === null ? [] : ['--exclude=' . $branch];
+        $result = $this->runner->inWorktree($name, 'rev-list', '--count', 'HEAD', '--not', ...[...$exclude, '--branches', '--tags', '--remotes']);
+
+        return $result->isSuccessful() && is_numeric($result->output) ? (int) $result->output : null;
+    }
+
+    /**
      * Capped: a branch cut from an old base is ahead by everything since.
      *
      * @return list<array{sha: string, subject: string, when: int, author: string}>

@@ -86,7 +86,7 @@ final readonly class Router
             ['GET', "#^/api/worktrees/{$name}/file$#", fn (array $v): Response => $api->file($v['name'], $query)],
             ['GET', "#^/api/worktrees/{$name}/usage$#", fn (array $v): Response => $api->usage($v['name'])],
             ['GET', "#^/api/worktrees/{$name}/jobs$#", fn (array $v): Response => $api->worktreeJobs($v['name'])],
-            ['DELETE', "#^/api/worktrees/{$name}$#", fn (array $v): Response => $api->remove($v['name'])],
+            ['DELETE', "#^/api/worktrees/{$name}$#", fn (array $v): Response => $api->remove($v['name'], $this->payload($body))],
             ['GET', '#^/api/branches$#', fn (): Response => $api->branches()],
             // The name behind the question mark rather than in the path: a branch name
             // carries slashes, and a segment that may hold one cannot say where it

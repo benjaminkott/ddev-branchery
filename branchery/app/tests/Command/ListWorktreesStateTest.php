@@ -21,7 +21,7 @@ final class ListWorktreesStateTest extends TestCase
     private function worktree(array $with = []): Worktree
     {
         return new Worktree(...[
-            'name' => 'my-fix', 'branch' => 'my-fix', 'madeFor' => 'my-fix', 'php' => '8.3', 'minPhp' => null, 'node' => null,
+            'name' => 'my-fix', 'branch' => 'my-fix', 'madeFor' => 'my-fix', 'ownsBranch' => true, 'php' => '8.3', 'minPhp' => null, 'node' => null,
             'database' => 'branchery_my_fix', 'profile' => null, 'docroot' => '', 'url' => 'https://my-fix.blog.ddev.site/',
             'entrypoints' => [], 'addresses' => [], 'path' => '/home/dev/blog/.worktrees/my-fix', 'changes' => 0, 'ahead' => 0, 'behind' => 0,
             'ready' => true, 'isProject' => false,

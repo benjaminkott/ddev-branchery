@@ -194,6 +194,7 @@
             "name": "string",
             "branch": "string",
             "madeFor": "?string",
+            "ownsBranch": "bool",
             "php": "string",
             "minPhp": "?string",
             "node": "?string",

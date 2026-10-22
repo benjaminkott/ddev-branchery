@@ -59,6 +59,8 @@ export interface Worktree {
      * this. Null for the project's own checkout.
      */
     madeFor: string | null;
+    /** The branch was cut for this worktree and goes with it; one that was here before stays. */
+    ownsBranch: boolean;
     /** Null where the worktree was not branched off. */
     forkedFrom: string | null;
     forkedAt: string | null;

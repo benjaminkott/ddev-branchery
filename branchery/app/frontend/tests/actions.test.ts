@@ -9,7 +9,7 @@
 
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
-import { type Action, actions, type Offer, wandered } from '../rules/actions.js';
+import { type Action, actions, type Offer, takesBranch, wandered } from '../rules/actions.js';
 import type { Worktree } from '../types.js';
 
 /** A worktree in the ordinary state: on its branch, in step, nothing pending. */
@@ -18,6 +18,7 @@ function worktree(said: Partial<Worktree> = {}): Worktree {
         name: 'demo',
         branch: 'feature/x',
         madeFor: 'feature/x',
+        ownsBranch: true,
         ahead: 0,
         behind: 0,
         changes: 0,
@@ -129,5 +130,21 @@ describe('whether a checkout has wandered', () => {
     /** The project's own checkout was made for nothing, so it cannot have left it. */
     it('is false where it was made for nothing', () => {
         assert.equal(wandered(worktree({ madeFor: null, branch: 'anything' })), false);
+    });
+});
+
+describe('whether removing a worktree takes its branch', () => {
+    it('takes the branch the worktree cut', () => {
+        assert.equal(takesBranch(worktree()), true);
+    });
+
+    /** Checked out as it stood, the branch was the developer's before and after. */
+    it('leaves a branch that was here before', () => {
+        assert.equal(takesBranch(worktree({ ownsBranch: false })), false);
+    });
+
+    /** What it wandered onto was never its own, and the question names what goes. */
+    it('leaves both where the checkout has wandered', () => {
+        assert.equal(takesBranch(worktree({ branch: 'some/patch' })), false);
     });
 });

@@ -48,6 +48,14 @@ export function wandered(worktree: Worktree): boolean {
     return worktree.madeFor !== null && worktree.madeFor !== worktree.branch;
 }
 
+/**
+ * Whether removing the worktree takes its branch along: only the one it cut,
+ * and only while it is on it -- what it wandered onto was never its own.
+ */
+export function takesBranch(worktree: Worktree): boolean {
+    return worktree.ownsBranch && !wandered(worktree);
+}
+
 export function actions(worktree: Worktree): Actions {
     return { doing: [...onBranch(worktree), ...always], undoing: undoing(worktree), beside: account(worktree) };
 }
